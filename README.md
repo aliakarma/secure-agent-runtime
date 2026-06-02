@@ -8,11 +8,13 @@ A **security-first agentic AI runtime** built on [LangGraph](https://github.com/
 
 | Layer | Purpose | Status |
 |-------|---------|--------|
-| **Agent Core** | LangGraph-based state machines for multi-step reasoning | ✅ Phase 1 |
-| **Sanitizers** | Prompt injection defense, PII redaction, content validation | 🔲 Phase 2+ |
-| **Trust Engine** | Dynamic trust scoring & permission boundaries | 🔲 Phase 3+ |
-| **API Server** | FastAPI endpoints for agent interaction | ✅ Phase 1 |
-| **Vector Store** | ChromaDB for retrieval-augmented generation | ✅ Phase 1 |
+| **Phase 1: Environment** | Multi-container setup, structlog, and basic FastAPI routing | ✅ Complete |
+| **Phase 2: Agent Core** | LangGraph-based state machines, Supervisor routing, ChromaDB | ✅ Complete |
+| **Phase 3: Threat Modeling** | Baseline Attack Success Rate (ASR) benchmarking and Threat Suite | ✅ Complete |
+| **Phase 4: Security Hooks** | 5 Interception Hooks (Cyclic Execution Graph) | ✅ Complete |
+| **Phase 5: Sanitizers** | Multimodal LLM-as-a-judge for payload semantics and Tool Outputs | ✅ Complete |
+| **Phase 6: Trust Engine** | Dynamic Trust Scoring (T(x)) and Three-Tier Policy Enforcement | ✅ Complete |
+| **Phase 7: System Shields** | Dynamic System Prompts and Guardrails | 🔲 Pending |
 
 ## 🏗️ Project Structure
 
@@ -133,13 +135,42 @@ Example log output:
 | `APP_HOST` | FastAPI bind address | `0.0.0.0` |
 | `APP_PORT` | FastAPI bind port | `8080` |
 
-## 📌 Phase 1 — Success Criteria
+## 📌 Development Progress (Phases 1-6)
 
-- [x] Project folder structure is clean and matches the plan
-- [x] All libraries install with no version conflicts
-- [x] A simple "Hello LangGraph" graph runs successfully
-- [x] Logs appear in the terminal when the graph executes
-- [ ] `docker-compose up` starts without errors
+### Phase 1: Environment Setup
+- Isolated Dockerized environment.
+- Structured logging (`structlog`) implemented for forensic audits.
+- FastAPI routing and environment variables mapped.
+
+### Phase 2: Agent Architecture Baseline
+- Designed a `Supervisor` orchestrator and two specialist worker agents (`FlightAgent`, `HotelAgent`).
+- Implemented ChromaDB persistent memory.
+- Created the baseline travel execution graph in `agents/workflow.py`.
+
+### Phase 3: Threat Modeling & Evaluation
+- Constructed `attacks.json` featuring 21 distinct Direct and Indirect Prompt Injections.
+- Built an automated evaluation suite (`evaluate_attacks.py`) that revealed a baseline Attack Success Rate (ASR) of 19.05% and a 100% vulnerability to the "Confused Deputy" problem.
+
+### Phase 4: Security Hooking Architecture
+- Engineered five distinct security interception checkpoints using function wrappers:
+  1. Pre-LLM Execution (Hook 1)
+  2. Pre-Tool Arguments (Hook 2)
+  3. Post-Tool Validation (Hook 3)
+  4. Memory/RAG Shield (Hook 4)
+  5. Supervisor Routing (Hook 5)
+
+### Phase 5: Multimodal Sanitization Layer
+- Deployed `TextSanitizer` powered by `gpt-4o-mini` using Pydantic structured output.
+- Deployed Modality Decoders (`VisualSanitizer` with Tesseract OCR, `ToolOutputSanitizer`, `RAGSanitizer`).
+- Successfully mitigated the Confused Deputy problem by extracting strings from third-party API payloads and intercepting malicious commands.
+
+### Phase 6: Provenance & Trust Engine
+- Designed the mathematical formula for dynamic trust: `T(x) = αS(x) + βP(x) + γH(x) + δR(x)`.
+- Replaced binary filter failures with Graceful Degradation using a **Three-Tier Policy**:
+  - `HIGH` (≥ 0.8): Full Tool execution allowed.
+  - `MEDIUM` (0.4 - 0.8): Read-Only execution. Modifying tools are cryptographically blocked.
+  - `LOW` (< 0.4): Agent is totally sandboxed.
+- Implemented stateful tracking across sessions to thwart repeated attacks (Amnesia fix) and fast heuristic filters to optimize latency.
 
 ## 📄 License
 

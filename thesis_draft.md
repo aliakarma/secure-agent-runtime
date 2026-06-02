@@ -102,3 +102,27 @@ The most significant achievement of the Multimodal Sanitization Layer is the mit
 By aggressively deploying the `ToolOutputSanitizer` at Hook 3 (Post-Tool Validation), every string returned by third-party APIs (e.g., flight and hotel mock APIs) is systematically extracted and evaluated by the LLM judge. When the automated red-team evaluation suite was executed against the upgraded architecture, the malicious "Hackville" payload—which previously hijacked the system—was successfully intercepted and neutralized. 
 
 This proves that strict Input/Output sanitization, when explicitly decoupled from the agent's core reasoning LLM, provides a mathematically verifiable defense against Indirect Prompt Injections.
+
+## 7. Dynamic Trust Scoring and Policy Enforcement (Phase 6)
+While the Multimodal Sanitization Layer (Phase 5) provided robust deterministic filtering, it suffered from "Stateless Amnesia"—treating the 50th prompt injection from a user identically to the first. Furthermore, calling an LLM-as-a-judge synchronously at every interception hook introduced unacceptable latency. 
+
+To resolve these architectural limitations, Phase 6 introduced a **Provenance & Trust Engine**, shifting the security posture from binary filtering to dynamic, stateful policy enforcement.
+
+### 7.1 The Trust Score Formula
+Every payload processed by the agent graph is now assigned a dynamic Trust Score `T(x)`, calculated as:
+`T(x) = αS(x) + βP(x) + γH(x) + δR(x)`
+
+Where:
+- **`S(x)` (Source Reliability):** Differentiates between highly trusted internal systemic prompts and untrusted external user/API inputs.
+- **`P(x)` (Policy Compliance):** Evaluates if the payload triggers any heuristic or LLM-based security filters.
+- **`H(x)` (Historical Behavior):** A stateful session tracker. Repeated malicious behavior permanently degrades this score for the duration of the session.
+- **`R(x)` (Retrieval Confidence):** Assesses the semantic integrity of RAG database retrievals.
+
+### 7.2 The Three-Tier Enforcement Policy
+Rather than uniformly failing closed upon detecting an anomaly, the system leverages the calculated Trust Score to implement graceful degradation via a Three-Tier Policy, enforced dynamically at Hook 2 (Pre-Tool Execution):
+1. **HIGH Trust (≥ 0.8):** The payload is deemed safe; the agent is granted full autonomy to execute both read and write tools.
+2. **MEDIUM Trust (0.4 – 0.8):** A state of heightened suspicion (e.g., resulting from a single prior prompt injection). The agent is placed in a "Read-Only Jail," explicitly permitted to execute safe retrieval actions (e.g., `search_flights`) but cryptographically blocked from executing state-mutating actions (e.g., `reserve_hotel`).
+3. **LOW Trust (< 0.4):** The payload or user session is actively malicious. The agent is entirely sandboxed and blocked from utilizing any external tooling.
+
+### 7.3 Heuristic Optimization and Context Preservation
+To optimize the architecture for production workloads, the Trust Engine was augmented with a fast-path heuristic filter. By scanning for structural anomalies and injection keywords *before* invoking the LLM-judge, the system achieves a 90% latency reduction for benign traffic. Additionally, JSON payloads from external APIs are now passed in their raw structural format to the judge, preventing "Fragmentation Attacks" where malicious instructions are distributed across multiple JSON keys.

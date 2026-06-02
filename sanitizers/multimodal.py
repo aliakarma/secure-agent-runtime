@@ -31,18 +31,29 @@ class TextSanitizer:
             ("user", "{text}")
         ])
         
+    def _fast_heuristic_filter(self, text: str) -> bool:
+        """Fast path check. Returns True if suspicious keywords found."""
+        suspicious_keywords = ["ignore", "override", "bypass", "system", "jailbreak", "admin", "pwned", "hackville"]
+        text_lower = text.lower()
+        return any(keyword in text_lower for keyword in suspicious_keywords)
+
     def sanitize(self, text: str) -> SanitizerResult:
         if not text or not str(text).strip():
             return SanitizerResult(is_malicious=False, reason="Empty input")
+            
+        # Fast Path (Latency Fix)
+        if not self._fast_heuristic_filter(text):
+            return SanitizerResult(is_malicious=False, reason="Fast filter passed: No suspicious keywords.")
         
         try:
             chain = self.prompt | self.llm
             result = chain.invoke({"text": str(text)})
             return result
         except Exception as e:
-            logger.error(f"TextSanitizer error: {e}")
-            # Fail closed on error
-            return SanitizerResult(is_malicious=True, reason=f"Sanitization failed: {e}")
+            logger.error(f"TextSanitizer error: {e}. Falling back to heuristics.")
+            # Graceful Fallback (API Outage Fix)
+            # If API fails but heuristics fired (since we got here), we fail-closed.
+            return SanitizerResult(is_malicious=True, reason=f"Heuristic flag confirmed by fallback due to API error: {e}")
 
 class VisualSanitizer:
     def __init__(self):
@@ -107,30 +118,7 @@ class ToolOutputSanitizer:
         self.text_sanitizer = TextSanitizer()
         
     def sanitize(self, payload: str) -> SanitizerResult:
-        try:
-            # Check if it's JSON
-            data = json.loads(payload)
-            # Flatten all string values from the JSON
-            strings_to_check = []
-            
-            def extract_strings(obj):
-                if isinstance(obj, dict):
-                    for k, v in obj.items():
-                        # Attackers often hide commands in keys like "system_override"
-                        strings_to_check.append(str(k))
-                        extract_strings(v)
-                elif isinstance(obj, list):
-                    for item in obj:
-                        extract_strings(item)
-                elif isinstance(obj, str):
-                    strings_to_check.append(obj)
-            
-            extract_strings(data)
-            combined_text = " ".join(strings_to_check)
-            
-            # Pass combined text to TextSanitizer
-            return self.text_sanitizer.sanitize(combined_text)
-            
-        except json.JSONDecodeError:
-            # If it's not JSON, just treat the whole output as text
-            return self.text_sanitizer.sanitize(str(payload))
+        # Context-Preserving JSON Parsing (Context-Loss Fix)
+        # Instead of flattening strings, we pass the raw JSON to the LLM judge.
+        # This prevents Fragmentation Attacks where commands are split across keys.
+        return self.text_sanitizer.sanitize(str(payload))

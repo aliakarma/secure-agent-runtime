@@ -73,7 +73,9 @@ def run_travel_graph(user_input: str, session_id: str = "default_session"):
             HumanMessage(content=user_input)
         ],
         "memory": memory_context,
-        "trust_score": 0.0,
+        "trust_score": 1.0,
+        "trust_tier": "HIGH",
+        "session_id": session_id,
         "route_to": ""
     }
     
@@ -92,7 +94,7 @@ def run_travel_graph(user_input: str, session_id: str = "default_session"):
     # 4. Save new memory
     last_message = final_state["messages"][-1].content if final_state["messages"] else ""
     memory_string = f"User: {user_input}\nAgent: {last_message}"
-    safe_memory_string = secure_memory_hook(memory_string)
+    safe_memory_string = secure_memory_hook(session_id, memory_string)
     memory_manager.save_memory(session_id, safe_memory_string)
     
     logger.info("travel_graph_execution_completed", session_id=session_id)

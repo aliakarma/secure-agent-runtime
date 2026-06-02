@@ -1,0 +1,32 @@
+# ── Core Agent Framework ──────────────────────────────────────────────
+langgraph>=0.4.0
+langchain>=0.3.0
+langchain-openai>=0.3.0
+
+# ── API & Server ──────────────────────────────────────────────────────
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.10.0
+
+# ── LLM Provider ─────────────────────────────────────────────────────
+openai>=1.60.0
+
+# ── Vector Store ──────────────────────────────────────────────────────
+chromadb>=0.6.0
+
+# ── Multimodal Processing ────────────────────────────────────────────
+pillow>=11.0.0
+opencv-python>=4.10.0
+pytesseract>=0.3.13
+openai-whisper>=20240930
+
+# ── Observability & Logging ──────────────────────────────────────────
+structlog>=24.4.0
+
+# ── Utilities ────────────────────────────────────────────────────────
+python-dotenv>=1.0.0
+httpx>=0.28.0
+
+# ── Testing ──────────────────────────────────────────────────────────
+pytest>=8.3.0
+pytest-asyncio>=0.24.0

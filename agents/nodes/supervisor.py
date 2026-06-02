@@ -1,0 +1,58 @@
+"""
+Supervisor Agent Node.
+"""
+
+from typing import Literal
+from pydantic import BaseModel, Field
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from agents.state import AgentState
+from logging_config import get_logger
+from langchain_core.messages import HumanMessage
+
+logger = get_logger(__name__)
+
+# Define the structured output for routing
+class Route(BaseModel):
+    next: Literal["FlightAgent", "HotelAgent", "FINISH"] = Field(
+        description="The next agent to route to, or FINISH if the user's request has been fully satisfied."
+    )
+
+system_prompt = """You are a Supervisor coordinating a travel booking system.
+You have the following specialized agents at your disposal:
+- FlightAgent: Assists with searching and booking flights.
+- HotelAgent: Assists with searching and booking hotels.
+
+Your task is to analyze the user's request and the conversation history, and decide which agent should act next.
+If the user wants a flight, route to FlightAgent.
+If the user wants a hotel, route to HotelAgent.
+If the user wants both, route to one of them first. Once that agent finishes and hands back to you, route to the other agent.
+If all tasks requested by the user are complete, or the user is just saying hello, respond with FINISH.
+"""
+
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+# We use with_structured_output to force the LLM to output our Route schema
+supervisor_llm = llm.with_structured_output(Route)
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", system_prompt),
+    MessagesPlaceholder(variable_name="messages"),
+    ("system", "Given the conversation above, who should act next? Or should we FINISH?")
+])
+
+supervisor_chain = prompt | supervisor_llm
+
+def supervisor_node(state: AgentState) -> dict:
+    """The supervisor node function."""
+    logger.info("node_executed", node="supervisor")
+    
+    # Invoke the supervisor chain to get routing decision
+    result = supervisor_chain.invoke({"messages": state["messages"]})
+    
+    next_node = result.next
+    logger.info("supervisor_routing", next_node=next_node)
+    
+    return {
+        "next": next_node
+    }

@@ -1,0 +1,56 @@
+# docker-compose.yml — Secure Agent Runtime
+# Start everything with:  docker-compose up --build
+
+services:
+  # ── Main Application ────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: secure-agent-runtime
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - LOG_LEVEL=INFO
+      - LOG_JSON=1
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    depends_on:
+      chromadb:
+        condition: service_healthy
+    volumes:
+      - ./docs:/app/docs
+    restart: unless-stopped
+    networks:
+      - agent-net
+
+  # ── ChromaDB Vector Store ───────────────────────────────────────────
+  chromadb:
+    image: chromadb/chroma:0.6.3
+    container_name: secure-agent-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/heartbeat')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - agent-net
+
+volumes:
+  chroma_data:
+    driver: local
+
+networks:
+  agent-net:
+    driver: bridge

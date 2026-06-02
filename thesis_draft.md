@@ -78,3 +78,27 @@ Instead of a single perimeter defense, the architecture implements layered inter
 A critical design requirement for autonomous systems is fault tolerance. When a traditional application encounters an error, it crashes. If an AI agent's execution is halted due to a blocked prompt injection, the user experience is abruptly terminated. 
 
 The security hooking architecture implements graceful degradation. When malicious content is flagged at any of the five checkpoints, the system does not raise a terminal exception. Instead, it enters a recursive sanitization loop—stripping the malicious payload, appending a `[SANITIZED]` warning flag, and returning control to the graph. This ensures the system remains operational and can safely redirect the user while neutralizing the threat.
+
+## 6. The Multimodal Sanitization Layer (Phase 5)
+While Phase 4 established the structural interception points, it relied on a basic placeholder logic. Phase 5 operationalized the security architecture by building an intelligent "Multimodal Sanitization Layer." Because modern AI agents interact with diverse data types, a single text-based filter is insufficient. Malicious instructions can be hidden in image pixels, audio phonetics, or nested JSON payloads.
+
+To counter this, a suite of six specialized "Sanitizer Agents" was developed, acting as deep-packet inspectors for AI workloads.
+
+### 6.1 The Intelligence Engine: LLM-as-a-Judge
+Traditional cybersecurity relies on static signatures and regular expressions (regex). However, prompt injections are semantically fluid; an attacker can rephrase "ignore previous instructions" in thousands of ways. To address this, the core `TextSanitizer` was engineered using an "LLM-as-a-Judge" paradigm. 
+
+Powered by a high-speed, deterministic model (`gpt-4o-mini` with `temperature=0`) and strict Pydantic structured output, the `TextSanitizer` evaluates text semantically. It classifies content as malicious if it detects jailbreak attempts, hidden system overrides, PII exposure, or instructions disguised as passive data.
+
+### 6.2 Modality Decoding and Triage
+Because the `TextSanitizer` requires text input, the remaining five sanitizers operate as modality decoders. They extract hidden strings from various formats and funnel them into the central intelligence engine:
+- **`VisualSanitizer`:** Employs Optical Character Recognition (OCR) via Tesseract to extract text from images. This defends against steganographic prompt injection, where an attacker embeds hidden instructions inside a seemingly benign image file uploaded to the agent.
+- **`AudioSanitizer` & `VideoSanitizer`:** Designed to transcribe audio arrays and extract temporal video frames, isolating phonetic or single-frame hidden commands.
+- **`RAGSanitizer`:** Intercepts vector database retrievals. It specifically scans historical memory chunks for data poisoning before the context is loaded into the agent's active memory.
+- **`ToolOutputSanitizer`:** Designed to recursively parse deeply nested JSON payloads returned by external APIs.
+
+### 6.3 Mitigating the Confused Deputy Problem
+The most significant achievement of the Multimodal Sanitization Layer is the mitigation of the Confused Deputy problem identified in Phase 3. 
+
+By aggressively deploying the `ToolOutputSanitizer` at Hook 3 (Post-Tool Validation), every string returned by third-party APIs (e.g., flight and hotel mock APIs) is systematically extracted and evaluated by the LLM judge. When the automated red-team evaluation suite was executed against the upgraded architecture, the malicious "Hackville" payload—which previously hijacked the system—was successfully intercepted and neutralized. 
+
+This proves that strict Input/Output sanitization, when explicitly decoupled from the agent's core reasoning LLM, provides a mathematically verifiable defense against Indirect Prompt Injections.

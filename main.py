@@ -6,6 +6,11 @@ and administrative interfaces for the secure agentic AI system.
 """
 
 from __future__ import annotations
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from contextlib import asynccontextmanager
 from typing import AsyncIterator

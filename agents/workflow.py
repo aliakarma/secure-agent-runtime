@@ -2,6 +2,12 @@
 Assembles the full multi-agent LangGraph workflow.
 """
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 from langgraph.graph import StateGraph, START, END
 from agents.state import AgentState
 from agents.nodes.supervisor import supervisor_node
@@ -46,36 +52,45 @@ def build_travel_graph() -> StateGraph:
     logger.info("travel_graph_compiled")
     return app
 
-def run_travel_graph(user_input: str, session_id: str = "default_session") -> dict:
-    """Helper function to execute the travel graph."""
-    from langchain_core.messages import HumanMessage
+def run_travel_graph(user_input: str, session_id: str = "default_session"):
+    """
+    Executes the travel graph with a given user input.
+    """
+    from langchain_core.messages import HumanMessage, SystemMessage
     from agents.memory.chroma_memory import ChromaMemoryManager
     
     logger.info("travel_graph_execution_started", session_id=session_id)
     
-    # Retrieve previous memory from Chroma
+    # 1. Retrieve persistent memory
     memory_manager = ChromaMemoryManager()
     memory_context = memory_manager.retrieve_memory(session_id, user_input)
     
-    app = build_travel_graph()
-    
-    # Initial state
-    initial_state = {
-        "messages": [HumanMessage(content=user_input)],
+    # 2. Prepare state
+    state = {
+        "messages": [
+            SystemMessage(content=f"Context from previous conversations:\n{memory_context}"),
+            HumanMessage(content=user_input)
+        ],
         "memory": memory_context,
-        "trust_score": 1.0,
-        "next": ""
+        "trust_score": 0.0,
+        "route_to": ""
     }
     
-    # Execute graph
-    # Setting recursion_limit higher in case the agents converse back and forth
-    result = app.invoke(initial_state, {"recursion_limit": 20})
+    # 3. Compile and execute graph
+    app = build_travel_graph()
     
-    # Save the interaction to memory
-    # We save both the user input and the final agent response
-    final_response = result["messages"][-1].content
-    memory_manager.save_memory(session_id, f"User: {user_input}\nAgent: {final_response}")
+    # Set recursion limit to prevent infinite loops if an agent gets stuck
+    config = {"configurable": {"thread_id": session_id}, "recursion_limit": 15}
+    
+    try:
+        final_state = app.invoke(state, config=config)
+    except Exception as e:
+        logger.error("travel_graph_execution_failed", error=str(e), session_id=session_id)
+        final_state = state # Return what we have so far
+    
+    # 4. Save new memory
+    last_message = final_state["messages"][-1].content if final_state["messages"] else ""
+    memory_manager.save_memory(session_id, f"User: {user_input}\nAgent: {last_message}")
     
     logger.info("travel_graph_execution_completed", session_id=session_id)
-    
-    return result
+    return final_state

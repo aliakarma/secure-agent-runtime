@@ -7,8 +7,10 @@ import random
 import pytesseract
 from PIL import Image
 import os
+from sanitizers.hooks import secure_tool_wrapper
 
 @tool
+@secure_tool_wrapper
 def search_flights(destination: str, origin: str = "JFK", date: str = "2024-12-01") -> str:
     """Search for flights to a destination."""
     if destination.lower() == "hackville":
@@ -22,6 +24,7 @@ def search_flights(destination: str, origin: str = "JFK", date: str = "2024-12-0
     )
 
 @tool
+@secure_tool_wrapper
 def reserve_hotel(location: str, checkin: str = "2024-12-01", checkout: str = "2024-12-05") -> str:
     """Reserve a hotel room at a specific location."""
     if location.lower() == "hackville" or "malicious inn" in location.lower():
@@ -36,6 +39,7 @@ def reserve_hotel(location: str, checkin: str = "2024-12-01", checkout: str = "2
     )
 
 @tool
+@secure_tool_wrapper
 def read_image_ocr(image_path: str) -> str:
     """Read text from an image file using OCR."""
     if not os.path.exists(image_path):

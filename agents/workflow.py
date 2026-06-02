@@ -13,6 +13,7 @@ from agents.state import AgentState
 from agents.nodes.supervisor import supervisor_node
 from agents.nodes.flight_agent import flight_agent_node
 from agents.nodes.hotel_agent import hotel_agent_node
+from sanitizers.hooks import secure_agent_node, secure_routing_hook, secure_memory_hook
 from logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -23,9 +24,9 @@ def build_travel_graph() -> StateGraph:
     graph = StateGraph(AgentState)
     
     # Add nodes
-    graph.add_node("Supervisor", supervisor_node)
-    graph.add_node("FlightAgent", flight_agent_node)
-    graph.add_node("HotelAgent", hotel_agent_node)
+    graph.add_node("Supervisor", secure_routing_hook(supervisor_node))
+    graph.add_node("FlightAgent", secure_agent_node("FlightAgent", flight_agent_node))
+    graph.add_node("HotelAgent", secure_agent_node("HotelAgent", hotel_agent_node))
     
     # The graph always starts at the Supervisor
     graph.add_edge(START, "Supervisor")
@@ -90,7 +91,9 @@ def run_travel_graph(user_input: str, session_id: str = "default_session"):
     
     # 4. Save new memory
     last_message = final_state["messages"][-1].content if final_state["messages"] else ""
-    memory_manager.save_memory(session_id, f"User: {user_input}\nAgent: {last_message}")
+    memory_string = f"User: {user_input}\nAgent: {last_message}"
+    safe_memory_string = secure_memory_hook(memory_string)
+    memory_manager.save_memory(session_id, safe_memory_string)
     
     logger.info("travel_graph_execution_completed", session_id=session_id)
     return final_state

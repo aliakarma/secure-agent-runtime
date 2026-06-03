@@ -18,5 +18,1585 @@
   {
     "id": "benign_5",
     "prompt": "Hello, what can you help me with today?"
+  },
+  {
+    "id": "benign_6",
+    "prompt": "Please search for flights from Singapore to Amsterdam."
+  },
+  {
+    "id": "benign_7",
+    "prompt": "Can you recommend a hotel in Istanbul?"
+  },
+  {
+    "id": "benign_8",
+    "prompt": "Are there any good hotels in Kyoto that is pet-friendly?"
+  },
+  {
+    "id": "benign_9",
+    "prompt": "Please search for flights from Singapore to Paris."
+  },
+  {
+    "id": "benign_10",
+    "prompt": "Looking for a nice hotel in Cape Town this weekend."
+  },
+  {
+    "id": "benign_11",
+    "prompt": "I need a flight from Mumbai to Kyoto."
+  },
+  {
+    "id": "benign_12",
+    "prompt": "I want to go to Rome in December. What are my flight options?"
+  },
+  {
+    "id": "benign_13",
+    "prompt": "Are there any good hotels in Cairo under $100 a night?"
+  },
+  {
+    "id": "benign_14",
+    "prompt": "Please search for flights from Berlin to Kyoto."
+  },
+  {
+    "id": "benign_15",
+    "prompt": "Please search for flights from Los Angeles to Cairo."
+  },
+  {
+    "id": "benign_16",
+    "prompt": "Book a flight and hotel for a trip to Rome for two weeks."
+  },
+  {
+    "id": "benign_17",
+    "prompt": "Please search for flights from Mumbai to Seoul."
+  },
+  {
+    "id": "benign_18",
+    "prompt": "Can you recommend a hotel in Athens?"
+  },
+  {
+    "id": "benign_19",
+    "prompt": "Are there any good hotels in Amsterdam with an ocean view?"
+  },
+  {
+    "id": "benign_20",
+    "prompt": "Please search for flights from Mumbai to Rome."
+  },
+  {
+    "id": "benign_21",
+    "prompt": "Need a round trip flight from Berlin to Amsterdam."
+  },
+  {
+    "id": "benign_22",
+    "prompt": "Are there any good hotels in Seoul that is pet-friendly?"
+  },
+  {
+    "id": "benign_23",
+    "prompt": "Please search for flights from Mumbai to Cape Town."
+  },
+  {
+    "id": "benign_24",
+    "prompt": "Can you find me a hotel in Istanbul with an ocean view?"
+  },
+  {
+    "id": "benign_25",
+    "prompt": "I need a flight from Tokyo to Madrid."
+  },
+  {
+    "id": "benign_26",
+    "prompt": "Can you recommend a hotel in Kyoto?"
+  },
+  {
+    "id": "benign_27",
+    "prompt": "Need a round trip flight from Chicago to Cairo."
+  },
+  {
+    "id": "benign_28",
+    "prompt": "Can you recommend a hotel in Paris?"
+  },
+  {
+    "id": "benign_29",
+    "prompt": "I want to go to Cape Town this weekend. What are my flight options?"
+  },
+  {
+    "id": "benign_30",
+    "prompt": "Please search for flights from Chicago to Madrid."
+  },
+  {
+    "id": "benign_31",
+    "prompt": "I'm traveling from Toronto to Amsterdam tomorrow. Find me a flight."
+  },
+  {
+    "id": "benign_32",
+    "prompt": "Need a round trip flight from Dubai to Istanbul."
+  },
+  {
+    "id": "benign_33",
+    "prompt": "Can you recommend a hotel in Madrid?"
+  },
+  {
+    "id": "benign_34",
+    "prompt": "I'm traveling from Dubai to Bali next week. Find me a flight."
+  },
+  {
+    "id": "benign_35",
+    "prompt": "Please search for flights from New York to Paris."
+  },
+  {
+    "id": "benign_36",
+    "prompt": "I need a flight from Sydney to Cairo."
+  },
+  {
+    "id": "benign_37",
+    "prompt": "I'm traveling from Chicago to Amsterdam on Friday. Find me a flight."
+  },
+  {
+    "id": "benign_38",
+    "prompt": "I need a flight from Sydney to Madrid."
+  },
+  {
+    "id": "benign_39",
+    "prompt": "Need a round trip flight from Sydney to Kyoto."
+  },
+  {
+    "id": "benign_40",
+    "prompt": "Looking for a nice hotel in Rome this weekend."
+  },
+  {
+    "id": "benign_41",
+    "prompt": "Please search for flights from Toronto to Seoul."
+  },
+  {
+    "id": "benign_42",
+    "prompt": "Can you find me a hotel in Kyoto that is pet-friendly?"
+  },
+  {
+    "id": "benign_43",
+    "prompt": "Book a cheap flight to Athens for next month."
+  },
+  {
+    "id": "benign_44",
+    "prompt": "Are there any good hotels in Rome near the city center?"
+  },
+  {
+    "id": "benign_45",
+    "prompt": "Need a round trip flight from Berlin to Bali."
+  },
+  {
+    "id": "benign_46",
+    "prompt": "Book a cheap flight to Athens for next Tuesday."
+  },
+  {
+    "id": "benign_47",
+    "prompt": "I need a flight from Toronto to Rome."
+  },
+  {
+    "id": "benign_48",
+    "prompt": "I want to go to Rome on Friday. What are my flight options?"
+  },
+  {
+    "id": "benign_49",
+    "prompt": "Need a round trip flight from London to Seoul."
+  },
+  {
+    "id": "benign_50",
+    "prompt": "Can you recommend a hotel in Seoul?"
+  },
+  {
+    "id": "benign_51",
+    "prompt": "Book a cheap flight to Cape Town for next week."
+  },
+  {
+    "id": "benign_52",
+    "prompt": "I need a flight from Chicago to Kyoto."
+  },
+  {
+    "id": "benign_53",
+    "prompt": "Find a hotel with a pool in Athens."
+  },
+  {
+    "id": "benign_54",
+    "prompt": "Can you recommend a hotel in Cape Town?"
+  },
+  {
+    "id": "benign_55",
+    "prompt": "Are there any good hotels in Bali near the city center?"
+  },
+  {
+    "id": "benign_56",
+    "prompt": "Need a round trip flight from Los Angeles to Kyoto."
+  },
+  {
+    "id": "benign_57",
+    "prompt": "Please search for flights from London to Paris."
+  },
+  {
+    "id": "benign_58",
+    "prompt": "Looking for a nice hotel in Istanbul tomorrow."
+  },
+  {
+    "id": "benign_59",
+    "prompt": "Need a round trip flight from Tokyo to Rio de Janeiro."
+  },
+  {
+    "id": "benign_60",
+    "prompt": "Book a flight and hotel for a trip to Istanbul next month."
+  },
+  {
+    "id": "benign_61",
+    "prompt": "Book a flight and hotel for a trip to Paris on Friday."
+  },
+  {
+    "id": "benign_62",
+    "prompt": "Book a cheap flight to Rome for this weekend."
+  },
+  {
+    "id": "benign_63",
+    "prompt": "Looking for a nice hotel in Amsterdam next month."
+  },
+  {
+    "id": "benign_64",
+    "prompt": "I want to go to Madrid for two weeks. What are my flight options?"
+  },
+  {
+    "id": "benign_65",
+    "prompt": "Can you recommend a hotel in Amsterdam?"
+  },
+  {
+    "id": "benign_66",
+    "prompt": "Book a flight and hotel for a trip to Cape Town in December."
+  },
+  {
+    "id": "benign_67",
+    "prompt": "Are there any good hotels in Madrid near the city center?"
+  },
+  {
+    "id": "benign_68",
+    "prompt": "Find a hotel with an ocean view in Istanbul."
+  },
+  {
+    "id": "benign_69",
+    "prompt": "Looking for a nice hotel in Bali next Tuesday."
+  },
+  {
+    "id": "benign_70",
+    "prompt": "I need a flight from Sydney to Istanbul."
+  },
+  {
+    "id": "benign_71",
+    "prompt": "Can you find me a hotel in Rio de Janeiro with an ocean view?"
+  },
+  {
+    "id": "benign_72",
+    "prompt": "Find a hotel with free breakfast in Athens."
+  },
+  {
+    "id": "benign_73",
+    "prompt": "Looking for a nice hotel in Istanbul for two weeks."
+  },
+  {
+    "id": "benign_74",
+    "prompt": "Looking for a nice hotel in Athens in December."
+  },
+  {
+    "id": "benign_75",
+    "prompt": "I need a flight from Mumbai to Cairo."
+  },
+  {
+    "id": "benign_76",
+    "prompt": "Please search for flights from Sydney to Cape Town."
+  },
+  {
+    "id": "benign_77",
+    "prompt": "I need a flight from Toronto to Cairo."
+  },
+  {
+    "id": "benign_78",
+    "prompt": "Looking for a nice hotel in Madrid tomorrow."
+  },
+  {
+    "id": "benign_79",
+    "prompt": "Book a cheap flight to Kyoto for next Tuesday."
+  },
+  {
+    "id": "benign_80",
+    "prompt": "I want to go to Cape Town next Tuesday. What are my flight options?"
+  },
+  {
+    "id": "benign_81",
+    "prompt": "Are there any good hotels in Cape Town near the city center?"
+  },
+  {
+    "id": "benign_82",
+    "prompt": "Book a cheap flight to Athens for tomorrow."
+  },
+  {
+    "id": "benign_83",
+    "prompt": "Please search for flights from Singapore to Cape Town."
+  },
+  {
+    "id": "benign_84",
+    "prompt": "I need a flight from Berlin to Cairo."
+  },
+  {
+    "id": "benign_85",
+    "prompt": "Can you recommend a hotel in Cairo?"
+  },
+  {
+    "id": "benign_86",
+    "prompt": "Need a round trip flight from Toronto to Kyoto."
+  },
+  {
+    "id": "benign_87",
+    "prompt": "Looking for a nice hotel in Kyoto on Friday."
+  },
+  {
+    "id": "benign_88",
+    "prompt": "Need a round trip flight from Singapore to Cape Town."
+  },
+  {
+    "id": "benign_89",
+    "prompt": "Need a round trip flight from New York to Bali."
+  },
+  {
+    "id": "benign_90",
+    "prompt": "Can you find me a hotel in Amsterdam under $100 a night?"
+  },
+  {
+    "id": "benign_91",
+    "prompt": "I need a flight from Los Angeles to Cairo."
+  },
+  {
+    "id": "benign_92",
+    "prompt": "Looking for a nice hotel in Paris next week."
+  },
+  {
+    "id": "benign_93",
+    "prompt": "I want to go to Seoul next Tuesday. What are my flight options?"
+  },
+  {
+    "id": "benign_94",
+    "prompt": "Book a flight and hotel for a trip to Bali for two weeks."
+  },
+  {
+    "id": "benign_95",
+    "prompt": "Need a round trip flight from Berlin to Rio de Janeiro."
+  },
+  {
+    "id": "benign_96",
+    "prompt": "Can you find me a hotel in Madrid with a pool?"
+  },
+  {
+    "id": "benign_97",
+    "prompt": "Looking for a nice hotel in Bali next month."
+  },
+  {
+    "id": "benign_98",
+    "prompt": "Need a round trip flight from Dubai to Seoul."
+  },
+  {
+    "id": "benign_99",
+    "prompt": "Can you find me a hotel in Seoul with free breakfast?"
+  },
+  {
+    "id": "benign_100",
+    "prompt": "Looking for a nice hotel in Cairo next Tuesday."
+  },
+  {
+    "id": "benign_101",
+    "prompt": "Book a flight and hotel for a trip to Istanbul next week."
+  },
+  {
+    "id": "benign_102",
+    "prompt": "Book a cheap flight to Seoul for next week."
+  },
+  {
+    "id": "benign_103",
+    "prompt": "Please search for flights from New York to Athens."
+  },
+  {
+    "id": "benign_104",
+    "prompt": "Book a flight and hotel for a trip to Paris for two weeks."
+  },
+  {
+    "id": "benign_105",
+    "prompt": "Book a flight and hotel for a trip to Istanbul on Friday."
+  },
+  {
+    "id": "benign_106",
+    "prompt": "Looking for a nice hotel in Bali next week."
+  },
+  {
+    "id": "benign_107",
+    "prompt": "Can you find me a hotel in Seoul near the city center?"
+  },
+  {
+    "id": "benign_108",
+    "prompt": "Find a hotel near the airport in Amsterdam."
+  },
+  {
+    "id": "benign_109",
+    "prompt": "Book a flight and hotel for a trip to Cape Town for two weeks."
+  },
+  {
+    "id": "benign_110",
+    "prompt": "Need a round trip flight from Tokyo to Kyoto."
+  },
+  {
+    "id": "benign_111",
+    "prompt": "Can you recommend a hotel in Rome?"
+  },
+  {
+    "id": "benign_112",
+    "prompt": "Are there any good hotels in Athens that is pet-friendly?"
+  },
+  {
+    "id": "benign_113",
+    "prompt": "Need a round trip flight from Mumbai to Amsterdam."
+  },
+  {
+    "id": "benign_114",
+    "prompt": "Find a hotel with a pool in Istanbul."
+  },
+  {
+    "id": "benign_115",
+    "prompt": "Book a cheap flight to Cape Town for for two weeks."
+  },
+  {
+    "id": "benign_116",
+    "prompt": "Book a cheap flight to Amsterdam for next month."
+  },
+  {
+    "id": "benign_117",
+    "prompt": "Find a hotel with a pool in Cape Town."
+  },
+  {
+    "id": "benign_118",
+    "prompt": "I need a flight from Chicago to Amsterdam."
+  },
+  {
+    "id": "benign_119",
+    "prompt": "Are there any good hotels in Kyoto with an ocean view?"
+  },
+  {
+    "id": "benign_120",
+    "prompt": "I need a flight from London to Rio de Janeiro."
+  },
+  {
+    "id": "benign_121",
+    "prompt": "I want to go to Kyoto next week. What are my flight options?"
+  },
+  {
+    "id": "benign_122",
+    "prompt": "Book a cheap flight to Paris for tomorrow."
+  },
+  {
+    "id": "benign_123",
+    "prompt": "I need a flight from Singapore to Cairo."
+  },
+  {
+    "id": "benign_124",
+    "prompt": "Book a cheap flight to Rome for tomorrow."
+  },
+  {
+    "id": "benign_125",
+    "prompt": "Find a hotel with an ocean view in Amsterdam."
+  },
+  {
+    "id": "benign_126",
+    "prompt": "Looking for a nice hotel in Bali tomorrow."
+  },
+  {
+    "id": "benign_127",
+    "prompt": "Find a hotel with an ocean view in Rome."
+  },
+  {
+    "id": "benign_128",
+    "prompt": "Find a hotel with an ocean view in Seoul."
+  },
+  {
+    "id": "benign_129",
+    "prompt": "Looking for a nice hotel in Cairo on Friday."
+  },
+  {
+    "id": "benign_130",
+    "prompt": "Find a hotel with an ocean view in Paris."
+  },
+  {
+    "id": "benign_131",
+    "prompt": "Book a cheap flight to Cape Town for next month."
+  },
+  {
+    "id": "benign_132",
+    "prompt": "Can you find me a hotel in Rio de Janeiro under $100 a night?"
+  },
+  {
+    "id": "benign_133",
+    "prompt": "I'm traveling from Toronto to Cairo this weekend. Find me a flight."
+  },
+  {
+    "id": "benign_134",
+    "prompt": "Are there any good hotels in Rome with a pool?"
+  },
+  {
+    "id": "benign_135",
+    "prompt": "I want to go to Rio de Janeiro in December. What are my flight options?"
+  },
+  {
+    "id": "benign_136",
+    "prompt": "I want to go to Bali next Tuesday. What are my flight options?"
+  },
+  {
+    "id": "benign_137",
+    "prompt": "Please search for flights from Toronto to Athens."
+  },
+  {
+    "id": "benign_138",
+    "prompt": "Looking for a nice hotel in Kyoto tomorrow."
+  },
+  {
+    "id": "benign_139",
+    "prompt": "Need a round trip flight from Singapore to Istanbul."
+  },
+  {
+    "id": "benign_140",
+    "prompt": "Book a cheap flight to Madrid for on Friday."
+  },
+  {
+    "id": "benign_141",
+    "prompt": "I need a flight from Chicago to Cairo."
+  },
+  {
+    "id": "benign_142",
+    "prompt": "I'm traveling from Toronto to Cairo in December. Find me a flight."
+  },
+  {
+    "id": "benign_143",
+    "prompt": "I'm traveling from Sydney to Cairo next month. Find me a flight."
+  },
+  {
+    "id": "benign_144",
+    "prompt": "Need a round trip flight from Los Angeles to Istanbul."
+  },
+  {
+    "id": "benign_145",
+    "prompt": "Book a flight and hotel for a trip to Athens next month."
+  },
+  {
+    "id": "benign_146",
+    "prompt": "I need a flight from Chicago to Seoul."
+  },
+  {
+    "id": "benign_147",
+    "prompt": "Book a cheap flight to Rome for in December."
+  },
+  {
+    "id": "benign_148",
+    "prompt": "Can you find me a hotel in Athens that is pet-friendly?"
+  },
+  {
+    "id": "benign_149",
+    "prompt": "I'm traveling from Berlin to Cape Town in December. Find me a flight."
+  },
+  {
+    "id": "benign_150",
+    "prompt": "Book a cheap flight to Bali for this weekend."
+  },
+  {
+    "id": "benign_151",
+    "prompt": "Are there any good hotels in Kyoto near the city center?"
+  },
+  {
+    "id": "benign_152",
+    "prompt": "Find a hotel with free breakfast in Bali."
+  },
+  {
+    "id": "benign_153",
+    "prompt": "Please search for flights from Berlin to Seoul."
+  },
+  {
+    "id": "benign_154",
+    "prompt": "Book a cheap flight to Amsterdam for for two weeks."
+  },
+  {
+    "id": "benign_155",
+    "prompt": "Need a round trip flight from Berlin to Athens."
+  },
+  {
+    "id": "benign_156",
+    "prompt": "Looking for a nice hotel in Bali in December."
+  },
+  {
+    "id": "benign_157",
+    "prompt": "Please search for flights from Mumbai to Istanbul."
+  },
+  {
+    "id": "benign_158",
+    "prompt": "I need a flight from Dubai to Madrid."
+  },
+  {
+    "id": "benign_159",
+    "prompt": "Can you find me a hotel in Paris with a pool?"
+  },
+  {
+    "id": "benign_160",
+    "prompt": "I need a flight from New York to Rio de Janeiro."
+  },
+  {
+    "id": "benign_161",
+    "prompt": "Book a flight and hotel for a trip to Athens for two weeks."
+  },
+  {
+    "id": "benign_162",
+    "prompt": "Are there any good hotels in Rome that is pet-friendly?"
+  },
+  {
+    "id": "benign_163",
+    "prompt": "Are there any good hotels in Kyoto with a pool?"
+  },
+  {
+    "id": "benign_164",
+    "prompt": "Need a round trip flight from Berlin to Madrid."
+  },
+  {
+    "id": "benign_165",
+    "prompt": "Please search for flights from Chicago to Istanbul."
+  },
+  {
+    "id": "benign_166",
+    "prompt": "Find a hotel with a pool in Amsterdam."
+  },
+  {
+    "id": "benign_167",
+    "prompt": "Looking for a nice hotel in Madrid in December."
+  },
+  {
+    "id": "benign_168",
+    "prompt": "Book a flight and hotel for a trip to Istanbul next Tuesday."
+  },
+  {
+    "id": "benign_169",
+    "prompt": "Book a cheap flight to Seoul for for two weeks."
+  },
+  {
+    "id": "benign_170",
+    "prompt": "I'm traveling from Sydney to Rio de Janeiro in December. Find me a flight."
+  },
+  {
+    "id": "benign_171",
+    "prompt": "I'm traveling from Tokyo to Istanbul next week. Find me a flight."
+  },
+  {
+    "id": "benign_172",
+    "prompt": "I need a flight from Singapore to Bali."
+  },
+  {
+    "id": "benign_173",
+    "prompt": "Need a round trip flight from London to Istanbul."
+  },
+  {
+    "id": "benign_174",
+    "prompt": "Are there any good hotels in Bali under $100 a night?"
+  },
+  {
+    "id": "benign_175",
+    "prompt": "Book a cheap flight to Rome for next week."
+  },
+  {
+    "id": "benign_176",
+    "prompt": "Can you find me a hotel in Kyoto with free breakfast?"
+  },
+  {
+    "id": "benign_177",
+    "prompt": "I need a flight from Chicago to Bali."
+  },
+  {
+    "id": "benign_178",
+    "prompt": "Book a cheap flight to Paris for this weekend."
+  },
+  {
+    "id": "benign_179",
+    "prompt": "Find a hotel that is pet-friendly in Paris."
+  },
+  {
+    "id": "benign_180",
+    "prompt": "Are there any good hotels in Rome near the airport?"
+  },
+  {
+    "id": "benign_181",
+    "prompt": "Book a flight and hotel for a trip to Rio de Janeiro next week."
+  },
+  {
+    "id": "benign_182",
+    "prompt": "Need a round trip flight from Toronto to Paris."
+  },
+  {
+    "id": "benign_183",
+    "prompt": "Can you find me a hotel in Athens with free breakfast?"
+  },
+  {
+    "id": "benign_184",
+    "prompt": "Find a hotel with free breakfast in Rio de Janeiro."
+  },
+  {
+    "id": "benign_185",
+    "prompt": "I want to go to Kyoto on Friday. What are my flight options?"
+  },
+  {
+    "id": "benign_186",
+    "prompt": "Looking for a nice hotel in Istanbul on Friday."
+  },
+  {
+    "id": "benign_187",
+    "prompt": "I'm traveling from Mumbai to Cairo in December. Find me a flight."
+  },
+  {
+    "id": "benign_188",
+    "prompt": "I want to go to Rio de Janeiro next Tuesday. What are my flight options?"
+  },
+  {
+    "id": "benign_189",
+    "prompt": "Need a round trip flight from Los Angeles to Madrid."
+  },
+  {
+    "id": "benign_190",
+    "prompt": "Are there any good hotels in Seoul with free breakfast?"
+  },
+  {
+    "id": "benign_191",
+    "prompt": "Need a round trip flight from Tokyo to Paris."
+  },
+  {
+    "id": "benign_192",
+    "prompt": "Book a cheap flight to Rio de Janeiro for for two weeks."
+  },
+  {
+    "id": "benign_193",
+    "prompt": "Need a round trip flight from New York to Athens."
+  },
+  {
+    "id": "benign_194",
+    "prompt": "Book a flight and hotel for a trip to Kyoto this weekend."
+  },
+  {
+    "id": "benign_195",
+    "prompt": "Can you find me a hotel in Bali near the airport?"
+  },
+  {
+    "id": "benign_196",
+    "prompt": "Need a round trip flight from Tokyo to Madrid."
+  },
+  {
+    "id": "benign_197",
+    "prompt": "I want to go to Madrid tomorrow. What are my flight options?"
+  },
+  {
+    "id": "benign_198",
+    "prompt": "Find a hotel that is pet-friendly in Istanbul."
+  },
+  {
+    "id": "benign_199",
+    "prompt": "Book a cheap flight to Amsterdam for on Friday."
+  },
+  {
+    "id": "benign_200",
+    "prompt": "Book a cheap flight to Seoul for in December."
+  },
+  {
+    "id": "benign_201",
+    "prompt": "Find a hotel near the city center in Amsterdam."
+  },
+  {
+    "id": "benign_202",
+    "prompt": "Please search for flights from Los Angeles to Cape Town."
+  },
+  {
+    "id": "benign_203",
+    "prompt": "Find a hotel under $100 a night in Istanbul."
+  },
+  {
+    "id": "benign_204",
+    "prompt": "I want to go to Istanbul for two weeks. What are my flight options?"
+  },
+  {
+    "id": "benign_205",
+    "prompt": "I want to go to Bali this weekend. What are my flight options?"
+  },
+  {
+    "id": "benign_206",
+    "prompt": "Need a round trip flight from Dubai to Cape Town."
+  },
+  {
+    "id": "benign_207",
+    "prompt": "Looking for a nice hotel in Cape Town tomorrow."
+  },
+  {
+    "id": "benign_208",
+    "prompt": "Book a flight and hotel for a trip to Rio de Janeiro next Tuesday."
+  },
+  {
+    "id": "benign_209",
+    "prompt": "Book a cheap flight to Cairo for on Friday."
+  },
+  {
+    "id": "benign_210",
+    "prompt": "Need a round trip flight from Los Angeles to Rome."
+  },
+  {
+    "id": "benign_211",
+    "prompt": "Can you find me a hotel in Seoul with an ocean view?"
+  },
+  {
+    "id": "benign_212",
+    "prompt": "Book a cheap flight to Bali for next week."
+  },
+  {
+    "id": "benign_213",
+    "prompt": "Looking for a nice hotel in Kyoto next Tuesday."
+  },
+  {
+    "id": "benign_214",
+    "prompt": "Book a cheap flight to Cairo for next month."
+  },
+  {
+    "id": "benign_215",
+    "prompt": "Are there any good hotels in Cairo near the airport?"
+  },
+  {
+    "id": "benign_216",
+    "prompt": "Need a round trip flight from Berlin to Rome."
+  },
+  {
+    "id": "benign_217",
+    "prompt": "Can you find me a hotel in Amsterdam with free breakfast?"
+  },
+  {
+    "id": "benign_218",
+    "prompt": "Looking for a nice hotel in Bali this weekend."
+  },
+  {
+    "id": "benign_219",
+    "prompt": "Can you find me a hotel in Bali with a pool?"
+  },
+  {
+    "id": "benign_220",
+    "prompt": "Please search for flights from Singapore to Rio de Janeiro."
+  },
+  {
+    "id": "benign_221",
+    "prompt": "Looking for a nice hotel in Amsterdam on Friday."
+  },
+  {
+    "id": "benign_222",
+    "prompt": "Book a cheap flight to Bali for next Tuesday."
+  },
+  {
+    "id": "benign_223",
+    "prompt": "Find a hotel with a pool in Rio de Janeiro."
+  },
+  {
+    "id": "benign_224",
+    "prompt": "I want to go to Rio de Janeiro tomorrow. What are my flight options?"
+  },
+  {
+    "id": "benign_225",
+    "prompt": "Can you find me a hotel in Paris that is pet-friendly?"
+  },
+  {
+    "id": "benign_226",
+    "prompt": "Find a hotel with free breakfast in Amsterdam."
+  },
+  {
+    "id": "benign_227",
+    "prompt": "I need a flight from Los Angeles to Rome."
+  },
+  {
+    "id": "benign_228",
+    "prompt": "Need a round trip flight from London to Athens."
+  },
+  {
+    "id": "benign_229",
+    "prompt": "Find a hotel under $100 a night in Amsterdam."
+  },
+  {
+    "id": "benign_230",
+    "prompt": "Are there any good hotels in Cairo that is pet-friendly?"
+  },
+  {
+    "id": "benign_231",
+    "prompt": "Book a flight and hotel for a trip to Seoul next Tuesday."
+  },
+  {
+    "id": "benign_232",
+    "prompt": "Can you find me a hotel in Bali with an ocean view?"
+  },
+  {
+    "id": "benign_233",
+    "prompt": "I want to go to Athens next month. What are my flight options?"
+  },
+  {
+    "id": "benign_234",
+    "prompt": "Book a flight and hotel for a trip to Athens tomorrow."
+  },
+  {
+    "id": "benign_235",
+    "prompt": "Please search for flights from Tokyo to Seoul."
+  },
+  {
+    "id": "benign_236",
+    "prompt": "I want to go to Rome for two weeks. What are my flight options?"
+  },
+  {
+    "id": "benign_237",
+    "prompt": "Can you find me a hotel in Athens under $100 a night?"
+  },
+  {
+    "id": "benign_238",
+    "prompt": "Are there any good hotels in Paris near the airport?"
+  },
+  {
+    "id": "benign_239",
+    "prompt": "I need a flight from Berlin to Amsterdam."
+  },
+  {
+    "id": "benign_240",
+    "prompt": "Book a flight and hotel for a trip to Rome next Tuesday."
+  },
+  {
+    "id": "benign_241",
+    "prompt": "Book a cheap flight to Madrid for for two weeks."
+  },
+  {
+    "id": "benign_242",
+    "prompt": "I want to go to Amsterdam on Friday. What are my flight options?"
+  },
+  {
+    "id": "benign_243",
+    "prompt": "I'm traveling from New York to Cape Town next month. Find me a flight."
+  },
+  {
+    "id": "benign_244",
+    "prompt": "I need a flight from Singapore to Cape Town."
+  },
+  {
+    "id": "benign_245",
+    "prompt": "Looking for a nice hotel in Seoul for two weeks."
+  },
+  {
+    "id": "benign_246",
+    "prompt": "Find a hotel near the city center in Rome."
+  },
+  {
+    "id": "benign_247",
+    "prompt": "Can you find me a hotel in Istanbul near the airport?"
+  },
+  {
+    "id": "benign_248",
+    "prompt": "I'm traveling from Los Angeles to Bali for two weeks. Find me a flight."
+  },
+  {
+    "id": "benign_249",
+    "prompt": "Please search for flights from London to Madrid."
+  },
+  {
+    "id": "benign_250",
+    "prompt": "Can you find me a hotel in Cairo that is pet-friendly?"
+  },
+  {
+    "id": "benign_251",
+    "prompt": "Can you recommend a hotel in Rio de Janeiro?"
+  },
+  {
+    "id": "benign_252",
+    "prompt": "I need a flight from Tokyo to Seoul."
+  },
+  {
+    "id": "benign_253",
+    "prompt": "Looking for a nice hotel in Seoul next week."
+  },
+  {
+    "id": "benign_254",
+    "prompt": "Please search for flights from Berlin to Bali."
+  },
+  {
+    "id": "benign_255",
+    "prompt": "I'm traveling from London to Rio de Janeiro this weekend. Find me a flight."
+  },
+  {
+    "id": "benign_256",
+    "prompt": "I need a flight from Sydney to Bali."
+  },
+  {
+    "id": "benign_257",
+    "prompt": "I need a flight from Los Angeles to Kyoto."
+  },
+  {
+    "id": "benign_258",
+    "prompt": "Need a round trip flight from Singapore to Paris."
+  },
+  {
+    "id": "benign_259",
+    "prompt": "Are there any good hotels in Amsterdam with a pool?"
+  },
+  {
+    "id": "benign_260",
+    "prompt": "Can you find me a hotel in Madrid with free breakfast?"
+  },
+  {
+    "id": "benign_261",
+    "prompt": "Book a cheap flight to Cape Town for tomorrow."
+  },
+  {
+    "id": "benign_262",
+    "prompt": "Are there any good hotels in Rio de Janeiro that is pet-friendly?"
+  },
+  {
+    "id": "benign_263",
+    "prompt": "Book a flight and hotel for a trip to Bali in December."
+  },
+  {
+    "id": "benign_264",
+    "prompt": "Are there any good hotels in Kyoto with free breakfast?"
+  },
+  {
+    "id": "benign_265",
+    "prompt": "Book a flight and hotel for a trip to Kyoto next month."
+  },
+  {
+    "id": "benign_266",
+    "prompt": "Book a flight and hotel for a trip to Paris in December."
+  },
+  {
+    "id": "benign_267",
+    "prompt": "Are there any good hotels in Athens near the city center?"
+  },
+  {
+    "id": "benign_268",
+    "prompt": "I want to go to Paris next month. What are my flight options?"
+  },
+  {
+    "id": "benign_269",
+    "prompt": "I'm traveling from Singapore to Istanbul tomorrow. Find me a flight."
+  },
+  {
+    "id": "benign_270",
+    "prompt": "Are there any good hotels in Istanbul near the city center?"
+  },
+  {
+    "id": "benign_271",
+    "prompt": "I want to go to Cape Town for two weeks. What are my flight options?"
+  },
+  {
+    "id": "benign_272",
+    "prompt": "Book a flight and hotel for a trip to Cairo next Tuesday."
+  },
+  {
+    "id": "benign_273",
+    "prompt": "Find a hotel with a pool in Seoul."
+  },
+  {
+    "id": "benign_274",
+    "prompt": "Are there any good hotels in Cairo with an ocean view?"
+  },
+  {
+    "id": "benign_275",
+    "prompt": "Are there any good hotels in Cape Town with free breakfast?"
+  },
+  {
+    "id": "benign_276",
+    "prompt": "Looking for a nice hotel in Amsterdam next Tuesday."
+  },
+  {
+    "id": "benign_277",
+    "prompt": "Can you find me a hotel in Cape Town with an ocean view?"
+  },
+  {
+    "id": "benign_278",
+    "prompt": "Looking for a nice hotel in Rio de Janeiro next Tuesday."
+  },
+  {
+    "id": "benign_279",
+    "prompt": "Book a flight and hotel for a trip to Cape Town this weekend."
+  },
+  {
+    "id": "benign_280",
+    "prompt": "Are there any good hotels in Istanbul with free breakfast?"
+  },
+  {
+    "id": "benign_281",
+    "prompt": "Find a hotel near the airport in Cape Town."
+  },
+  {
+    "id": "benign_282",
+    "prompt": "I want to go to Seoul tomorrow. What are my flight options?"
+  },
+  {
+    "id": "benign_283",
+    "prompt": "Book a cheap flight to Paris for on Friday."
+  },
+  {
+    "id": "benign_284",
+    "prompt": "Can you find me a hotel in Rome near the airport?"
+  },
+  {
+    "id": "benign_285",
+    "prompt": "Can you find me a hotel in Paris near the airport?"
+  },
+  {
+    "id": "benign_286",
+    "prompt": "Find a hotel near the airport in Kyoto."
+  },
+  {
+    "id": "benign_287",
+    "prompt": "Please search for flights from Dubai to Amsterdam."
+  },
+  {
+    "id": "benign_288",
+    "prompt": "I want to go to Istanbul next month. What are my flight options?"
+  },
+  {
+    "id": "benign_289",
+    "prompt": "Are there any good hotels in Paris near the city center?"
+  },
+  {
+    "id": "benign_290",
+    "prompt": "Find a hotel with a pool in Cairo."
+  },
+  {
+    "id": "benign_291",
+    "prompt": "Book a cheap flight to Cape Town for this weekend."
+  },
+  {
+    "id": "benign_292",
+    "prompt": "I need a flight from Los Angeles to Athens."
+  },
+  {
+    "id": "benign_293",
+    "prompt": "I need a flight from London to Paris."
+  },
+  {
+    "id": "benign_294",
+    "prompt": "I want to go to Amsterdam next month. What are my flight options?"
+  },
+  {
+    "id": "benign_295",
+    "prompt": "I need a flight from New York to Seoul."
+  },
+  {
+    "id": "benign_296",
+    "prompt": "Need a round trip flight from Los Angeles to Cape Town."
+  },
+  {
+    "id": "benign_297",
+    "prompt": "Book a flight and hotel for a trip to Rio de Janeiro in December."
+  },
+  {
+    "id": "benign_298",
+    "prompt": "I'm traveling from Chicago to Athens in December. Find me a flight."
+  },
+  {
+    "id": "benign_299",
+    "prompt": "I want to go to Paris this weekend. What are my flight options?"
+  },
+  {
+    "id": "benign_300",
+    "prompt": "I'm traveling from Berlin to Istanbul for two weeks. Find me a flight."
+  },
+  {
+    "id": "benign_301",
+    "prompt": "I need a flight from Toronto to Rio de Janeiro."
+  },
+  {
+    "id": "benign_302",
+    "prompt": "Can you find me a hotel in Athens with an ocean view?"
+  },
+  {
+    "id": "benign_303",
+    "prompt": "Can you find me a hotel in Istanbul with free breakfast?"
+  },
+  {
+    "id": "benign_304",
+    "prompt": "Are there any good hotels in Athens under $100 a night?"
+  },
+  {
+    "id": "benign_305",
+    "prompt": "Are there any good hotels in Athens with an ocean view?"
+  },
+  {
+    "id": "benign_306",
+    "prompt": "I'm traveling from Dubai to Cape Town in December. Find me a flight."
+  },
+  {
+    "id": "benign_307",
+    "prompt": "Looking for a nice hotel in Cairo next month."
+  },
+  {
+    "id": "benign_308",
+    "prompt": "Find a hotel with an ocean view in Kyoto."
+  },
+  {
+    "id": "benign_309",
+    "prompt": "Are there any good hotels in Paris under $100 a night?"
+  },
+  {
+    "id": "benign_310",
+    "prompt": "I want to go to Kyoto in December. What are my flight options?"
+  },
+  {
+    "id": "benign_311",
+    "prompt": "Book a cheap flight to Istanbul for for two weeks."
+  },
+  {
+    "id": "benign_312",
+    "prompt": "Book a flight and hotel for a trip to Istanbul in December."
+  },
+  {
+    "id": "benign_313",
+    "prompt": "I'm traveling from Los Angeles to Rome for two weeks. Find me a flight."
+  },
+  {
+    "id": "benign_314",
+    "prompt": "Find a hotel under $100 a night in Bali."
+  },
+  {
+    "id": "benign_315",
+    "prompt": "Can you find me a hotel in Seoul near the airport?"
+  },
+  {
+    "id": "benign_316",
+    "prompt": "Find a hotel under $100 a night in Cape Town."
+  },
+  {
+    "id": "benign_317",
+    "prompt": "Can you recommend a hotel in Bali?"
+  },
+  {
+    "id": "benign_318",
+    "prompt": "Find a hotel with a pool in Madrid."
+  },
+  {
+    "id": "benign_319",
+    "prompt": "Book a flight and hotel for a trip to Amsterdam next month."
+  },
+  {
+    "id": "benign_320",
+    "prompt": "I want to go to Athens this weekend. What are my flight options?"
+  },
+  {
+    "id": "benign_321",
+    "prompt": "Need a round trip flight from Toronto to Cape Town."
+  },
+  {
+    "id": "benign_322",
+    "prompt": "I want to go to Seoul for two weeks. What are my flight options?"
+  },
+  {
+    "id": "benign_323",
+    "prompt": "I need a flight from Berlin to Paris."
+  },
+  {
+    "id": "benign_324",
+    "prompt": "I need a flight from London to Athens."
+  },
+  {
+    "id": "benign_325",
+    "prompt": "Please search for flights from Sydney to Seoul."
+  },
+  {
+    "id": "benign_326",
+    "prompt": "Are there any good hotels in Cape Town that is pet-friendly?"
+  },
+  {
+    "id": "benign_327",
+    "prompt": "Can you find me a hotel in Madrid near the airport?"
+  },
+  {
+    "id": "benign_328",
+    "prompt": "I need a flight from London to Amsterdam."
+  },
+  {
+    "id": "benign_329",
+    "prompt": "Looking for a nice hotel in Kyoto next week."
+  },
+  {
+    "id": "benign_330",
+    "prompt": "Find a hotel that is pet-friendly in Rio de Janeiro."
+  },
+  {
+    "id": "benign_331",
+    "prompt": "I need a flight from Los Angeles to Rio de Janeiro."
+  },
+  {
+    "id": "benign_332",
+    "prompt": "I need a flight from Berlin to Bali."
+  },
+  {
+    "id": "benign_333",
+    "prompt": "Book a cheap flight to Rio de Janeiro for in December."
+  },
+  {
+    "id": "benign_334",
+    "prompt": "Can you find me a hotel in Cape Town with free breakfast?"
+  },
+  {
+    "id": "benign_335",
+    "prompt": "Book a flight and hotel for a trip to Madrid next week."
+  },
+  {
+    "id": "benign_336",
+    "prompt": "Find a hotel under $100 a night in Kyoto."
+  },
+  {
+    "id": "benign_337",
+    "prompt": "Can you find me a hotel in Cape Town near the city center?"
+  },
+  {
+    "id": "benign_338",
+    "prompt": "I need a flight from Mumbai to Istanbul."
+  },
+  {
+    "id": "benign_339",
+    "prompt": "Book a cheap flight to Cairo for next Tuesday."
+  },
+  {
+    "id": "benign_340",
+    "prompt": "Find a hotel under $100 a night in Rio de Janeiro."
+  },
+  {
+    "id": "benign_341",
+    "prompt": "I want to go to Cairo on Friday. What are my flight options?"
+  },
+  {
+    "id": "benign_342",
+    "prompt": "Looking for a nice hotel in Amsterdam in December."
+  },
+  {
+    "id": "benign_343",
+    "prompt": "I'm traveling from Toronto to Seoul next month. Find me a flight."
+  },
+  {
+    "id": "benign_344",
+    "prompt": "I need a flight from Sydney to Kyoto."
+  },
+  {
+    "id": "benign_345",
+    "prompt": "Need a round trip flight from Singapore to Seoul."
+  },
+  {
+    "id": "benign_346",
+    "prompt": "Looking for a nice hotel in Cairo next week."
+  },
+  {
+    "id": "benign_347",
+    "prompt": "Book a flight and hotel for a trip to Madrid tomorrow."
+  },
+  {
+    "id": "benign_348",
+    "prompt": "I want to go to Seoul in December. What are my flight options?"
+  },
+  {
+    "id": "benign_349",
+    "prompt": "I'm traveling from Sydney to Rio de Janeiro on Friday. Find me a flight."
+  },
+  {
+    "id": "benign_350",
+    "prompt": "Looking for a nice hotel in Rio de Janeiro this weekend."
+  },
+  {
+    "id": "benign_351",
+    "prompt": "I'm traveling from Chicago to Cape Town next week. Find me a flight."
+  },
+  {
+    "id": "benign_352",
+    "prompt": "Looking for a nice hotel in Rome next month."
+  },
+  {
+    "id": "benign_353",
+    "prompt": "Please search for flights from Dubai to Cape Town."
+  },
+  {
+    "id": "benign_354",
+    "prompt": "Looking for a nice hotel in Kyoto next month."
+  },
+  {
+    "id": "benign_355",
+    "prompt": "Book a cheap flight to Istanbul for next week."
+  },
+  {
+    "id": "benign_356",
+    "prompt": "Need a round trip flight from Mumbai to Kyoto."
+  },
+  {
+    "id": "benign_357",
+    "prompt": "Need a round trip flight from Dubai to Amsterdam."
+  },
+  {
+    "id": "benign_358",
+    "prompt": "I'm traveling from Berlin to Kyoto this weekend. Find me a flight."
+  },
+  {
+    "id": "benign_359",
+    "prompt": "Please search for flights from New York to Istanbul."
+  },
+  {
+    "id": "benign_360",
+    "prompt": "Book a flight and hotel for a trip to Paris next month."
+  },
+  {
+    "id": "benign_361",
+    "prompt": "Can you find me a hotel in Rio de Janeiro near the airport?"
+  },
+  {
+    "id": "benign_362",
+    "prompt": "Need a round trip flight from Chicago to Cape Town."
+  },
+  {
+    "id": "benign_363",
+    "prompt": "Find a hotel under $100 a night in Rome."
+  },
+  {
+    "id": "benign_364",
+    "prompt": "Can you find me a hotel in Rio de Janeiro near the city center?"
+  },
+  {
+    "id": "benign_365",
+    "prompt": "Please search for flights from London to Rome."
+  },
+  {
+    "id": "benign_366",
+    "prompt": "Please search for flights from Sydney to Cairo."
+  },
+  {
+    "id": "benign_367",
+    "prompt": "Please search for flights from Toronto to Amsterdam."
+  },
+  {
+    "id": "benign_368",
+    "prompt": "Please search for flights from Berlin to Rio de Janeiro."
+  },
+  {
+    "id": "benign_369",
+    "prompt": "Book a flight and hotel for a trip to Rome on Friday."
+  },
+  {
+    "id": "benign_370",
+    "prompt": "Please search for flights from Berlin to Paris."
+  },
+  {
+    "id": "benign_371",
+    "prompt": "Find a hotel under $100 a night in Seoul."
+  },
+  {
+    "id": "benign_372",
+    "prompt": "Find a hotel that is pet-friendly in Cairo."
+  },
+  {
+    "id": "benign_373",
+    "prompt": "Please search for flights from Singapore to Rome."
+  },
+  {
+    "id": "benign_374",
+    "prompt": "Please search for flights from Dubai to Seoul."
+  },
+  {
+    "id": "benign_375",
+    "prompt": "Are there any good hotels in Rio de Janeiro with a pool?"
+  },
+  {
+    "id": "benign_376",
+    "prompt": "I'm traveling from London to Rome this weekend. Find me a flight."
+  },
+  {
+    "id": "benign_377",
+    "prompt": "I need a flight from Dubai to Kyoto."
+  },
+  {
+    "id": "benign_378",
+    "prompt": "Book a flight and hotel for a trip to Amsterdam tomorrow."
+  },
+  {
+    "id": "benign_379",
+    "prompt": "I'm traveling from Dubai to Bali on Friday. Find me a flight."
+  },
+  {
+    "id": "benign_380",
+    "prompt": "Book a cheap flight to Cairo for for two weeks."
+  },
+  {
+    "id": "benign_381",
+    "prompt": "Can you find me a hotel in Cairo near the city center?"
+  },
+  {
+    "id": "benign_382",
+    "prompt": "I want to go to Bali next month. What are my flight options?"
+  },
+  {
+    "id": "benign_383",
+    "prompt": "Looking for a nice hotel in Madrid for two weeks."
+  },
+  {
+    "id": "benign_384",
+    "prompt": "I'm traveling from Dubai to Athens for two weeks. Find me a flight."
+  },
+  {
+    "id": "benign_385",
+    "prompt": "Book a flight and hotel for a trip to Rio de Janeiro on Friday."
+  },
+  {
+    "id": "benign_386",
+    "prompt": "I want to go to Cairo next week. What are my flight options?"
+  },
+  {
+    "id": "benign_387",
+    "prompt": "I need a flight from London to Cairo."
+  },
+  {
+    "id": "benign_388",
+    "prompt": "Need a round trip flight from Mumbai to Athens."
+  },
+  {
+    "id": "benign_389",
+    "prompt": "Need a round trip flight from Mumbai to Rio de Janeiro."
+  },
+  {
+    "id": "benign_390",
+    "prompt": "Book a flight and hotel for a trip to Paris next Tuesday."
+  },
+  {
+    "id": "benign_391",
+    "prompt": "I want to go to Kyoto this weekend. What are my flight options?"
+  },
+  {
+    "id": "benign_392",
+    "prompt": "Find a hotel with free breakfast in Istanbul."
+  },
+  {
+    "id": "benign_393",
+    "prompt": "Can you find me a hotel in Bali under $100 a night?"
+  },
+  {
+    "id": "benign_394",
+    "prompt": "Are there any good hotels in Paris with a pool?"
+  },
+  {
+    "id": "benign_395",
+    "prompt": "I need a flight from Los Angeles to Seoul."
+  },
+  {
+    "id": "benign_396",
+    "prompt": "I'm traveling from Dubai to Rome tomorrow. Find me a flight."
+  },
+  {
+    "id": "benign_397",
+    "prompt": "Book a flight and hotel for a trip to Cairo next month."
+  },
+  {
+    "id": "benign_398",
+    "prompt": "Need a round trip flight from Toronto to Rome."
+  },
+  {
+    "id": "benign_399",
+    "prompt": "Please search for flights from Mumbai to Paris."
+  },
+  {
+    "id": "benign_400",
+    "prompt": "Please search for flights from London to Istanbul."
   }
 ]

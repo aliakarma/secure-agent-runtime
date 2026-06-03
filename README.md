@@ -15,6 +15,7 @@ A **security-first agentic AI runtime** built on [LangGraph](https://github.com/
 | **Phase 5: Sanitizers** | Multimodal LLM-as-a-judge for payload semantics and Tool Outputs | ✅ Complete |
 | **Phase 6: Trust Engine** | Dynamic Trust Scoring (T(x)) and Three-Tier Policy Enforcement | ✅ Complete |
 | **Phase 7: System Shields** | Pre-LLM Sanitizer, Dynamic System Prompts, and Guardrails | ✅ Complete |
+| **Phase 8: Output QC** | Output Validation & Recovery Loops | ✅ Complete |
 
 ## 🏗️ Project Structure
 
@@ -135,7 +136,7 @@ Example log output:
 | `APP_HOST` | FastAPI bind address | `0.0.0.0` |
 | `APP_PORT` | FastAPI bind port | `8080` |
 
-## 📌 Development Progress (Phases 1-7)
+## 📌 Development Progress (Phases 1-8)
 
 ### Phase 1: Environment Setup
 - Isolated Dockerized environment.
@@ -178,6 +179,12 @@ Example log output:
 - Implemented Trust-Aware Context Masking to replace low-trust outputs with placeholder tokens (`[LOW-TRUST CONTENT MASKED]`).
 - Bounded human instructions with explicit tags to prevent cross-boundary confusion.
 - Kept performance under the 50ms budget by using fast heuristic/regex filtering instead of an LLM call.
+
+### Phase 8: Output Validation & Recovery Loops
+- Implemented `OutputValidator` acting as a secondary "Agent B" to audit main LLM outputs.
+- Checks generated outputs for hallucinations, policy violations, PII leakage, and unsafe tool requests.
+- Integrated a **Reinjection Loop** to automatically regenerate flagged responses (with a max retry limit of 3).
+- Built a **Human-in-the-Loop (HITL)** failsafe to escalate to manual approval when encountering high-risk operations (e.g., confirming bookings) or after exhausting regeneration retries.
 
 ## 📄 License
 

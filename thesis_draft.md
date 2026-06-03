@@ -135,3 +135,18 @@ Using the Trust Tier assigned in Phase 6, the Pre-LLM layer systematically masks
 
 ### 8.2 Canonical System Prompts and Boundary Enforcement
 To mitigate "Role Hijacking" and "System Overrides", a Canonical System Prompt is dynamically prepended to every execution state, explicitly overriding any attempts to change the agent's core rules. Furthermore, all user-provided data is wrapped within strict instruction boundaries (e.g., `--- USER INPUT START ---`), preventing the LLM from confusing user variables with developer instructions. This architectural design definitively solves boundary-crossing attacks.
+
+## 9. Output Validation and Recovery Loops (Phase 8)
+Even with strict upstream sanitization, LLMs are probabilistic models prone to unprompted hallucinations and logical errors. Therefore, a secondary security paradigm is required post-generation. Phase 8 instituted an independent "Quality Control" agent (Agent B) and a self-correcting recovery loop.
+
+### 9.1 The Output Validator Agent
+Before any AI-generated response is returned to the user or passed to another system component, it is intercepted and audited by a secondary, lightweight LLM (Agent B). This auditor evaluates the payload for:
+- Hallucinated facts or contradictory reasoning.
+- Policy violations, including the inadvertent leakage of PII, internal system prompts, or memory context.
+- Unsafe instructions disguised within the output.
+
+### 9.2 The Reinjection Recovery Loop
+When Agent B flags a response as unsafe, the system does not merely fail and crash. Instead, it engages a Reinjection Recovery Loop. The unsafe response, coupled with a strict system constraint explaining the validation failure, is appended back into the graph state. The primary LLM is then reinvoked, forcing it to self-correct its mistake. To prevent infinite recursion, this loop is strictly capped at three regeneration attempts.
+
+### 9.3 Human-in-the-Loop (HITL) Escalation
+Autonomous execution introduces unacceptable risks for highly sensitive actions (e.g., executing a financial transaction or confirming a real booking). To mitigate this, Phase 8 integrated a Human-in-the-Loop module. The Output Validator acts as an intent classifier; if it detects a high-risk operation, or if the recovery loop exhausts its three retries without producing a safe output, execution is paused. The operation is escalated to a human operator who must manually approve or reject the action, ensuring critical decisions always have a human failsafe.

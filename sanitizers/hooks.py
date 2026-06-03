@@ -7,6 +7,7 @@ logger = get_logger(__name__)
 from sanitizers.multimodal import TextSanitizer, VisualSanitizer, ToolOutputSanitizer, RAGSanitizer
 from sanitizers.trust_engine import trust_engine
 from sanitizers.pre_llm import pre_llm_sanitizer
+from sanitizers.recovery_loop import with_validation_and_recovery
 
 text_sanitizer = TextSanitizer()
 visual_sanitizer = VisualSanitizer()
@@ -46,7 +47,9 @@ def secure_agent_node(agent_name, agent_runnable):
         if state and "messages" in state:
             state["messages"] = pre_llm_sanitizer.sanitize_context(state["messages"], current_trust_tier.get())
         
-        return agent_runnable(state)
+        # Phase 8: Output Validation and Recovery
+        recovered_runnable = with_validation_and_recovery(agent_name, agent_runnable)
+        return recovered_runnable(state)
     return wrapper
 
 def secure_tool_wrapper(func):
@@ -128,7 +131,9 @@ def secure_routing_hook(supervisor_runnable):
         if state and "messages" in state:
             state["messages"] = pre_llm_sanitizer.sanitize_context(state["messages"], state.get("trust_tier", "HIGH"))
                 
-        return supervisor_runnable(state)
+        # Phase 8: Output Validation and Recovery for Supervisor
+        recovered_supervisor = with_validation_and_recovery("Supervisor", supervisor_runnable)
+        return recovered_supervisor(state)
     return wrapper
 
 def secure_memory_hook(session_id: str, memory_string: str) -> str:

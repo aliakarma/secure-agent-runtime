@@ -6,6 +6,7 @@ logger = get_logger(__name__)
 
 from sanitizers.multimodal import TextSanitizer, VisualSanitizer, ToolOutputSanitizer, RAGSanitizer
 from sanitizers.trust_engine import trust_engine
+from sanitizers.pre_llm import pre_llm_sanitizer
 
 text_sanitizer = TextSanitizer()
 visual_sanitizer = VisualSanitizer()
@@ -40,6 +41,10 @@ def secure_agent_node(agent_name, agent_runnable):
             if res.is_malicious:
                 logger.warning(f"Security Alert at Hook 1 ({agent_name}_Pre_LLM): {res.reason}")
                 state["messages"][-1].content = f"[SANITIZED] Content blocked by Hook 1. Reason: {res.reason}"
+        
+        # Phase 7: Pre-LLM Context Sanitization (Final barrier before LLM)
+        if state and "messages" in state:
+            state["messages"] = pre_llm_sanitizer.sanitize_context(state["messages"], current_trust_tier.get())
         
         return agent_runnable(state)
     return wrapper
@@ -118,6 +123,10 @@ def secure_routing_hook(supervisor_runnable):
             if res.is_malicious:
                 logger.warning(f"Security Alert at Hook 5 (Supervisor_Routing): {res.reason}")
                 state["messages"][-1].content = f"[SANITIZED] Content blocked by Hook 5 before routing. Reason: {res.reason}"
+                
+        # Phase 7: Pre-LLM Context Sanitization (Final barrier before Supervisor LLM)
+        if state and "messages" in state:
+            state["messages"] = pre_llm_sanitizer.sanitize_context(state["messages"], state.get("trust_tier", "HIGH"))
                 
         return supervisor_runnable(state)
     return wrapper

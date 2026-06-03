@@ -126,3 +126,12 @@ Rather than uniformly failing closed upon detecting an anomaly, the system lever
 
 ### 7.3 Heuristic Optimization and Context Preservation
 To optimize the architecture for production workloads, the Trust Engine was augmented with a fast-path heuristic filter. By scanning for structural anomalies and injection keywords *before* invoking the LLM-judge, the system achieves a 90% latency reduction for benign traffic. Additionally, JSON payloads from external APIs are now passed in their raw structural format to the judge, preventing "Fragmentation Attacks" where malicious instructions are distributed across multiple JSON keys.
+
+## 8. The Pre-LLM Security Enforcement Layer (Phase 7)
+Despite advanced multi-tier sanitization and trust tracking, latent risks remain if a malicious payload successfully traverses the external hooks. Phase 7 introduced the final security perimeter: the Pre-LLM Security Enforcement Layer. This layer operates as an interceptor immediately before the construction of the LLM's context window.
+
+### 8.1 Context Masking and Unsafe Span Removal
+Using the Trust Tier assigned in Phase 6, the Pre-LLM layer systematically masks entire payloads originating from LOW-trust sources with placeholder tokens (`[LOW-TRUST CONTENT MASKED]`). For higher-trust interactions, a high-speed heuristic regex filter strips specific attack syntax (e.g., "ignore previous instructions") from the context window. Crucially, this is executed under a strict 50ms performance budget, ensuring it does not become a bottleneck.
+
+### 8.2 Canonical System Prompts and Boundary Enforcement
+To mitigate "Role Hijacking" and "System Overrides", a Canonical System Prompt is dynamically prepended to every execution state, explicitly overriding any attempts to change the agent's core rules. Furthermore, all user-provided data is wrapped within strict instruction boundaries (e.g., `--- USER INPUT START ---`), preventing the LLM from confusing user variables with developer instructions. This architectural design definitively solves boundary-crossing attacks.

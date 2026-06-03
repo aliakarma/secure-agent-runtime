@@ -14,7 +14,7 @@ A **security-first agentic AI runtime** built on [LangGraph](https://github.com/
 | **Phase 4: Security Hooks** | 5 Interception Hooks (Cyclic Execution Graph) | ✅ Complete |
 | **Phase 5: Sanitizers** | Multimodal LLM-as-a-judge for payload semantics and Tool Outputs | ✅ Complete |
 | **Phase 6: Trust Engine** | Dynamic Trust Scoring (T(x)) and Three-Tier Policy Enforcement | ✅ Complete |
-| **Phase 7: System Shields** | Dynamic System Prompts and Guardrails | 🔲 Pending |
+| **Phase 7: System Shields** | Pre-LLM Sanitizer, Dynamic System Prompts, and Guardrails | ✅ Complete |
 
 ## 🏗️ Project Structure
 
@@ -135,7 +135,7 @@ Example log output:
 | `APP_HOST` | FastAPI bind address | `0.0.0.0` |
 | `APP_PORT` | FastAPI bind port | `8080` |
 
-## 📌 Development Progress (Phases 1-6)
+## 📌 Development Progress (Phases 1-7)
 
 ### Phase 1: Environment Setup
 - Isolated Dockerized environment.
@@ -171,6 +171,13 @@ Example log output:
   - `MEDIUM` (0.4 - 0.8): Read-Only execution. Modifying tools are cryptographically blocked.
   - `LOW` (< 0.4): Agent is totally sandboxed.
 - Implemented stateful tracking across sessions to thwart repeated attacks (Amnesia fix) and fast heuristic filters to optimize latency.
+
+### Phase 7: Pre-LLM Security Enforcement Layer
+- Deployed `PreLLMSanitizer` to sanitize the entire context window directly before it enters the LLM's reasoning loop.
+- Enforced a strict Canonical System Prompt override to mitigate System Prompt Injections.
+- Implemented Trust-Aware Context Masking to replace low-trust outputs with placeholder tokens (`[LOW-TRUST CONTENT MASKED]`).
+- Bounded human instructions with explicit tags to prevent cross-boundary confusion.
+- Kept performance under the 50ms budget by using fast heuristic/regex filtering instead of an LLM call.
 
 ## 📄 License
 

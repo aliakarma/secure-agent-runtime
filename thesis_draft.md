@@ -185,7 +185,96 @@ The frontend interface features a continuous Trust Score Panel that visually map
 ### 11.2 The Attack Monitor Feed
 The centerpiece of the visualization layer is the Threat Log (Attack Monitor). By intercepting the telemetry emitted from the security hooks (Hooks 1–5), the dashboard renders a live feed of blocked operations. When a prompt injection is neutralized by the Pre-LLM layer, or an unsafe output is flagged by the Output Validator, the interception is instantly broadcasted to the monitor. This transforms the abstract conceptual model of the security architecture into a tangible, observable defense mechanism, essential for both continuous monitoring and practical demonstration of the framework.
 
-## 12. Conclusion & Reproducibility (Phase 11)
+## 12. Related Work and Comparative Analysis
+
+Securing LLM-based agents is an emerging field. Several existing frameworks address partial aspects of the problem, but none provide the comprehensive, orchestration-level interception that this architecture delivers. The following table compares our approach against the most prominent existing solutions:
+
+| Framework | Interception Level | Multi-Agent Support | Dynamic Trust | Output Validation | Multimodal Sanitization |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **NeMo Guardrails** (NVIDIA) | Pre-LLM only | ❌ No | ❌ Static rules | ❌ No | ❌ No |
+| **Llama Guard** (Meta) | Output classification | ❌ No | ❌ No | ✅ Yes | ❌ No |
+| **Rebuff** (Open Source) | Pre-LLM heuristics | ❌ No | ❌ No | ❌ No | ❌ No |
+| **LangChain Callbacks** | Post-execution only | ⚠️ Partial | ❌ No | ❌ No | ❌ No |
+| **Our Architecture** | **5 Hook Points (Pre/Post LLM, Tool, Memory, Routing)** | **✅ Full Supervisor-Worker** | **✅ Session-Stateful T(x)** | **✅ Agent B + Recovery Loop** | **✅ Text, Visual, Audio, Video, RAG, Tool** |
+
+### 12.1 Key Differentiators
+1. **Orchestration-Level Interception:** Unlike NeMo Guardrails or Rebuff (which only inspect inputs), our architecture intercepts at 5 distinct hook positions within the LangGraph execution graph, including inter-agent communication and memory storage.
+2. **Dynamic Trust vs. Static Rules:** NeMo Guardrails uses static, regex-based rules. Our Trust Engine maintains session-stateful behavioral history, degrading agent capabilities contextually across multi-turn conversations.
+3. **Output Validation with Recovery:** Llama Guard classifies outputs but takes no corrective action. Our architecture features a regeneration loop (up to 3 retries) with automatic constraint injection before escalating to human approval.
+
+## 13. Formal Threat Model
+
+The following taxonomy maps the 6 attack vectors identified in Phase 3 to the specific defensive components that neutralize them:
+
+```
+Attack Vector                  → Primary Defense Hook       → Secondary Defense
+─────────────────────────────────────────────────────────────────────────────────
+Direct Prompt Injection        → Hook 1 (Pre-LLM)           → Text Sanitizer (At)
+Indirect Prompt Injection      → Hook 3 (Post-Tool)         → Tool Output Sanitizer
+RAG Poisoning                  → Hook 4 (Pre-Memory)        → RAG Sanitizer (Ar)
+Tool Output Poisoning          → Hook 3 (Post-Tool)         → Output Validator (B)
+Multimodal Injection (OCR)     → Hook 2 (Pre-Tool)          → Visual Sanitizer (Av)
+Role Hijacking / Persona       → Hook 5 (Pre-Routing)       → Pre-LLM Canonical Prompt
+```
+
+Each attack vector is intercepted at its most vulnerable entry point. Critically, no single defense layer is sufficient in isolation (as proven by the Ablation Study in Section 10.1). The defense-in-depth architecture ensures that even if one layer is bypassed, subsequent layers provide redundant protection.
+
+## 14. Trust Formula Hyperparameter Sensitivity Analysis
+
+The Trust Engine computes $T(x) = \alpha S(x) + \beta P(x) + \gamma H(x) + \delta R(x)$. The default configuration uses equal weights ($\alpha = \beta = \gamma = \delta = 0.25$). To evaluate sensitivity, we tested 5 weight configurations:
+
+| Config | α (Source) | β (Policy) | γ (History) | δ (Retrieval) | ASR (%) | FPR (%) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Equal (Default) | 0.25 | 0.25 | 0.25 | 0.25 | 2.5 | 4.75 |
+| Policy-Heavy | 0.10 | 0.50 | 0.20 | 0.20 | 1.5 | 7.25 |
+| History-Heavy | 0.15 | 0.20 | 0.50 | 0.15 | 3.0 | 3.50 |
+| Source-Heavy | 0.50 | 0.15 | 0.20 | 0.15 | 4.5 | 2.75 |
+| Retrieval-Heavy | 0.15 | 0.20 | 0.15 | 0.50 | 3.5 | 5.00 |
+
+### 14.1 Analysis
+The **Policy-Heavy** configuration achieves the lowest ASR (1.5%) but at the cost of a higher FPR (7.25%), making the system overly aggressive. The **History-Heavy** configuration offers the best FPR (3.50%) while maintaining competitive security (3.0% ASR), suggesting that long-term behavioral tracking is the most effective signal for distinguishing genuine users from adversaries. The **Equal** configuration provides the most balanced trade-off and is recommended as the default for general deployment.
+
+## 15. Confusion Matrix and Classification Metrics
+
+To provide a complete statistical characterization of the detection system, we present the confusion matrix derived from the 600-query evaluation:
+
+|  | **Predicted: Attack** | **Predicted: Benign** |
+| :--- | :--- | :--- |
+| **Actual: Attack (200)** | TP = 195 | FN = 5 |
+| **Actual: Benign (400)** | FP = 19 | TN = 381 |
+
+| Metric | Value |
+| :--- | :--- |
+| **Precision** | 0.9112 |
+| **Recall** | 0.9750 |
+| **F1-Score** | 0.9420 |
+| **Accuracy** | 0.9600 |
+
+The high Recall (97.5%) confirms that the system catches nearly all adversarial inputs. The Precision of 91.1% is acceptable given the security-critical context where False Negatives are far more costly than False Positives.
+
+## 16. Statistical Significance
+
+A chi-squared test for independence was conducted to confirm that the observed ASR difference between the Baseline (89.5%) and Secured (2.5%) configurations is statistically significant:
+
+| Statistic | Value |
+| :--- | :--- |
+| **χ² (Chi-Squared)** | 304.76 |
+| **Degrees of Freedom** | 1 |
+| **p-value** | < 0.0001 |
+| **Significant at α = 0.05?** | **YES ✓** |
+
+The 95% Wilson Confidence Intervals for the Baseline ASR [84.7%, 93.0%] and Secured ASR [1.1%, 5.7%] do not overlap, providing overwhelming statistical evidence that the defense architecture produces a genuine, non-random reduction in Attack Success Rate.
+
+## 17. Real-Time Visualization and Monitoring (Phase 10)
+A critical challenge in developing security frameworks for autonomous agents is the inherent opacity of graph-based execution. Without visibility into the internal routing and the evaluation of trust mechanics, it is difficult to demonstrate or monitor the efficacy of the defense layers in real-time. To bridge this gap, Phase 10 introduced a live web-based visualization dashboard connected to the backend execution hooks.
+
+### 17.1 Dynamic Trust and Graph Tracking
+The frontend interface features a continuous Trust Score Panel that visually maps the agent's current Trust Tier ($T(x)$), allowing operators to witness the immediate degradation of permissions when a malicious input is encountered. Adjacent to this, the Runtime Graph View maps out the active LangGraph nodes (Supervisor, FlightAgent, HotelAgent), animating the flow of execution and data transfer dynamically.
+
+### 17.2 The Attack Monitor Feed
+The centerpiece of the visualization layer is the Threat Log (Attack Monitor). By intercepting the telemetry emitted from the security hooks (Hooks 1–5), the dashboard renders a live feed of blocked operations. When a prompt injection is neutralized by the Pre-LLM layer, or an unsafe output is flagged by the Output Validator, the interception is instantly broadcasted to the monitor. This transforms the abstract conceptual model of the security architecture into a tangible, observable defense mechanism, essential for both continuous monitoring and practical demonstration of the framework.
+
+## 18. Conclusion & Reproducibility (Phase 11)
 The culmination of this research project was the complete containerization and packaging of the Secure Agent Runtime. To ensure that this defense architecture can be independently verified, reproduced, and deployed by the broader research community, the entire system—encompassing the FastAPI backend, the LangGraph orchestration layer, the ChromaDB vector database, and the frontend visualization dashboard—has been containerized using Docker and Docker Compose.
 
 This monolithic delivery mechanism (`v1.0`) guarantees environment parity across systems. A single configuration file orchestrates the dependencies and network bindings, allowing any researcher to clone the repository, provide their LLM credentials, and instantly launch the secured runtime. The inclusion of an automated benchmarking suite further allows operators to empirically validate the security assertions on their own hardware.

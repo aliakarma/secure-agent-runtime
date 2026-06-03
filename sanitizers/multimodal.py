@@ -75,22 +75,103 @@ class VisualSanitizer:
             return SanitizerResult(is_malicious=True, reason=f"Image processing failed: {e}")
 
 class AudioSanitizer:
+    """
+    Phase 5: Audio Sanitizer Agent (Aa).
+    Converts audio to text using OpenAI Whisper, then checks the 
+    transcript for hidden phonetic commands or injection payloads.
+    """
     def __init__(self):
         self.text_sanitizer = TextSanitizer()
         
-    def sanitize(self, audio_data: str) -> SanitizerResult:
-        # Simulated Whisper transcription
-        transcript = audio_data # In a real system, audio_data -> Whisper API -> transcript
-        return self.text_sanitizer.sanitize(transcript)
+    def sanitize(self, audio_path: str) -> SanitizerResult:
+        if not os.path.exists(audio_path):
+            return SanitizerResult(is_malicious=False, reason="Audio file not found, treating as safe/ignorable.")
+        
+        try:
+            # Use OpenAI Whisper API for transcription
+            import openai
+            client = openai.OpenAI()
+            with open(audio_path, "rb") as audio_file:
+                transcription = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file
+                )
+            transcript = transcription.text
+            
+            if not transcript.strip():
+                return SanitizerResult(is_malicious=False, reason="No speech detected in audio.")
+                
+            logger.info(f"AudioSanitizer transcribed: {transcript[:100]}...")
+            return self.text_sanitizer.sanitize(transcript)
+        except ImportError:
+            logger.warning("OpenAI package not available, falling back to text passthrough.")
+            return SanitizerResult(is_malicious=False, reason="Whisper unavailable, skipping audio sanitization.")
+        except Exception as e:
+            logger.error(f"AudioSanitizer error: {e}")
+            # Fail-closed: if we can't process audio, treat as suspicious
+            return SanitizerResult(is_malicious=True, reason=f"Audio processing failed: {e}")
 
 class VideoSanitizer:
+    """
+    Phase 5: Video Sanitizer Agent (Avid).
+    Extracts keyframes from video using OpenCV, runs OCR on each frame
+    to detect temporal injection — instructions that appear for only
+    a fraction of a second and are invisible to human viewers.
+    """
     def __init__(self):
         self.text_sanitizer = TextSanitizer()
+        self.keyframe_interval = 30  # Extract every 30th frame (~1 per second at 30fps)
         
-    def sanitize(self, video_data: str) -> SanitizerResult:
-        # Simulated frame extraction
-        extracted_text = video_data
-        return self.text_sanitizer.sanitize(extracted_text)
+    def sanitize(self, video_path: str) -> SanitizerResult:
+        if not os.path.exists(video_path):
+            return SanitizerResult(is_malicious=False, reason="Video file not found, treating as safe/ignorable.")
+        
+        try:
+            import cv2
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                return SanitizerResult(is_malicious=True, reason="Failed to open video file.")
+            
+            frame_count = 0
+            extracted_texts = []
+            
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                    
+                # Extract keyframes at interval
+                if frame_count % self.keyframe_interval == 0:
+                    try:
+                        # Convert frame to PIL Image for OCR
+                        from PIL import Image as PILImage
+                        import numpy as np
+                        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        pil_image = PILImage.fromarray(rgb_frame)
+                        text = pytesseract.image_to_string(pil_image)
+                        if text.strip():
+                            extracted_texts.append(text.strip())
+                    except Exception as e:
+                        logger.warning(f"Frame {frame_count} OCR failed: {e}")
+                        
+                frame_count += 1
+            
+            cap.release()
+            
+            if not extracted_texts:
+                return SanitizerResult(is_malicious=False, reason=f"No text found in {frame_count} video frames.")
+            
+            # Concatenate all extracted text and run through text sanitizer
+            combined_text = " ".join(extracted_texts)
+            logger.info(f"VideoSanitizer extracted text from {len(extracted_texts)} frames: {combined_text[:100]}...")
+            return self.text_sanitizer.sanitize(combined_text)
+            
+        except ImportError:
+            logger.warning("OpenCV not available, falling back to text passthrough.")
+            return SanitizerResult(is_malicious=False, reason="OpenCV unavailable, skipping video sanitization.")
+        except Exception as e:
+            logger.error(f"VideoSanitizer error: {e}")
+            return SanitizerResult(is_malicious=True, reason=f"Video processing failed: {e}")
 
 class RAGSanitizer:
     def __init__(self):

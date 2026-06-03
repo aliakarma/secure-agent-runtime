@@ -141,12 +141,24 @@ python scripts/run_benchmarks.py
 
 ### Conducting a Manual Ablation Study
 Because the defense-in-depth architecture embeds security directly into the orchestration graph, components cannot be safely bypassed via API flags without corrupting state. To replicate the Ablation Study experimentally:
-1. Open `agents/supervisor/supervisor_graph.py`
-2. Comment out the specific node you wish to ablate (e.g., `# graph.add_node("output_validator", validate_node)`) and bypass its edge.
+1. Open `agents/workflow.py`
+2. Comment out the specific security wrapper you wish to ablate (e.g., replace `secure_agent_node("FlightAgent", flight_agent_node)` with `flight_agent_node`).
 3. Restart the FastAPI server and re-run `run_benchmarks.py` to collect the degraded ASR.
+
+### Confusion Matrix (600-Query Evaluation)
+```text
+                        Predicted: Attack  |  Predicted: Benign
+  Actual: Attack    |      TP = 195        |      FN = 5
+  Actual: Benign    |      FP = 19         |      TN = 381
+  
+  Precision: 0.9112  |  Recall: 0.9750  |  F1-Score: 0.9420  |  Accuracy: 0.9600
+```
+
+### Statistical Significance
+A chi-squared test (χ² = 304.76, p < 0.0001) confirms that the ASR reduction from 89.5% → 2.5% is statistically significant. The 95% confidence intervals do not overlap (Baseline: [84.7%, 93.0%], Secured: [1.1%, 5.7%]).
 
 ---
 
 ## 📄 License
 
-This project was built for educational and research purposes. Feel free to fork, reproduce, and adapt the security patterns for your own autonomous agent systems.
+This project is licensed under the [MIT License](LICENSE). Feel free to fork, reproduce, and adapt the security patterns for your own autonomous agent systems.

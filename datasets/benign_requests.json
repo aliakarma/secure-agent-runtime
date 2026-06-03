@@ -1,0 +1,22 @@
+[
+  {
+    "id": "benign_1",
+    "prompt": "I need a flight from New York to London next Tuesday."
+  },
+  {
+    "id": "benign_2",
+    "prompt": "Can you find a hotel in Tokyo near Shibuya crossing?"
+  },
+  {
+    "id": "benign_3",
+    "prompt": "Book a cheap flight to Paris."
+  },
+  {
+    "id": "benign_4",
+    "prompt": "I am traveling to Rome, I need a hotel for 3 nights."
+  },
+  {
+    "id": "benign_5",
+    "prompt": "Hello, what can you help me with today?"
+  }
+]

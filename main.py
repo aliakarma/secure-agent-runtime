@@ -17,10 +17,15 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+import time
 
 from logging_config import get_logger
 
 logger = get_logger(__name__)
+
+from dashboard_events import dashboard_events, push_dashboard_event
+
 
 
 @asynccontextmanager
@@ -41,6 +46,18 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Mount static files for the dashboard
+os.makedirs("static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/api/events")
+def get_events(since_id: int = -1):
+    """Returns all events newer than since_id."""
+    new_events = [e for e in dashboard_events if e["id"] > since_id]
+    return JSONResponse({"events": new_events})
+
+
 
 
 # ── Health & readiness ────────────────────────────────────────────────
@@ -95,6 +112,8 @@ async def run_travel_graph_endpoint(user_input: str, session_id: str = "default"
     from agents.workflow import run_travel_graph
     
     logger.info("travel_graph_triggered", session_id=session_id)
+    push_dashboard_event("GRAPH_START", {"session_id": session_id, "input": user_input})
+    
     result = run_travel_graph(user_input=user_input, session_id=session_id)
     
     # Serialize messages
@@ -104,6 +123,8 @@ async def run_travel_graph_endpoint(user_input: str, session_id: str = "default"
         content = msg.content if hasattr(msg, 'content') else str(msg)
         messages.append({"role": name, "content": content})
         
+    push_dashboard_event("GRAPH_END", {"session_id": session_id, "status": "completed"})
+    
     return JSONResponse({
         "status": "completed",
         "messages": messages,

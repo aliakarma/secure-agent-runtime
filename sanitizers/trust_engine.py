@@ -71,7 +71,18 @@ class TrustEngine:
         score = self.calculate_trust(session_id, source, is_malicious)
         tier = self.determine_tier(score)
         
-        logger.info(f"TrustEngine: session={session_id}, score={score}, tier={tier}")
+        logger.info(f"TrustEngine: session={session_id}, score={self.trust_scores[session_id]:.2f}, tier={tier}")
+        
+        try:
+            from dashboard_events import push_dashboard_event
+            push_dashboard_event("TRUST_UPDATE", {
+                "session_id": session_id,
+                "score": round(self.trust_scores[session_id], 2),
+                "tier": tier
+            })
+        except Exception:
+            pass
+            
         return score, tier
 
 # Global instance

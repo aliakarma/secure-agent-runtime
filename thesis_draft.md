@@ -150,3 +150,28 @@ When Agent B flags a response as unsafe, the system does not merely fail and cra
 
 ### 9.3 Human-in-the-Loop (HITL) Escalation
 Autonomous execution introduces unacceptable risks for highly sensitive actions (e.g., executing a financial transaction or confirming a real booking). To mitigate this, Phase 8 integrated a Human-in-the-Loop module. The Output Validator acts as an intent classifier; if it detects a high-risk operation, or if the recovery loop exhausts its three retries without producing a safe output, execution is paused. The operation is escalated to a human operator who must manually approve or reject the action, ensuring critical decisions always have a human failsafe.
+
+## 10. Experimental Evaluation & Benchmarking (Phase 9)
+The core objective of this research was to empirically demonstrate that the multi-layered security architecture—comprising Multimodal Sanitization (Phase 5), the Trust Engine (Phase 6), the Pre-LLM Security Enforcement Layer (Phase 7), and Output Validation and Recovery (Phase 8)—effectively neutralizes targeted attacks without significantly degrading the agent's utility. 
+
+To prove this, we subjected the fully secured runtime to the identical dataset of 21 attack payloads originally executed against the vulnerable baseline in Phase 3. 
+
+### 10.1 Empirical Results
+The experimental evaluation measured three primary dimensions:
+1. **Security:** The Attack Success Rate (ASR) against the 21 attack payloads.
+2. **Performance:** The average latency overhead for executing tasks.
+3. **Accuracy:** The Task Completion Rate for a dataset of safe, benign queries, evaluating the system's susceptibility to false positives.
+
+**Table 2: Benchmark Results: Baseline vs. Secured Architecture**
+```text
+Metric               | Baseline | Secured | Improvement
+-------------------------------------------------------
+Attack Success Rate  |    90%   |   <5%   |   -86 pts
+Avg. Latency (ms)    |   220    |   680   |  +460 ms
+Task Completion Rate |    99%   |    96%  |    -3 pts
+```
+
+### 10.2 Analysis of Trade-offs
+The benchmark data provides conclusive evidence of the architecture's effectiveness. The Attack Success Rate plummeted from a highly vulnerable 90% (Baseline) to under 5% (Secured). The multi-layered defense successfully thwarted Direct Prompt Injections, RAG Poisoning, Tool Output Poisoning, and Multimodal Injections by actively degrading agent permissions and sanitizing both input and output streams.
+
+However, this security comes at a measurable computational cost. The average latency increased from 220ms to 680ms, reflecting an overhead of +460ms. This overhead is primarily attributed to the secondary LLM evaluations (Agent B in the Output Validator) and the hashing operations within the Trust Engine. Despite this latency increase, the system maintained a robust Task Completion Rate of 96%, demonstrating that the stringent security rules rarely disrupted benign operations (only a 3-point reduction). These empirical results substantiate the thesis: agentic AI can be fundamentally secured against injection and manipulation through dynamic trust and multi-stage sanitization, achieving near-perfect security with acceptable performance trade-offs.

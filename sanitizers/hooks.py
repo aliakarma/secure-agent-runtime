@@ -43,6 +43,9 @@ def secure_agent_node(agent_name, agent_runnable):
                 logger.warning(f"Security Alert at Hook 1 ({agent_name}_Pre_LLM): {res.reason}")
                 state["messages"][-1].content = f"[SANITIZED] Content blocked by Hook 1. Reason: {res.reason}"
         
+        from dashboard_events import push_dashboard_event
+        push_dashboard_event("NODE_ACTIVE", {"node": agent_name})
+        
         # Phase 7: Pre-LLM Context Sanitization (Final barrier before LLM)
         if state and "messages" in state:
             state["messages"] = pre_llm_sanitizer.sanitize_context(state["messages"], current_trust_tier.get())
@@ -99,10 +102,20 @@ def secure_tool_wrapper(func):
         
         logger.info(f"Hook 3 Triggered: Intercepting after tool execution ({tool_name}).")
         # Check outputs
+        from dashboard_events import push_dashboard_event
+        
         res = tool_sanitizer.sanitize(str(result))
         if res.is_malicious:
             logger.warning(f"Security Alert at Hook 3 ({tool_name}_Post_Tool): {res.reason}")
             trust_engine.register_injection(session_id)
+            
+            push_dashboard_event("SECURITY_ALERT", {
+                "phase": 3,
+                "agent": tool_name,
+                "message": f"Suspicious tool output blocked: {res.reason}",
+                "severity": "CRITICAL"
+            })
+            
             return "Error: Suspicious tool output detected and blocked."
             
         return result
@@ -126,6 +139,13 @@ def secure_routing_hook(supervisor_runnable):
             if res.is_malicious:
                 logger.warning(f"Security Alert at Hook 5 (Supervisor_Routing): {res.reason}")
                 state["messages"][-1].content = f"[SANITIZED] Content blocked by Hook 5 before routing. Reason: {res.reason}"
+                from dashboard_events import push_dashboard_event
+                push_dashboard_event("SECURITY_ALERT", {
+                    "phase": 5, 
+                    "agent": "Supervisor", 
+                    "message": "Tool output contains an indirect prompt injection payload.",
+                    "severity": "CRITICAL"
+                })
                 
         # Phase 7: Pre-LLM Context Sanitization (Final barrier before Supervisor LLM)
         if state and "messages" in state:

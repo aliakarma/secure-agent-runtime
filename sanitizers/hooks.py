@@ -31,6 +31,19 @@ def secure_agent_node(agent_name, agent_runnable):
         
         if state and "messages" in state and len(state["messages"]) > 0:
             last_message = state["messages"][-1].content
+            
+            # Phase A: GraphChain Pre-Processing Module
+            # Constructs a structural map capturing relationships, trust paths, and modality interactions
+            from trust.graphchain import graphchain
+            structural_map = graphchain.build_structural_map(
+                session_id=session_id,
+                source="user_or_agent",
+                content=last_message,
+                modalities=["text"],
+                initial_trust=1.0 if tier == "HIGH" else 0.5
+            )
+            logger.info(f"GraphChain structural map created: {structural_map['node_id']}")
+            
             res = text_sanitizer.sanitize(last_message)
             
             # Update Trust Engine
@@ -97,8 +110,18 @@ def secure_tool_wrapper(func):
                 trust_engine.register_injection(session_id)
                 return "Error: Suspicious tool arguments detected and blocked."
                 
-        # Run actual tool
-        result = func(*args, **kwargs)
+        # Phase B: MCP Protocol Execution Sandbox
+        import inspect
+        from agents.mcp_sandbox import mcp_sandbox
+        
+        # Bind args and kwargs to parameter names for MCP payload
+        sig = inspect.signature(func)
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        parameters = dict(bound_args.arguments)
+        
+        # Execute tool via MCP isolation layer
+        result = mcp_sandbox.execute(tool_name, parameters, func)
         
         logger.info(f"Hook 3 Triggered: Intercepting after tool execution ({tool_name}).")
         # Check outputs

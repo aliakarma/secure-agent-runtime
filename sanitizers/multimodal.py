@@ -64,12 +64,39 @@ class VisualSanitizer:
             return SanitizerResult(is_malicious=False, reason="File not found, treating as safe/ignorable.")
             
         try:
-            text = pytesseract.image_to_string(Image.open(image_path))
-            if not text.strip():
-                return SanitizerResult(is_malicious=False, reason="No text found in image.")
+            img = Image.open(image_path)
+            
+            # Phase C: Deep Image Inspection (Metadata & Steganography)
+            metadata_text = []
+            if hasattr(img, '_getexif') and img._getexif() is not None:
+                from PIL import ExifTags
+                exif_data = img._getexif()
+                for tag, value in exif_data.items():
+                    if tag in ExifTags.TAGS:
+                        tag_name = ExifTags.TAGS[tag]
+                        if isinstance(value, str):
+                            metadata_text.append(f"{tag_name}: {value}")
+                            
+            # Basic Steganography Heuristic
+            stegano_flag = False
+            file_size = os.path.getsize(image_path)
+            if file_size > 5 * 1024 * 1024:  # Suspiciously large
+                stegano_flag = True
+
+            text = pytesseract.image_to_string(img)
+            
+            full_context = text
+            if metadata_text:
+                full_context += "\n[HIDDEN METADATA]: " + " | ".join(metadata_text)
                 
-            logger.info(f"VisualSanitizer extracted text: {text}")
-            return self.text_sanitizer.sanitize(text)
+            if not full_context.strip() and not stegano_flag:
+                return SanitizerResult(is_malicious=False, reason="No text or suspicious metadata found in image.")
+                
+            if stegano_flag:
+                logger.warning("VisualSanitizer: Possible steganographic payload detected.")
+                
+            logger.info(f"VisualSanitizer extracted content: {full_context}")
+            return self.text_sanitizer.sanitize(full_context)
         except Exception as e:
             logger.error(f"VisualSanitizer error: {e}")
             return SanitizerResult(is_malicious=True, reason=f"Image processing failed: {e}")

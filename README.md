@@ -17,6 +17,7 @@ A **security-first agentic AI runtime** built on [LangGraph](https://github.com/
 | **Phase 7: System Shields** | Pre-LLM Sanitizer, Dynamic System Prompts, and Guardrails | ✅ Complete |
 | **Phase 8: Output QC** | Output Validation & Recovery Loops | ✅ Complete |
 | **Phase 9: Evaluation** | Experimental Evaluation & Benchmarking | ✅ Complete |
+| **Phase 10: Dashboard** | Frontend Visualization & Monitoring Dashboard | ✅ Complete |
 
 ## 🏗️ Project Structure
 
@@ -137,7 +138,7 @@ Example log output:
 | `APP_HOST` | FastAPI bind address | `0.0.0.0` |
 | `APP_PORT` | FastAPI bind port | `8080` |
 
-## 📌 Development Progress (Phases 1-9)
+## 📌 Development Progress (Phases 1-10)
 
 ### Phase 1: Environment Setup
 - Isolated Dockerized environment.
@@ -200,6 +201,13 @@ Example log output:
   Avg. Latency (ms)    |   220    |   680   |  +460 ms
   Task Completion Rate |    99%   |    96%  |    -3 pts
   ```
+
+### Phase 10: Frontend Visualization & Monitoring Dashboard
+- Built a Real-Time Web Dashboard using HTML, CSS (Glassmorphism), and Vanilla JS.
+- **Trust Score Panel:** Live visual meter displaying the active Trust Score (T(x)) and Trust Tier mapping (HIGH/MEDIUM/LOW).
+- **Runtime Graph View:** Animated flowchart tracking data execution across the LangGraph (Supervisor ↔ Flight/Hotel Agents).
+- **Attack Monitor:** A dynamic event feed capturing Phase 3-7 security interceptions, providing immediate visibility into blocked prompt injections and poisoned tool outputs.
+- Accessible via the static FastAPI mount at `http://localhost:8080/static/index.html`.
 
 ## 📄 License
 

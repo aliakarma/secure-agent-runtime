@@ -163,5 +163,23 @@ attackForm.addEventListener('submit', async (e) => {
     }
 });
 
+// Navigation Menu Handlers
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        // Remove active class from all
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        item.classList.add('active');
+        
+        const text = item.innerText.trim();
+        if (text === 'Graph Inspector') {
+            document.querySelector('.graph-card').scrollIntoView({ behavior: 'smooth' });
+        } else if (text === 'Threat Logs') {
+            document.querySelector('.security-card').scrollIntoView({ behavior: 'smooth' });
+        } else if (text === 'Policies') {
+            alert("Policy management will be available in Phase 11.");
+        }
+    });
+});
+
 // Start Polling
 pollEvents();

@@ -107,7 +107,7 @@ async def run_hello_graph() -> JSONResponse:
     })
 
 @app.post("/run-travel-graph", tags=["demo", "phase2"])
-async def run_travel_graph_endpoint(user_input: str, session_id: str = "default") -> JSONResponse:
+def run_travel_graph_endpoint(user_input: str, session_id: str = "default") -> JSONResponse:
     """Execute the Phase 2 travel booking graph."""
     from agents.workflow import run_travel_graph
     

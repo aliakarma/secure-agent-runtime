@@ -170,16 +170,55 @@ document.querySelectorAll('.nav-item').forEach(item => {
         document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
         item.classList.add('active');
         
-        const text = item.innerText.trim();
-        if (text === 'Graph Inspector') {
-            document.querySelector('.graph-card').scrollIntoView({ behavior: 'smooth' });
-        } else if (text === 'Threat Logs') {
-            document.querySelector('.security-card').scrollIntoView({ behavior: 'smooth' });
-        } else if (text === 'Policies') {
-            alert("Policy management will be available in Phase 11.");
+        const target = item.getAttribute('data-target');
+        if (target === 'graph') {
+            document.querySelector('.graph-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (target === 'threats') {
+            document.querySelector('.security-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (target === 'policies') {
+            alert("Policy management is currently managed via the backend TrustEngine configuration.");
+        } else if (target === 'monitoring') {
+            document.querySelector('.topbar').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     });
 });
+
+// Dynamic SVG Line Alignment
+function updateLines() {
+    const sup = document.getElementById('node-Supervisor');
+    const fli = document.getElementById('node-FlightAgent');
+    const hot = document.getElementById('node-HotelAgent');
+    const container = document.querySelector('.edges-container');
+    
+    if (!sup || !fli || !hot || !container) return;
+    
+    const supIcon = sup.querySelector('.node-icon');
+    const fliIcon = fli.querySelector('.node-icon');
+    const hotIcon = hot.querySelector('.node-icon');
+    
+    const containerRect = container.getBoundingClientRect();
+    const supRect = supIcon.getBoundingClientRect();
+    const fliRect = fliIcon.getBoundingClientRect();
+    const hotRect = hotIcon.getBoundingClientRect();
+    
+    const startX = supRect.right - containerRect.left;
+    const startY = supRect.top + (supRect.height / 2) - containerRect.top;
+    
+    const endXF = fliRect.left - containerRect.left - 5; // tiny offset for border
+    const endYF = fliRect.top + (fliRect.height / 2) - containerRect.top;
+    
+    const endXH = hotRect.left - containerRect.left - 5;
+    const endYH = hotRect.top + (hotRect.height / 2) - containerRect.top;
+    
+    const pathF = document.getElementById('edge-to-flight');
+    const pathH = document.getElementById('edge-to-hotel');
+    
+    if (pathF) pathF.setAttribute('d', `M ${startX},${startY} C ${startX+60},${startY} ${endXF-60},${endYF} ${endXF},${endYF}`);
+    if (pathH) pathH.setAttribute('d', `M ${startX},${startY} C ${startX+60},${startY} ${endXH-60},${endYH} ${endXH},${endYH}`);
+}
+const observer = new ResizeObserver(() => updateLines());
+observer.observe(document.querySelector('.node-system'));
+setTimeout(updateLines, 200);
 
 // Start Polling
 pollEvents();

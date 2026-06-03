@@ -9,14 +9,16 @@ The **Secure Agent Runtime** is a research project designed to build a security-
 This project implements an extensive 11-Phase security architecture built around LangGraph:
 
 1. **Sandboxed Execution:** Full containerization via Docker.
-2. **Threat Modeling:** A dataset of 21 targeted adversarial payloads targeting autonomous systems.
+2. **Threat Modeling:** A dataset of targeted adversarial payloads targeting autonomous systems.
 3. **Structured Audit Logging:** Deterministic JSON event tracking across the entire graph.
-4. **Multimodal Sanitization:** Specialized pre-processors (Text/OCR) to sanitize arbitrary inputs.
-5. **Dynamic Trust Engine:** A session-based tracking system calculating $T(x)$ using source reliability, history, and policy compliance.
-6. **Three-Tier Policy Enforcement:** Automatic capability degradation (HIGH/MEDIUM/LOW trust tiers) blocking risky tools.
-7. **Pre-LLM Security Shield:** Context filtering that prevents prompt injection logic from ever reaching the LLM context window.
-8. **Output Validation & Recovery:** A secondary LLM agent ("Agent B") that audits outputs for hallucinations and policy violations, with automated recovery loops.
-9. **Real-Time Visualization Dashboard:** A glassmorphism-styled web interface providing live monitoring of the LangGraph execution, trust scores, and intercepted attacks.
+4. **GraphChain Pre-Processing:** Constructs structural maps of inputs, trust paths, and modality interactions before orchestration.
+5. **Multimodal Sanitization:** Specialized pre-processors (Text, Audio/Whisper, Video/OCR, Deep Image Inspection via EXIF/Steganography analysis) to sanitize arbitrary inputs.
+6. **Dynamic Trust Engine:** A session-based tracking system calculating $T(x)$ using source reliability, history, and policy compliance.
+7. **Three-Tier Policy Enforcement:** Automatic capability degradation (HIGH/MEDIUM/LOW trust tiers) blocking risky tools.
+8. **MCP Tool Sandbox:** Isolates tool execution via the Model Context Protocol (MCP) to prevent prompt injection leaks.
+9. **Pre-LLM Security Shield:** Context filtering that prevents prompt injection logic from ever reaching the LLM context window.
+10. **Output Validation & Recovery:** A secondary LLM agent ("Agent B") that audits outputs for hallucinations and policy violations, with automated recovery loops.
+11. **Real-Time Visualization Dashboard:** A glassmorphism-styled web interface providing live monitoring of the LangGraph execution, trust scores, and intercepted attacks.
 
 ---
 

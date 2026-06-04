@@ -114,7 +114,9 @@ def run_travel_graph_endpoint(user_input: str, session_id: str = "default") -> J
     logger.info("travel_graph_triggered", session_id=session_id)
     push_dashboard_event("GRAPH_START", {"session_id": session_id, "input": user_input})
     
+    start = time.perf_counter()
     result = run_travel_graph(user_input=user_input, session_id=session_id)
+    elapsed_ms = (time.perf_counter() - start) * 1000
     
     # Serialize messages
     messages = []
@@ -122,11 +124,21 @@ def run_travel_graph_endpoint(user_input: str, session_id: str = "default") -> J
         name = msg.name if hasattr(msg, 'name') and msg.name else type(msg).__name__
         content = msg.content if hasattr(msg, 'content') else str(msg)
         messages.append({"role": name, "content": content})
+    
+    # Determine if the security system blocked/sanitized the request
+    security_blocked = any(
+        "[SANITIZED]" in (msg.content if hasattr(msg, 'content') else '')
+        or "[REJECTED]" in (msg.content if hasattr(msg, 'content') else '')
+        for msg in result.get("messages", [])
+    )
         
     push_dashboard_event("GRAPH_END", {"session_id": session_id, "status": "completed"})
     
     return JSONResponse({
         "status": "completed",
         "messages": messages,
-        "memory_used": result.get("memory", [])
+        "memory_used": result.get("memory", []),
+        "security_blocked": security_blocked,
+        "trust_score": result.get("trust_score", 1.0),
+        "processing_time_ms": round(elapsed_ms, 2)
     })

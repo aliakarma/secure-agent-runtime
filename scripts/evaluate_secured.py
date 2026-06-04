@@ -1,12 +1,13 @@
 import os
 import sys
 import math
+from scipy.stats import chi2 as chi2_dist
 
 def chi_squared_test(baseline_success, baseline_total, secured_success, secured_total):
     """
     Performs a chi-squared test for independence on ASR between
     baseline and secured configurations.
-    Returns the chi-squared statistic and approximate p-value.
+    Returns the chi-squared statistic and exact p-value (using scipy).
     """
     baseline_fail = baseline_total - baseline_success
     secured_fail = secured_total - secured_success
@@ -27,9 +28,8 @@ def chi_squared_test(baseline_success, baseline_total, secured_success, secured_
         if expected > 0:
             chi2 += ((observed - expected) ** 2) / expected
     
-    # Approximate p-value using chi-squared distribution with df=1
-    # Using the complementary error function approximation
-    p_value = math.exp(-chi2 / 2) if chi2 < 30 else 0.0
+    # Exact p-value using scipy's survival function (1 - CDF) with df=1
+    p_value = float(chi2_dist.sf(chi2, 1))
     
     return chi2, p_value
 

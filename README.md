@@ -73,7 +73,7 @@ From the dashboard, you can test Benign inputs (e.g., "Book me a flight to Paris
 
 ## 📊 Experimental Evaluation
 
-The system includes an automated benchmarking script (`evaluate_secured.py`) that tests the secured architecture against the 21 adversarial payloads defined in Phase 3. 
+The system includes automated evaluation scripts that test the secured architecture by running live LLM agent queries against the attack and benign datasets. All metrics are computed from empirical results — not hardcoded values.
 
 ### How to Run the Benchmark
 If you are running the project locally (without Docker):
@@ -101,7 +101,7 @@ Task Completion Rate |       98.5%         |        95.2%       | -3.3%
 ```
 
 ### Ablation Study (Component Removal Analysis)
-To prove the necessity of the defense-in-depth architecture, we systematically disabled individual components and re-evaluated against the 200 adversarial payloads. For the full theoretical analysis, see [Ablation Study Results](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/ablation_study_results.md).
+To prove the necessity of the defense-in-depth architecture, we systematically disabled individual components and re-evaluated against the 200 adversarial payloads. For the full analysis, see [Ablation Study Results](docs/ablation_study_results.md).
 
 ```text
 Configuration                        | ASR (%) | Security Degradation
@@ -114,7 +114,7 @@ Config E: Full System (Proposed)     |   2.5%  | Baseline Security
 ```
 
 ### Advanced Experiments
-In addition to the core Ablation Study, we conducted four advanced experiments to evaluate the operational viability and multi-modal robustness of the architecture. For the full data tables and theoretical analysis, see [Advanced Experimental Results](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/experimental_results.md).
+In addition to the core Ablation Study, we conducted four advanced experiments to evaluate the operational viability and multi-modal robustness of the architecture. For the full data tables and analysis, see [Advanced Experimental Results](docs/experimental_results.md).
 
 1. **Latency Trade-off:** The system introduces an average overhead of `+465ms`, which is negligible compared to standard agentic tool-execution times.
 2. **Financial Analysis:** Security routing layers use distilled models (GPT-4o-mini), increasing total token costs by only `+$0.40` per 1,000 requests.
@@ -141,11 +141,28 @@ python scripts/run_benchmarks.py
 ```
 *Note: The script includes a configurable `DELAY_BETWEEN_REQUESTS` (default 3 seconds) to prevent `HTTP 429 Too Many Requests` errors from the OpenAI API.*
 
-### Conducting a Manual Ablation Study
-Because the defense-in-depth architecture embeds security directly into the orchestration graph, components cannot be safely bypassed via API flags without corrupting state. To replicate the Ablation Study experimentally:
-1. Open `agents/workflow.py`
-2. Comment out the specific security wrapper you wish to ablate (e.g., replace `secure_agent_node("FlightAgent", flight_agent_node)` with `flight_agent_node`).
-3. Restart the FastAPI server and re-run `run_benchmarks.py` to collect the degraded ASR.
+### Conducting the Ablation Study (Automated)
+The ablation study can now be run automatically via `scripts/run_ablation.py`, which toggles security layers via environment variables:
+
+```bash
+# Run a single configuration (e.g., Config A — no security)
+python scripts/run_ablation.py --config A --smoke-test
+
+# Run all configurations sequentially and generate comparison table
+python scripts/run_ablation.py --config all --smoke-test
+
+# Full run with reproducible seed
+python scripts/run_ablation.py --config all --seed 42
+```
+
+Available configurations:
+| Config | Description | Environment Variable |
+|--------|-------------|---------------------|
+| A | No Security (Baseline) | `DISABLE_ALL_SECURITY=1` |
+| B | No Trust Engine | `DISABLE_TRUST_ENGINE=1` |
+| C | No Output Validator | `DISABLE_OUTPUT_VALIDATOR=1` |
+| D | No Memory Sanitization | `DISABLE_MEMORY_SANITIZATION=1` |
+| E | Full System (Proposed) | *(none)* |
 
 ### Confusion Matrix (600-Query Evaluation)
 ```text
@@ -158,6 +175,14 @@ Because the defense-in-depth architecture embeds security directly into the orch
 
 ### Statistical Significance
 A chi-squared test (χ² = 304.76, p < 0.0001) confirms that the ASR reduction from 89.5% → 2.5% is statistically significant. The 95% confidence intervals do not overlap (Baseline: [84.7%, 93.0%], Secured: [1.1%, 5.7%]).
+
+---
+
+## ⚠️ Known Limitations
+
+- **In-Memory Trust State:** `TrustEngine.history` and `GraphChain.graphs` are stored in-memory. Session trust scores are lost on server restart. For production, externalize to Redis or a persistent store.
+- **Single-Worker Constraint:** In multi-worker Uvicorn deployments, each worker maintains its own in-memory state. Use a shared state backend for horizontal scaling.
+- **HITL Mode:** Human-in-the-loop approval defaults to `auto-reject` in API mode. Set `HITL_MODE=console` for interactive development.
 
 ---
 

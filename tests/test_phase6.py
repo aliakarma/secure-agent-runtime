@@ -30,7 +30,7 @@ def test_amnesia_fix():
     
     # Normally user benign is: S(0.5)*0.25 + P(1.0)*0.25 + H(1.0)*0.25 + R(1.0)*0.25 = 0.75 (MEDIUM)
     # But since 2 injections occurred: H(x) = max(0, 1 - 2*0.5) = 0
-    # Score = 0.125 + 0.25 + 0 + 0.25 = 0.625 (Still medium but significantly lower)
+    # Score = 0.125 + 0.25 + 0 + 0.25 = 0.625, rounds to 0.62 via Python's banker's rounding
     # Let's verify score is lowered.
     assert score == 0.62
 

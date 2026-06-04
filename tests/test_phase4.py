@@ -35,5 +35,8 @@ def test_hook_2_and_3_tool_wrapper():
     
 def test_hook_4_memory():
     """Test Hook 4 for memory storage."""
-    res = secure_memory_hook("This is a POISON string to be saved to DB.")
+    res = secure_memory_hook(
+        session_id="test_hook4_session",
+        memory_string="This is a POISON string to be saved to DB."
+    )
     assert "[SANITIZED]" in res

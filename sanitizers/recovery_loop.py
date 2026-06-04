@@ -29,7 +29,12 @@ def ask_human_approval(reason: str) -> bool:
     elif HITL_MODE == "console":
         print(f"\n[HUMAN IN THE LOOP REQUIRED]")
         print(f"Reason: {reason}")
+        import sys
+        if not sys.stdin.isatty():
+            logger.warning("[HITL] Non-interactive environment detected, auto-rejecting.")
+            return False
         try:
+            # Note: For production, replace this with a webhook or async callback pattern
             choice = builtins.input("Approve this action/response? (y/n): ").strip().lower()
             return choice == 'y'
         except (EOFError, KeyboardInterrupt):
@@ -39,7 +44,7 @@ def ask_human_approval(reason: str) -> bool:
             logger.error(f"[HITL] Failed to get human input: {e}")
             return False
     else:  # auto-reject (safe default for API/production)
-        logger.warning(f"[HITL] Auto-rejecting (HITL_MODE=auto-reject): {reason}")
+        logger.warning(f"[HITL] Auto-rejecting (HITL_MODE={HITL_MODE}): {reason}")
         return False
 
 def with_validation_and_recovery(agent_name: str, agent_runnable):

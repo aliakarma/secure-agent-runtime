@@ -16,7 +16,7 @@ class ValidatorResult(BaseModel):
 class OutputValidator:
     def __init__(self):
         # We use a strict temperature 0 model for predictable validation
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0).with_structured_output(ValidatorResult)
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1).with_structured_output(ValidatorResult)
         
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", 

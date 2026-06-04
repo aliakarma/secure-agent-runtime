@@ -274,7 +274,10 @@ The frontend interface features a continuous Trust Score Panel that visually map
 ### 17.2 The Attack Monitor Feed
 The centerpiece of the visualization layer is the Threat Log (Attack Monitor). By intercepting the telemetry emitted from the security hooks (Hooks 1–5), the dashboard renders a live feed of blocked operations. When a prompt injection is neutralized by the Pre-LLM layer, or an unsafe output is flagged by the Output Validator, the interception is instantly broadcasted to the monitor. This transforms the abstract conceptual model of the security architecture into a tangible, observable defense mechanism, essential for both continuous monitoring and practical demonstration of the framework.
 
-## 18. Conclusion & Reproducibility (Phase 11)
+## 18. Architectural Limitations & Future Work
+While the architecture demonstrates significant defensive capabilities, a notable limitation in the current implementation is the reliance on in-memory state for the Trust Engine (`TrustEngine.history`) and Graph mapping (`GraphChain`). In a multi-worker deployment (e.g., Uvicorn) or container restart, this state is wiped out, permanently resetting a malicious user's Trust Score to HIGH. Future iterations must externalize this state to a persistent, distributed store such as Redis to ensure resilience across sessions and server restarts.
+
+## 19. Conclusion & Reproducibility (Phase 11)
 The culmination of this research project was the complete containerization and packaging of the Secure Agent Runtime. To ensure that this defense architecture can be independently verified, reproduced, and deployed by the broader research community, the entire system—encompassing the FastAPI backend, the LangGraph orchestration layer, the ChromaDB vector database, and the frontend visualization dashboard—has been containerized using Docker and Docker Compose.
 
 This monolithic delivery mechanism (`v1.0`) guarantees environment parity across systems. A single configuration file orchestrates the dependencies and network bindings, allowing any researcher to clone the repository, provide their LLM credentials, and instantly launch the secured runtime. The inclusion of an automated benchmarking suite further allows operators to empirically validate the security assertions on their own hardware.

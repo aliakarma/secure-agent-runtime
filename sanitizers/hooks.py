@@ -1,5 +1,6 @@
 import functools
 import contextvars
+import os
 from logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -14,6 +15,14 @@ visual_sanitizer = VisualSanitizer()
 tool_sanitizer = ToolOutputSanitizer()
 rag_sanitizer = RAGSanitizer()
 
+# ── Ablation Feature Flags ───────────────────────────────────────────
+# Set any of these env vars to "1" to disable the corresponding security layer.
+# Used by scripts/run_ablation.py for automated ablation studies.
+DISABLE_ALL_SECURITY = os.getenv("DISABLE_ALL_SECURITY", "0") == "1"
+DISABLE_TRUST_ENGINE = os.getenv("DISABLE_TRUST_ENGINE", "0") == "1"
+DISABLE_OUTPUT_VALIDATOR = os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") == "1"
+DISABLE_MEMORY_SANITIZATION = os.getenv("DISABLE_MEMORY_SANITIZATION", "0") == "1"
+
 # Context variables to pass state down to tools
 current_session_id = contextvars.ContextVar("current_session_id", default="default_session")
 current_trust_tier = contextvars.ContextVar("current_trust_tier", default="HIGH")
@@ -21,6 +30,10 @@ current_trust_tier = contextvars.ContextVar("current_trust_tier", default="HIGH"
 def secure_agent_node(agent_name, agent_runnable):
     """Hook 1: Before LLM Execution."""
     def wrapper(state):
+        # Ablation: if all security is disabled, run agent directly
+        if DISABLE_ALL_SECURITY:
+            return agent_runnable(state)
+        
         session_id = state.get("session_id", "default_session")
         tier = state.get("trust_tier", "HIGH")
         
@@ -46,11 +59,12 @@ def secure_agent_node(agent_name, agent_runnable):
             
             res = text_sanitizer.sanitize(last_message)
             
-            # Update Trust Engine
-            score, new_tier = trust_engine.process_payload(session_id, last_message, "user_or_agent", res.is_malicious)
-            state["trust_score"] = score
-            state["trust_tier"] = new_tier
-            current_trust_tier.set(new_tier)
+            # Update Trust Engine (skip if ablated)
+            if not DISABLE_TRUST_ENGINE:
+                score, new_tier = trust_engine.process_payload(session_id, last_message, "user_or_agent", res.is_malicious)
+                state["trust_score"] = score
+                state["trust_tier"] = new_tier
+                current_trust_tier.set(new_tier)
             
             if res.is_malicious:
                 logger.warning(f"Security Alert at Hook 1 ({agent_name}_Pre_LLM): {res.reason}")
@@ -63,7 +77,9 @@ def secure_agent_node(agent_name, agent_runnable):
         if state and "messages" in state:
             state["messages"] = pre_llm_sanitizer.sanitize_context(state["messages"], current_trust_tier.get())
         
-        # Phase 8: Output Validation and Recovery
+        # Phase 8: Output Validation and Recovery (skip if ablated)
+        if DISABLE_OUTPUT_VALIDATOR:
+            return agent_runnable(state)
         recovered_runnable = with_validation_and_recovery(agent_name, agent_runnable)
         return recovered_runnable(state)
     return wrapper
@@ -181,10 +197,15 @@ def secure_routing_hook(supervisor_runnable):
 
 def secure_memory_hook(session_id: str, memory_string: str) -> str:
     """Hook 4: Before data is saved to memory."""
+    # Ablation: if all security or memory sanitization is disabled, pass through
+    if DISABLE_ALL_SECURITY or DISABLE_MEMORY_SANITIZATION:
+        return memory_string
+    
     logger.info("Hook 4 Triggered: Intercepting data before saving to memory.")
     res = rag_sanitizer.sanitize(memory_string)
     
-    score, new_tier = trust_engine.process_payload(session_id, memory_string, "rag", res.is_malicious)
+    if not DISABLE_TRUST_ENGINE:
+        score, new_tier = trust_engine.process_payload(session_id, memory_string, "rag", res.is_malicious)
     
     if res.is_malicious:
         logger.warning(f"Security Alert at Hook 4 (Memory_Storage): {res.reason}")

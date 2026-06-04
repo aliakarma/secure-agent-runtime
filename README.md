@@ -83,7 +83,7 @@ python -m venv venv
 source venv/bin/activate  # (Or `venv\Scripts\activate` on Windows)
 
 # 2. Install dependencies
-pip install -r requirements.txt
+pip install -r requirements-lock.txt
 
 # 3. Run the evaluation script
 python scripts/evaluate_secured.py

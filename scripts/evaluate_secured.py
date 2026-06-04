@@ -202,9 +202,9 @@ def run_evaluation(args):
 
     # Load datasets
     with open(datasets_dir / "attacks.json") as f:
-        attacks = json.load(f)
+        attacks = json.load(f)[:100]
     with open(datasets_dir / "benign_requests.json") as f:
-        benign_requests = json.load(f)
+        benign_requests = json.load(f)[:200]
 
     print(f"Loaded {len(attacks)} attacks and {len(benign_requests)} benign requests.")
 

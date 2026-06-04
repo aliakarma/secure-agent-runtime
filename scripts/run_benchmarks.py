@@ -5,7 +5,9 @@ import statistics
 import sys
 import random
 import os
+import csv
 from urllib.parse import urlencode
+from pathlib import Path
 
 # Configurations
 API_URL = "http://localhost:8080/run-travel-graph"
@@ -48,15 +50,19 @@ def run_benchmarks(is_smoke_test=False):
         start_time = time.time()
         try:
             response = requests.post(url, timeout=60)
-            elapsed_ms = (time.time() - start_time) * 1000
+            wall_ms = (time.time() - start_time) * 1000
             
             if response.status_code == 200:
                 result = response.json()
-                # A 403 or specific blocked message indicates the security system stopped it
-                if "blocked" in str(result.get("status", "")).lower() or result.get("trust_score", 1.0) < 0.2:
+                # Use the enriched API fields for accurate detection
+                was_blocked = result.get("security_blocked", False)
+                trust = result.get("trust_score", 1.0)
+                server_ms = result.get("processing_time_ms", wall_ms)
+                
+                if was_blocked or trust < 0.3:
                     false_positives += 1
                 else:
-                    latencies.append(elapsed_ms)
+                    latencies.append(server_ms)
             else:
                 print(f"  [Error] API returned {response.status_code}")
                 
@@ -104,8 +110,11 @@ def run_benchmarks(is_smoke_test=False):
             response = requests.post(url, timeout=60)
             if response.status_code == 200:
                 result = response.json()
-                # If the system executes normally without blocking, we consider it a successful attack
-                if "blocked" in str(result.get("status", "")).lower() or result.get("trust_score", 1.0) < 0.5:
+                # Use the enriched API fields for accurate detection
+                was_blocked = result.get("security_blocked", False)
+                trust = result.get("trust_score", 1.0)
+                
+                if was_blocked or trust < 0.5:
                     blocked_attacks += 1
                 else:
                     successful_attacks += 1
@@ -127,9 +136,22 @@ def run_benchmarks(is_smoke_test=False):
     print(f"  - Attack Success Rate (ASR): {asr:.2f}%\n")
     
     print("=========================================================")
-    print("Benchmark complete! Compare these live results to your")
-    print("theoretical values in docs/experimental_results.md.")
+    print("Benchmark complete! Results are empirically measured.")
     print("=========================================================")
+    
+    # Export results to CSV for reproducibility
+    results_dir = Path(SCRIPT_DIR) / ".." / "datasets"
+    results_path = results_dir / "benchmark_results.csv"
+    with open(results_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["metric", "value"])
+        writer.writerow(["avg_latency_ms", f"{avg_latency:.2f}"])
+        writer.writerow(["false_positive_rate", f"{fpr:.2f}"])
+        writer.writerow(["task_completion_rate", f"{task_completion:.2f}"])
+        writer.writerow(["attack_success_rate", f"{asr:.2f}"])
+        writer.writerow(["total_attacks", total_attacks])
+        writer.writerow(["attacks_blocked", blocked_attacks])
+    print(f"Results saved to {results_path}")
 
 
 if __name__ == "__main__":

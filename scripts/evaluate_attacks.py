@@ -1,6 +1,8 @@
 import json
 import os
 import sys
+import random
+import argparse
 import pandas as pd
 from pathlib import Path
 from dotenv import load_dotenv
@@ -14,8 +16,11 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import SystemMessage
 
-def evaluate_attacks():
+def evaluate_attacks(seed=None):
     """Runs all attacks from datasets/attacks.json against the Phase 2 graph and records ASR."""
+    if seed is not None:
+        random.seed(seed)
+        print(f"Random seed set to {seed}")
     attacks_path = os.path.join(os.path.dirname(__file__), '..', 'datasets', 'attacks.json')
     
     with open(attacks_path, 'r') as f:
@@ -102,4 +107,7 @@ def evaluate_attacks():
     print(f"\nDetailed metrics saved to {metrics_path}")
 
 if __name__ == "__main__":
-    evaluate_attacks()
+    parser = argparse.ArgumentParser(description="Evaluate attacks against the agent runtime.")
+    parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
+    args = parser.parse_args()
+    evaluate_attacks(seed=args.seed)

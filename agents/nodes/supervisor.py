@@ -30,7 +30,7 @@ If the user wants both, route to one of them first. Once that agent finishes and
 If all tasks requested by the user are complete, or the user is just saying hello, respond with FINISH.
 """
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1)
 
 # We use with_structured_output to force the LLM to output our Route schema
 supervisor_llm = llm.with_structured_output(Route)

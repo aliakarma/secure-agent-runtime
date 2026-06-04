@@ -1,24 +1,45 @@
 import builtins
+import os
 from langchain_core.messages import SystemMessage, AIMessage
 from sanitizers.output_validator import output_validator
 from logging_config import get_logger
 
 logger = get_logger(__name__)
 
+# HITL configuration via environment variables
+# auto-reject: safe default for API/production — never blocks
+# auto-approve: for testing — always approves
+# console: interactive terminal input — only use in dev
+HITL_MODE = os.getenv("HITL_MODE", "auto-reject")
+HITL_TIMEOUT = int(os.getenv("HITL_TIMEOUT", "30"))
+
+
 def ask_human_approval(reason: str) -> bool:
     """
-    Simulates a Human-in-the-Loop interaction.
-    In a real app, this would pause the graph or use a UI webhook.
-    For this prototype, we use terminal input.
+    Human-in-the-Loop approval gate.
+    
+    Behavior is controlled by the HITL_MODE environment variable:
+    - 'auto-reject' (default): Rejects automatically. Safe for API/production.
+    - 'auto-approve': Approves automatically. Useful for testing.
+    - 'console': Prompts for terminal input. Only for interactive development.
     """
-    print(f"\n[HUMAN IN THE LOOP REQUIRED]")
-    print(f"Reason: {reason}")
-    try:
-        # We use builtins.input so it doesn't get mocked out easily, or just standard input
-        choice = builtins.input("Approve this action/response? (y/n): ").strip().lower()
-        return choice == 'y'
-    except Exception as e:
-        logger.error(f"Failed to get human input: {e}")
+    if HITL_MODE == "auto-approve":
+        logger.info(f"[HITL] Auto-approving (HITL_MODE=auto-approve): {reason}")
+        return True
+    elif HITL_MODE == "console":
+        print(f"\n[HUMAN IN THE LOOP REQUIRED]")
+        print(f"Reason: {reason}")
+        try:
+            choice = builtins.input("Approve this action/response? (y/n): ").strip().lower()
+            return choice == 'y'
+        except (EOFError, KeyboardInterrupt):
+            logger.warning("[HITL] No input received, auto-rejecting.")
+            return False
+        except Exception as e:
+            logger.error(f"[HITL] Failed to get human input: {e}")
+            return False
+    else:  # auto-reject (safe default for API/production)
+        logger.warning(f"[HITL] Auto-rejecting (HITL_MODE=auto-reject): {reason}")
         return False
 
 def with_validation_and_recovery(agent_name: str, agent_runnable):

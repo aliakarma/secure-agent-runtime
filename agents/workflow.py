@@ -23,10 +23,16 @@ def build_travel_graph() -> StateGraph:
     # Define the graph using our AgentState
     graph = StateGraph(AgentState)
     
-    # Add nodes
-    graph.add_node("Supervisor", secure_routing_hook(supervisor_node))
-    graph.add_node("FlightAgent", secure_agent_node("FlightAgent", flight_agent_node))
-    graph.add_node("HotelAgent", secure_agent_node("HotelAgent", hotel_agent_node))
+    # Ablation support: when DISABLE_ALL_SECURITY=1, use raw agent nodes
+    if os.getenv("DISABLE_ALL_SECURITY", "0") == "1":
+        logger.warning("ABLATION MODE: All security wrappers DISABLED (Config A)")
+        graph.add_node("Supervisor", supervisor_node)
+        graph.add_node("FlightAgent", flight_agent_node)
+        graph.add_node("HotelAgent", hotel_agent_node)
+    else:
+        graph.add_node("Supervisor", secure_routing_hook(supervisor_node))
+        graph.add_node("FlightAgent", secure_agent_node("FlightAgent", flight_agent_node))
+        graph.add_node("HotelAgent", secure_agent_node("HotelAgent", hotel_agent_node))
     
     # The graph always starts at the Supervisor
     graph.add_edge(START, "Supervisor")

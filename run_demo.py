@@ -1,9 +1,10 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Try loading from the current dir, and also from the langgraph dir where the user pasted it
+# Load .env from the project root (where this script lives)
 load_dotenv()
-load_dotenv(r"c:\Users\Ali Akarma\Documents\GitHub\langgraph\.env")
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:

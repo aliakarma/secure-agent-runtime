@@ -108,7 +108,7 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
     # Load datasets
     datasets_dir = PROJECT_ROOT / "datasets"
     with open(datasets_dir / "attacks.json") as f:
-        attacks = json.load(f)
+        attacks = json.load(f)[:100]
 
     if seed is not None:
         random.seed(seed)

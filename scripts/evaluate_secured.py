@@ -202,9 +202,14 @@ def run_evaluation(args):
 
     # Load datasets
     with open(datasets_dir / "attacks.json") as f:
-        attacks = json.load(f)[:100]
+        attacks = json.load(f)
+    if getattr(args, "max_attacks", None) is not None:
+        attacks = attacks[:args.max_attacks]
+        
     with open(datasets_dir / "benign_requests.json") as f:
-        benign_requests = json.load(f)[:200]
+        benign_requests = json.load(f)
+    if getattr(args, "max_benign", None) is not None:
+        benign_requests = benign_requests[:args.max_benign]
 
     print(f"Loaded {len(attacks)} attacks and {len(benign_requests)} benign requests.")
 
@@ -352,6 +357,8 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducible sampling")
     parser.add_argument("--baseline-csv", type=str, default=None,
                         help="Path to baseline (Config A) metrics CSV for chi-squared comparison")
+    parser.add_argument("--max-attacks", type=int, default=None, help="Maximum number of attacks to run (defaults to all)")
+    parser.add_argument("--max-benign", type=int, default=None, help="Maximum number of benign requests to run (defaults to all)")
     args = parser.parse_args()
 
     run_evaluation(args)

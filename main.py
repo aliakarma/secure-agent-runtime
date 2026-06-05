@@ -57,6 +57,13 @@ def get_events(since_id: int = -1):
     new_events = [e for e in dashboard_events if e["id"] > since_id]
     return JSONResponse({"events": new_events})
 
+@app.get("/api/provenance", tags=["provenance"])
+def get_provenance(session_id: str = "default"):
+    """Expose the dynamic Provenance Ledger records for a session."""
+    from sanitizers.provenance import provenance_ledger
+    records = provenance_ledger.get_lineage(session_id)
+    return JSONResponse({"session_id": session_id, "provenance_lineage": records})
+
 
 
 

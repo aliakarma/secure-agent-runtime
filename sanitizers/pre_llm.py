@@ -22,7 +22,7 @@ class PreLLMSanitizer:
             re.compile(r"you\s+are\s+now", re.IGNORECASE),
             re.compile(r"jailbreak", re.IGNORECASE),
             re.compile(r"ignore\s+above", re.IGNORECASE),
-            re.compile(r"bypass", re.IGNORECASE)
+            re.compile(r"\bbypass\s+(?:security|rules?|filters?|safeguards?|restrictions?|policies|verification|check)\b", re.IGNORECASE)
         ]
         self.canonical_system_prompt = (
             "SYSTEM RULE: You are a secure, professional AI agent. "

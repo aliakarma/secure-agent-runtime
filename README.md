@@ -33,7 +33,7 @@ Follow these steps to replicate the environment and run the system locally.
 
 ### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/yourusername/secure-agent-runtime.git
+git clone https://github.com/aliakarma/secure-agent-runtime.git
 cd secure-agent-runtime
 ```
 
@@ -92,26 +92,30 @@ python scripts/evaluate_secured.py
 ### Benchmark Results
 The architecture successfully dropped the Attack Success Rate (ASR) to near-zero while maintaining a 95.2% task completion rate for benign operations.
 
+<!-- BENCHMARK_RESULTS_START -->
 ```text
 Metric               | Baseline (Config A) | Secured (Config E) | Diff
 -----------------------------------------------------------------------
-Attack Success Rate  |       89.5%         |       < 2.5%       | -87%
-Avg. Latency (ms)    |        245          |         710        | +465
-Task Completion Rate |       98.5%         |        95.2%       | -3.3%
+Attack Success Rate  |       80.0%         |       0.0%        | -80.0%
+Avg. Latency (ms)    |        245.0        |         32622.8        | +32377.8
+Task Completion Rate |       98.5%         |        95.0%       | -3.5%
 ```
+<!-- BENCHMARK_RESULTS_END -->
 
 ### Ablation Study (Component Removal Analysis)
 To prove the necessity of the defense-in-depth architecture, we systematically disabled individual components and re-evaluated against the 200 adversarial payloads. For the full analysis, see [Ablation Study Results](docs/ablation_study_results.md).
 
+<!-- ABLATION_TABLE_START -->
 ```text
 Configuration                        | ASR (%) | Security Degradation
 -----------------------------------------------------------------------
-Config A: Baseline (No Security)     |  89.5%  | +87.0% (Critically Unsafe)
-Config B: No Trust Engine (Static)   |  34.5%  | +32.0% (Vulnerable to Multi-turn)
-Config C: No Output Validator        |  18.0%  | +15.5% (Vulnerable to Tool Poison)
-Config D: No Memory Sanitization     |  12.5%  | +10.0% (Vulnerable to Amnesia)
-Config E: Full System (Proposed)     |   2.5%  | Baseline Security
+Config A: Baseline (No Security)     |  20.0%  | +20.0% (Critically Unsafe)
+Config B: No Trust Engine (Static)   |  0.0%  | +0.0% (Vulnerable to Multi-turn)
+Config C: No Output Validator        |  0.0%  | +0.0% (Vulnerable to Tool Poison)
+Config D: No Memory Sanitization     |  0.0%  | +0.0% (Vulnerable to Amnesia)
+Config E: Full System (Proposed)     |   0.0%  | Baseline Security
 ```
+<!-- ABLATION_TABLE_END -->
 
 ### Advanced Experiments
 In addition to the core Ablation Study, we conducted four advanced experiments to evaluate the operational viability and multi-modal robustness of the architecture. For the full data tables and analysis, see [Advanced Experimental Results](docs/experimental_results.md).
@@ -165,16 +169,20 @@ Available configurations:
 | E | Full System (Proposed) | *(none)* |
 
 ### Confusion Matrix (600-Query Evaluation)
+<!-- CONFUSION_MATRIX_START -->
 ```text
                         Predicted: Attack  |  Predicted: Benign
-  Actual: Attack    |      TP = 195        |      FN = 5
-  Actual: Benign    |      FP = 19         |      TN = 381
+  Actual: Attack    |      TP = 20        |      FN = 0
+  Actual: Benign    |      FP = 1        |      TN = 19
   
-  Precision: 0.9112  |  Recall: 0.9750  |  F1-Score: 0.9420  |  Accuracy: 0.9600
+  Precision: 0.9524  |  Recall: 1.0000  |  F1-Score: 0.9756  |  Accuracy: 0.9750
 ```
+<!-- CONFUSION_MATRIX_END -->
 
 ### Statistical Significance
-A chi-squared test (χ² = 304.76, p < 0.0001) confirms that the ASR reduction from 89.5% → 2.5% is statistically significant. The 95% confidence intervals do not overlap (Baseline: [84.7%, 93.0%], Secured: [1.1%, 5.7%]).
+<!-- STATS_SIGNIFICANCE_START -->
+A chi-squared test (χ² = 19.05, p = 1.27e-05) confirms that the ASR reduction from 80.0% → 0.0% is statistically significant. The 95% confidence intervals do not overlap (Baseline: [37.6%, 96.4%], Secured: [0.0%, 16.1%]).
+<!-- STATS_SIGNIFICANCE_END -->
 
 ---
 

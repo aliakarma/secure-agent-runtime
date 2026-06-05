@@ -32,7 +32,7 @@ class TrustEngine:
         self.history[session_id] += 1
         logger.warning(f"TrustEngine: Registered injection for session {session_id}. Total: {self.history[session_id]}")
 
-    def calculate_trust(self, session_id: str, source: str, is_malicious: bool) -> float:
+    def calculate_trust(self, session_id: str, source: str, is_malicious: bool, retrieval_confidence: float = 1.0) -> float:
         """
         Calculate Trust Score: T(x) = αS(x) + βP(x) + γH(x) + δR(x)
         """
@@ -49,8 +49,8 @@ class TrustEngine:
         injections = self.history.get(session_id, 0)
         H_x = max(0.0, 1.0 - (injections * 0.5))
         
-        # R(x): Retrieval confidence (Mocked to 1.0 for non-RAG, or calculated in RAG sanitizer)
-        R_x = 1.0 
+        # R(x): Retrieval confidence
+        R_x = retrieval_confidence if source == "rag" else 1.0
         
         trust_score = (self.alpha * S_x) + (self.beta * P_x) + (self.gamma * H_x) + (self.delta * R_x)
         return round(trust_score, 2)
@@ -63,12 +63,12 @@ class TrustEngine:
         else:
             return "LOW"
             
-    def process_payload(self, session_id: str, payload: str, source: str, is_malicious: bool) -> tuple[float, str]:
+    def process_payload(self, session_id: str, payload: str, source: str, is_malicious: bool, retrieval_confidence: float = 1.0) -> tuple[float, str]:
         """Process a payload, update state, and return the new trust score and tier."""
         if is_malicious:
             self.register_injection(session_id)
             
-        score = self.calculate_trust(session_id, source, is_malicious)
+        score = self.calculate_trust(session_id, source, is_malicious, retrieval_confidence)
         tier = self.determine_tier(score)
         
         logger.info(f"TrustEngine: session={session_id}, score={score:.2f}, tier={tier}")

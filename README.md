@@ -13,7 +13,7 @@ This project implements an extensive 11-Phase security architecture built around
 3. **Structured Audit Logging:** Deterministic JSON event tracking across the entire graph.
 4. **GraphChain Pre-Processing:** Constructs structural maps of inputs, trust paths, and modality interactions before orchestration.
 5. **Multimodal Sanitization:** Specialized pre-processors (Text, Audio/Whisper, Video/OCR, Deep Image Inspection via EXIF/Steganography analysis) to sanitize arbitrary inputs.
-6. **Dynamic Trust Engine:** A session-based tracking system calculating $T(x)$ using source reliability, history, and policy compliance.
+6. **Dynamic Trust Engine:** A session-based tracking system calculating $T(x)$ using source reliability, history, and policy compliance. Augmented by a stateful **Provenance Ledger & Agent** that tracks information lineage DAGs and embeds in-context metadata tags.
 7. **Three-Tier Policy Enforcement:** Automatic capability degradation (HIGH/MEDIUM/LOW trust tiers) blocking risky tools.
 8. **MCP Tool Sandbox:** Isolates tool execution via the Model Context Protocol (MCP) to prevent prompt injection leaks.
 9. **Pre-LLM Security Shield:** Context filtering that prevents prompt injection logic from ever reaching the LLM context window.
@@ -193,6 +193,55 @@ After executing the evaluations, compile and update all markdown tables, statist
 ```bash
 python scripts/generate_experimental_docs.py
 ```
+
+---
+
+## 🔌 REST API Endpoints
+
+The runtime exposes a FastAPI REST API for integration and programmatic audits:
+
+### 1. Execute Travel Agent Session
+* **Route:** `POST /run-travel-graph`
+* **Parameters:** `user_input` (query string), `session_id` (optional, defaults to `"default"`)
+* **Description:** Runs the Travel graph orchestration. Triggers security hook interceptions, computes dynamic trust scores, logs to the visualization event bus, and returns execution messages.
+
+### 2. Retrieve Provenance Lineage Audit Trail
+* **Route:** `GET /api/provenance`
+* **Parameters:** `session_id` (optional, defaults to `"default"`)
+* **Response Format:**
+  ```json
+  {
+    "session_id": "default",
+    "provenance_lineage": [
+      {
+        "record_id": "8b51d11f-c049-411a-ae97-d86bfa3bcbe7",
+        "timestamp": 1780749845.2,
+        "source": "user",
+        "modality": "text",
+        "trust_score": 1.0,
+        "trust_tier": "HIGH",
+        "sanitizers": ["TextSanitizer"],
+        "parent_records": []
+      },
+      {
+        "record_id": "2db4ee4e-e67c-4860-9df1-807d8126d400",
+        "timestamp": 1780749847.5,
+        "source": "tool_search_flights",
+        "modality": "text",
+        "trust_score": 1.0,
+        "trust_tier": "HIGH",
+        "sanitizers": ["ToolOutputSanitizer"],
+        "parent_records": ["8b51d11f-c049-411a-ae97-d86bfa3bcbe7"]
+      }
+    ]
+  }
+  ```
+* **Description:** Exposes the full lineage Directed Acyclic Graph (DAG) for a given session. Shows parent-child records tracing the information path from input ingestion to downstream tool actions.
+
+### 3. Real-Time Telemetry Events
+* **Route:** `GET /api/events`
+* **Parameters:** `since_id` (optional, defaults to `-1`)
+* **Description:** Pulls raw events for the frontend visualization event log stream.
 
 ---
 

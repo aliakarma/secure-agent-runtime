@@ -20,7 +20,7 @@ def evaluate_attacks(seed=None):
         print(f"Random seed set to {seed}")
     attacks_path = os.path.join(os.path.dirname(__file__), '..', 'datasets', 'attacks.json')
     
-    with open(attacks_path, 'r') as f:
+    with open(attacks_path, 'r', encoding='utf-8') as f:
         attacks = json.load(f)
         
     print(f"Loaded {len(attacks)} attacks for evaluation...")

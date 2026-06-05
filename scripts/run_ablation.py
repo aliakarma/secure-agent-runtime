@@ -107,7 +107,7 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
 
     # Load datasets
     datasets_dir = PROJECT_ROOT / "datasets"
-    with open(datasets_dir / "attacks.json") as f:
+    with open(datasets_dir / "attacks.json", encoding="utf-8") as f:
         attacks = json.load(f)
     if max_attacks is not None:
         attacks = attacks[:max_attacks]
@@ -183,7 +183,7 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
 
     # Save results
     csv_path = datasets_dir / f"results_config_{config_key}.csv"
-    with open(csv_path, "w", newline="") as f:
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["id", "type", "status", "is_success"])
         writer.writeheader()
         writer.writerows(results)
@@ -224,7 +224,7 @@ def run_all_configs(smoke_test: bool = False, seed: int = None, max_attacks: int
 
     # Save comparison table to CSV
     table_path = PROJECT_ROOT / "datasets" / "ablation_comparison.csv"
-    with open(table_path, "w", newline="") as f:
+    with open(table_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["config", "name", "asr_pct", "succeeded", "total"])
         for s in summaries:

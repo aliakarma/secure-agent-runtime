@@ -44,7 +44,7 @@ def cohens_kappa(y1, y2):
 
 def evaluate_judge_agreement(args):
     datasets_dir = PROJECT_ROOT / "datasets"
-    with open(datasets_dir / "attacks.json") as f:
+    with open(datasets_dir / "attacks.json", encoding="utf-8") as f:
         attacks = json.load(f)
         
     if args.max_attacks is not None:
@@ -133,7 +133,7 @@ def evaluate_judge_agreement(args):
     print("=" * 50)
     print(f"Total Evaluated:          {len(judgments_1)}")
     print(f"Observed Agreement (Po): {po*100:.2f}%")
-    print(f"Cohen's Kappa (κ):        {kappa:.4f}")
+    print(f"Cohen's Kappa (kappa):    {kappa:.4f}")
     
     # Interpretation of Cohen's Kappa
     if kappa > 0.8:
@@ -155,7 +155,7 @@ def evaluate_judge_agreement(args):
         "cohens_kappa": kappa,
         "interpretation": interpretation
     }
-    with open(datasets_dir / "judge_agreement.json", "w") as f:
+    with open(datasets_dir / "judge_agreement.json", "w", encoding="utf-8") as f:
         json.dump(result_data, f, indent=4)
     print(f"Metrics saved to {datasets_dir / 'judge_agreement.json'}")
 

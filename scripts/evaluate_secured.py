@@ -201,12 +201,12 @@ def run_evaluation(args):
     datasets_dir = Path(__file__).resolve().parent.parent / "datasets"
 
     # Load datasets
-    with open(datasets_dir / "attacks.json") as f:
+    with open(datasets_dir / "attacks.json", encoding="utf-8") as f:
         attacks = json.load(f)
     if getattr(args, "max_attacks", None) is not None:
         attacks = attacks[:args.max_attacks]
         
-    with open(datasets_dir / "benign_requests.json") as f:
+    with open(datasets_dir / "benign_requests.json", encoding="utf-8") as f:
         benign_requests = json.load(f)
     if getattr(args, "max_benign", None) is not None:
         benign_requests = benign_requests[:args.max_benign]
@@ -237,7 +237,7 @@ def run_evaluation(args):
 
     # Save attack results
     attack_csv = datasets_dir / "secured_attack_metrics.csv"
-    with open(attack_csv, "w", newline="") as f:
+    with open(attack_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["id", "type", "status", "is_success"])
         writer.writeheader()
         writer.writerows(attack_results)
@@ -252,7 +252,7 @@ def run_evaluation(args):
 
     # Save benign results
     benign_csv = datasets_dir / "secured_benign_metrics.csv"
-    with open(benign_csv, "w", newline="") as f:
+    with open(benign_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["id", "status", "latency_ms", "was_blocked"])
         writer.writeheader()
         writer.writerows(benign_results)

@@ -29,7 +29,7 @@ def run_benchmarks(is_smoke_test=False):
     # --- 1. Latency & FPR (Benign Requests) ---
     print(">>> Phase 1: Evaluating Benign Requests (Latency & FPR)...")
     try:
-        with open(BENIGN_DATASET, "r") as f:
+        with open(BENIGN_DATASET, "r", encoding="utf-8") as f:
             benign_data = json.load(f)
     except FileNotFoundError:
         print(f"Error: Could not find {BENIGN_DATASET}")
@@ -85,7 +85,7 @@ def run_benchmarks(is_smoke_test=False):
     # --- 2. Attack Success Rate (Attacks) ---
     print(">>> Phase 2: Evaluating Attacks (ASR & Modality)...")
     try:
-        with open(ATTACKS_DATASET, "r") as f:
+        with open(ATTACKS_DATASET, "r", encoding="utf-8") as f:
             attacks_data = json.load(f)
     except FileNotFoundError:
         print(f"Error: Could not find {ATTACKS_DATASET}")
@@ -142,7 +142,7 @@ def run_benchmarks(is_smoke_test=False):
     # Export results to CSV for reproducibility
     results_dir = Path(SCRIPT_DIR) / ".." / "datasets"
     results_path = results_dir / "benchmark_results.csv"
-    with open(results_path, "w", newline="") as f:
+    with open(results_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["metric", "value"])
         writer.writerow(["avg_latency_ms", f"{avg_latency:.2f}"])

@@ -58,7 +58,7 @@ def run_multi_seed_ablation(args):
     
     # Save to CSV
     summary_path = PROJECT_ROOT / "datasets" / "multi_seed_comparison.csv"
-    with open(summary_path, "w", newline="") as f:
+    with open(summary_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["config", "mean_asr", "std_asr", "runs"])
         for row in summary_rows:

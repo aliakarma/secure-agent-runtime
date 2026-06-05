@@ -26,7 +26,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 def run_evasion_test(args):
     datasets_dir = PROJECT_ROOT / "datasets"
-    with open(datasets_dir / "evasion_attacks.json") as f:
+    with open(datasets_dir / "evasion_attacks.json", encoding="utf-8") as f:
         attacks = json.load(f)
         
     if args.max_attacks is not None:
@@ -133,7 +133,7 @@ def run_evasion_test(args):
     
     # Save results to CSV
     csv_path = datasets_dir / "evasion_metrics.csv"
-    with open(csv_path, "w", newline="") as f:
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["id", "type", "status", "is_success", "heuristic_bypassed"])
         writer.writeheader()
         writer.writerows(results)

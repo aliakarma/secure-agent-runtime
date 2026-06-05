@@ -64,7 +64,7 @@ CONFIGS = {
 }
 
 
-def run_single_config(config_key: str, smoke_test: bool = False, seed: int = None):
+def run_single_config(config_key: str, smoke_test: bool = False, seed: int = None, max_attacks: int = None):
     """Run the evaluation for a single ablation configuration."""
     config = CONFIGS[config_key]
     print("\n" + "=" * 70)
@@ -108,7 +108,9 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
     # Load datasets
     datasets_dir = PROJECT_ROOT / "datasets"
     with open(datasets_dir / "attacks.json") as f:
-        attacks = json.load(f)[:100]
+        attacks = json.load(f)
+    if max_attacks is not None:
+        attacks = attacks[:max_attacks]
 
     if seed is not None:
         random.seed(seed)
@@ -199,11 +201,11 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
     }
 
 
-def run_all_configs(smoke_test: bool = False, seed: int = None):
+def run_all_configs(smoke_test: bool = False, seed: int = None, max_attacks: int = None):
     """Run all ablation configurations and produce a comparison table."""
     summaries = []
     for config_key in ["A", "B", "C", "D", "E"]:
-        summary = run_single_config(config_key, smoke_test=smoke_test, seed=seed)
+        summary = run_single_config(config_key, smoke_test=smoke_test, seed=seed, max_attacks=max_attacks)
         summaries.append(summary)
 
     # Print comparison table
@@ -239,11 +241,13 @@ if __name__ == "__main__":
                         help="Which ablation config to run (A-E or 'all')")
     parser.add_argument("--smoke-test", action="store_true",
                         help="Run with 20 attacks only (quick validation)")
+    parser.add_argument("--max-attacks", type=int, default=None,
+                        help="Maximum number of attacks to run (defaults to all)")
     parser.add_argument("--seed", type=int, default=None,
                         help="Random seed for reproducible sampling")
     args = parser.parse_args()
 
     if args.config == "all":
-        run_all_configs(smoke_test=args.smoke_test, seed=args.seed)
+        run_all_configs(smoke_test=args.smoke_test, seed=args.seed, max_attacks=args.max_attacks)
     else:
-        run_single_config(args.config.upper(), smoke_test=args.smoke_test, seed=args.seed)
+        run_single_config(args.config.upper(), smoke_test=args.smoke_test, seed=args.seed, max_attacks=args.max_attacks)

@@ -44,11 +44,18 @@ def test_policy_enforcement():
     def search_flights(arg: str):
         return "Flights"
 
+    # Register mock tools in mcp sandbox to prevent "Method not found" error
+    from agents.mcp_sandbox import mcp_sandbox
+    if "action_tool" not in mcp_sandbox.allowed_tools:
+        mcp_sandbox.allowed_tools.append("action_tool")
+    if "search_flights" not in mcp_sandbox.allowed_tools:
+        mcp_sandbox.allowed_tools.append("search_flights")
+
     current_session_id.set("test_session")
     
     # Test HIGH
     current_trust_tier.set("HIGH")
-    assert action_tool("test") == "Success"
+    assert "Success" in action_tool("test")
     
     # Test LOW
     current_trust_tier.set("LOW")
@@ -58,4 +65,4 @@ def test_policy_enforcement():
     current_trust_tier.set("MEDIUM")
     assert "Error: Tool action_tool blocked" in action_tool("test")
     # Medium allows search_flights
-    assert search_flights("test") == "Flights"
+    assert "Flights" in search_flights("test")

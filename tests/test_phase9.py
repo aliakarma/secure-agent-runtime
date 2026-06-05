@@ -13,7 +13,7 @@ def test_attack_dataset_exists():
     """Verify the attack dataset exists and has at least 200 entries."""
     dataset_path = os.path.join(os.path.dirname(__file__), '..', 'datasets', 'attacks.json')
     assert os.path.exists(dataset_path), "attacks.json not found"
-    with open(dataset_path, 'r') as f:
+    with open(dataset_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     assert len(data) >= 200, f"Expected >=200 attacks, found {len(data)}"
 
@@ -21,14 +21,14 @@ def test_benign_dataset_exists():
     """Verify the benign dataset exists and has at least 400 entries."""
     dataset_path = os.path.join(os.path.dirname(__file__), '..', 'datasets', 'benign_requests.json')
     assert os.path.exists(dataset_path), "benign_requests.json not found"
-    with open(dataset_path, 'r') as f:
+    with open(dataset_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     assert len(data) >= 400, f"Expected >=400 benign requests, found {len(data)}"
 
 def test_attack_types_coverage():
     """Verify attacks cover all 6 required attack types from Phase 3."""
     dataset_path = os.path.join(os.path.dirname(__file__), '..', 'datasets', 'attacks.json')
-    with open(dataset_path, 'r') as f:
+    with open(dataset_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
     types = set(item.get("type", "") for item in data)

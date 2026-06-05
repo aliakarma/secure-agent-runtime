@@ -238,17 +238,21 @@ The **Policy-Heavy** configuration achieves the lowest ASR (1.5%) but at the cos
 
 To provide a complete statistical characterization of the detection system, we present the confusion matrix derived from the 600-query evaluation:
 
+<!-- THESIS_CONFUSION_MATRIX_START -->
 |  | **Predicted: Attack** | **Predicted: Benign** |
 | :--- | :--- | :--- |
-| **Actual: Attack (200)** | TP = 195 | FN = 5 |
-| **Actual: Benign (400)** | FP = 19 | TN = 381 |
+| **Actual: Attack (20)** | TP = 20 | FN = 0 |
+| **Actual: Benign (20)** | FP = 1 | TN = 19 |
+<!-- THESIS_CONFUSION_MATRIX_END -->
 
+<!-- THESIS_METRICS_START -->
 | Metric | Value |
 | :--- | :--- |
-| **Precision** | 0.9112 |
-| **Recall** | 0.9750 |
-| **F1-Score** | 0.9420 |
-| **Accuracy** | 0.9600 |
+| **Precision** | 0.9524 |
+| **Recall** | 1.0000 |
+| **F1-Score** | 0.9756 |
+| **Accuracy** | 0.9750 |
+<!-- THESIS_METRICS_END -->
 
 The high Recall (97.5%) confirms that the system catches nearly all adversarial inputs. The Precision of 91.1% is acceptable given the security-critical context where False Negatives are far more costly than False Positives.
 
@@ -256,14 +260,18 @@ The high Recall (97.5%) confirms that the system catches nearly all adversarial 
 
 A chi-squared test for independence was conducted to confirm that the observed ASR difference between the Baseline (89.5%) and Secured (2.5%) configurations is statistically significant:
 
+<!-- THESIS_STATS_START -->
 | Statistic | Value |
 | :--- | :--- |
-| **χ² (Chi-Squared)** | 304.76 |
+| **χ² (Chi-Squared)** | 19.05 |
 | **Degrees of Freedom** | 1 |
-| **p-value** | < 0.0001 |
+| **p-value** | 1.2750e-05 |
 | **Significant at α = 0.05?** | **YES ✓** |
+<!-- THESIS_STATS_END -->
 
-The 95% Wilson Confidence Intervals for the Baseline ASR [84.7%, 93.0%] and Secured ASR [1.1%, 5.7%] do not overlap, providing overwhelming statistical evidence that the defense architecture produces a genuine, non-random reduction in Attack Success Rate.
+<!-- THESIS_CI_TEXT_START -->
+The 95% Wilson Confidence Intervals for the Baseline ASR [37.6%, 96.4%] and Secured ASR [0.0%, 16.1%] do not overlap, providing overwhelming statistical evidence that the defense architecture produces a genuine, non-random reduction in Attack Success Rate.
+<!-- THESIS_CI_TEXT_END -->
 
 ## 17. Real-Time Visualization and Monitoring (Phase 10)
 A critical challenge in developing security frameworks for autonomous agents is the inherent opacity of graph-based execution. Without visibility into the internal routing and the evaluation of trust mechanics, it is difficult to demonstrate or monitor the efficacy of the defense layers in real-time. To bridge this gap, Phase 10 introduced a live web-based visualization dashboard connected to the backend execution hooks.

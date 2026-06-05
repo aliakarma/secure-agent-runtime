@@ -12,7 +12,7 @@ class MCPSandbox:
     before and after execution to prevent prompt injection leaks.
     """
     def __init__(self):
-        self.allowed_tools = ["search_flights", "reserve_hotel", "read_image_ocr"]
+        self.allowed_tools = ["search_flights", "reserve_hotel", "read_image_ocr", "process_audio_memo", "analyze_video_feed"]
         
     def execute(self, tool_name: str, parameters: Dict[str, Any], execute_fn: Callable) -> str:
         """

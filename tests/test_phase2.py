@@ -33,18 +33,6 @@ def test_graph_compilation():
     assert "FlightAgent" in nodes
     assert "HotelAgent" in nodes
 
-@patch('langchain_openai.ChatOpenAI.invoke')
-def test_supervisor_routing(mock_invoke):
-    """Test the supervisor's routing decision."""
-    from agents.nodes.supervisor import supervisor_node
-    from agents.nodes.supervisor import Route
-    
-    # Mock the LLM returning a Route object (the with_structured_output wraps it, so we mock the raw output if needed, but wait: 
-    # Actually, ChatOpenAI.invoke returns AIMessage. If with_structured_output is used, it parses it. 
-    # It's easier to mock the whole chain). Let's mock `supervisor_node` directly or avoid the test.
-    # To properly mock it without Pydantic issues, we can patch `supervisor_chain` attribute.
-    pass
-
 def test_supervisor_routing():
     from agents.nodes.supervisor import supervisor_node, supervisor_chain
     from agents.nodes.supervisor import Route

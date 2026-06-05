@@ -66,3 +66,42 @@ def test_policy_enforcement():
     assert "Error: Tool action_tool blocked" in action_tool("test")
     # Medium allows search_flights
     assert "Flights" in search_flights("test")
+
+def test_provenance_ledger_and_agent():
+    from sanitizers.provenance import provenance_ledger, provenance_agent
+    provenance_ledger.clear()
+    
+    # Ingest record 1
+    tag1 = provenance_agent.tag_input(
+        session_id="session_prov",
+        content="Flight query",
+        source="user",
+        modality="text",
+        sanitizers=["TextSanitizer"],
+        trust_score=0.75,
+        trust_tier="MEDIUM"
+    )
+    assert "[PROVENANCE: ID=" in tag1
+    assert "Source=user" in tag1
+    assert "TrustScore=0.75" in tag1
+    
+    # Ingest record 2 (checks trust lineage links to record 1)
+    tag2 = provenance_agent.tag_input(
+        session_id="session_prov",
+        content="Result",
+        source="tool_search_flights",
+        modality="text",
+        sanitizers=["ToolOutputSanitizer"],
+        trust_score=0.88,
+        trust_tier="HIGH"
+    )
+    assert "[PROVENANCE: ID=" in tag2
+    assert "Source=tool_search_flights" in tag2
+    
+    records = provenance_ledger.get_records("session_prov")
+    assert len(records) == 2
+    assert records[1].trust_lineage == [records[0].record_id]
+    
+    lineage = provenance_ledger.get_lineage("session_prov")
+    assert len(lineage) == 2
+    assert lineage[1]["parent_records"] == [lineage[0]["record_id"]]

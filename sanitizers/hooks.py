@@ -5,7 +5,7 @@ from logging_config import get_logger
 
 logger = get_logger(__name__)
 
-from sanitizers.multimodal import TextSanitizer, VisualSanitizer, ToolOutputSanitizer, RAGSanitizer
+from sanitizers.multimodal import TextSanitizer, VisualSanitizer, ToolOutputSanitizer, RAGSanitizer, AudioSanitizer, VideoSanitizer
 from sanitizers.trust_engine import trust_engine
 from sanitizers.pre_llm import pre_llm_sanitizer
 from sanitizers.recovery_loop import with_validation_and_recovery
@@ -14,6 +14,8 @@ text_sanitizer = TextSanitizer()
 visual_sanitizer = VisualSanitizer()
 tool_sanitizer = ToolOutputSanitizer()
 rag_sanitizer = RAGSanitizer()
+audio_sanitizer = AudioSanitizer()
+video_sanitizer = VideoSanitizer()
 
 # ── Ablation Feature Flags ───────────────────────────────────────────
 # Set any of these env vars to "1" to disable the corresponding security layer.
@@ -88,6 +90,10 @@ def secure_tool_wrapper(func):
     """Hooks 2 & 3: Before and After Tool Execution."""
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        # Config A Baseline bypass: if DISABLE_ALL_SECURITY=1, bypass all wrappers
+        if os.getenv("DISABLE_ALL_SECURITY", "0") == "1":
+            return func(*args, **kwargs)
+            
         tool_name = func.__name__
         session_id = current_session_id.get()
         tier = current_trust_tier.get()
@@ -96,7 +102,7 @@ def secure_tool_wrapper(func):
         if tier == "LOW":
             logger.warning(f"Hook 2 (Policy Enforcement): Blocked {tool_name} due to LOW trust tier.")
             return "Error: Action blocked by security policy (LOW trust)."
-        elif tier == "MEDIUM" and tool_name not in ["search_flights", "read_image_ocr"]:
+        elif tier == "MEDIUM" and tool_name not in ["search_flights", "read_image_ocr", "process_audio_memo", "analyze_video_feed"]:
             logger.warning(f"Hook 2 (Policy Enforcement): Blocked {tool_name} due to MEDIUM trust tier. Only read-only actions allowed.")
             return f"Error: Tool {tool_name} blocked. Medium trust only allows read-only tools."
             
@@ -104,9 +110,13 @@ def secure_tool_wrapper(func):
         
         # Check inputs
         for arg in args:
-            # Special check for image tool
+            # Special check for image and other multimodal tools
             if tool_name == "read_image_ocr" and isinstance(arg, str) and (arg.endswith(".png") or arg.endswith(".jpg")):
                 res = visual_sanitizer.sanitize(arg)
+            elif tool_name == "process_audio_memo" and isinstance(arg, str) and (arg.endswith(".wav") or arg.endswith(".mp3")):
+                res = audio_sanitizer.sanitize(arg)
+            elif tool_name == "analyze_video_feed" and isinstance(arg, str) and arg.endswith(".mp4"):
+                res = video_sanitizer.sanitize(arg)
             else:
                 res = text_sanitizer.sanitize(str(arg))
             
@@ -118,6 +128,10 @@ def secure_tool_wrapper(func):
         for k, v in kwargs.items():
             if tool_name == "read_image_ocr" and k == "image_path":
                 res = visual_sanitizer.sanitize(str(v))
+            elif tool_name == "process_audio_memo" and k == "audio_path":
+                res = audio_sanitizer.sanitize(str(v))
+            elif tool_name == "analyze_video_feed" and k == "video_path":
+                res = video_sanitizer.sanitize(str(v))
             else:
                 res = text_sanitizer.sanitize(str(v))
                 
@@ -170,12 +184,13 @@ def secure_routing_hook(supervisor_runnable):
             last_message = state["messages"][-1].content
             res = text_sanitizer.sanitize(last_message)
             
-            # Update Trust Engine
-            score, new_tier = trust_engine.process_payload(session_id, last_message, "agent", res.is_malicious)
-            state["trust_score"] = score
-            state["trust_tier"] = new_tier
+            # Update Trust Engine (skip if ablated)
+            if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1" and os.getenv("DISABLE_ALL_SECURITY", "0") != "1":
+                score, new_tier = trust_engine.process_payload(session_id, last_message, "agent", res.is_malicious)
+                state["trust_score"] = score
+                state["trust_tier"] = new_tier
             
-            if res.is_malicious:
+            if res.is_malicious and os.getenv("DISABLE_ALL_SECURITY", "0") != "1":
                 logger.warning(f"Security Alert at Hook 5 (Supervisor_Routing): {res.reason}")
                 state["messages"][-1].content = f"[SANITIZED] Content blocked by Hook 5 before routing. Reason: {res.reason}"
                 from dashboard_events import push_dashboard_event
@@ -191,6 +206,8 @@ def secure_routing_hook(supervisor_runnable):
             state["messages"] = pre_llm_sanitizer.sanitize_context(state["messages"], state.get("trust_tier", "HIGH"))
                 
         # Phase 8: Output Validation and Recovery for Supervisor
+        if os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") == "1" or os.getenv("DISABLE_ALL_SECURITY", "0") == "1":
+            return supervisor_runnable(state)
         recovered_supervisor = with_validation_and_recovery("Supervisor", supervisor_runnable)
         return recovered_supervisor(state)
     return wrapper
@@ -198,14 +215,15 @@ def secure_routing_hook(supervisor_runnable):
 def secure_memory_hook(session_id: str, memory_string: str) -> str:
     """Hook 4: Before data is saved to memory."""
     # Ablation: if all security or memory sanitization is disabled, pass through
-    if DISABLE_ALL_SECURITY or DISABLE_MEMORY_SANITIZATION:
+    if os.getenv("DISABLE_ALL_SECURITY", "0") == "1" or os.getenv("DISABLE_MEMORY_SANITIZATION", "0") == "1":
         return memory_string
     
     logger.info("Hook 4 Triggered: Intercepting data before saving to memory.")
     res = rag_sanitizer.sanitize(memory_string)
     
-    if not DISABLE_TRUST_ENGINE:
-        score, new_tier = trust_engine.process_payload(session_id, memory_string, "rag", res.is_malicious)
+    if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
+        retrieval_conf = res.confidence if not res.is_malicious else (1.0 - res.confidence)
+        score, new_tier = trust_engine.process_payload(session_id, memory_string, "rag", res.is_malicious, retrieval_confidence=retrieval_conf)
     
     if res.is_malicious:
         logger.warning(f"Security Alert at Hook 4 (Memory_Storage): {res.reason}")

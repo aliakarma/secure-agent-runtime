@@ -40,8 +40,6 @@ logs/
 htmlcov/
 .coverage
 
-*.html
+project_12week_timeline.html
+secure_agentic_ai_project_guide.html
 Thesis_Proposal.md
-Claude_Review.md
-Gemini_Review.md
-thesis_draft.md

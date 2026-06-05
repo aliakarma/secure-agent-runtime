@@ -71,6 +71,21 @@ def secure_agent_node(agent_name, agent_runnable):
             if res.is_malicious:
                 logger.warning(f"Security Alert at Hook 1 ({agent_name}_Pre_LLM): {res.reason}")
                 state["messages"][-1].content = f"[SANITIZED] Content blocked by Hook 1. Reason: {res.reason}"
+                
+            # Provenance Agent Ingestion Tracking & Tagging
+            from sanitizers.provenance import provenance_agent
+            p_tag = provenance_agent.tag_input(
+                session_id=session_id,
+                content=state["messages"][-1].content,
+                source="user",
+                modality="text",
+                sanitizers=["TextSanitizer"],
+                trust_score=state.get("trust_score", 1.0),
+                trust_tier=state.get("trust_tier", "HIGH"),
+                raw_content=last_message
+            )
+            # Prepends provenance metadata to the payload for Secure LLM Reasoning
+            state["messages"][-1].content = f"{p_tag}\n\n{state['messages'][-1].content}"
         
         from dashboard_events import push_dashboard_event
         push_dashboard_event("NODE_ACTIVE", {"node": agent_name})
@@ -171,7 +186,20 @@ def secure_tool_wrapper(func):
             
             return "Error: Suspicious tool output detected and blocked."
             
-        return result
+        # Provenance Tagging of Tool Output
+        from sanitizers.provenance import provenance_agent
+        score = trust_engine.calculate_trust(session_id, f"tool_{tool_name}", False)
+        p_tag = provenance_agent.tag_input(
+            session_id=session_id,
+            content=str(result),
+            source=f"tool_{tool_name}",
+            modality="text",
+            sanitizers=["ToolOutputSanitizer"],
+            trust_score=score,
+            trust_tier=tier
+        )
+        # Prepend the provenance tag to the tool result
+        return f"{p_tag}\n\n{result}"
     return wrapper
 
 def secure_routing_hook(supervisor_runnable):
@@ -221,11 +249,24 @@ def secure_memory_hook(session_id: str, memory_string: str) -> str:
     logger.info("Hook 4 Triggered: Intercepting data before saving to memory.")
     res = rag_sanitizer.sanitize(memory_string)
     
+    score = 1.0
     if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
         retrieval_conf = res.confidence if not res.is_malicious else (1.0 - res.confidence)
         score, new_tier = trust_engine.process_payload(session_id, memory_string, "rag", res.is_malicious, retrieval_confidence=retrieval_conf)
+        
+    # Provenance tagging for memory storage
+    from sanitizers.provenance import provenance_agent
+    p_tag = provenance_agent.tag_input(
+        session_id=session_id,
+        content=memory_string if not res.is_malicious else "[SANITIZED]",
+        source="rag",
+        modality="text",
+        sanitizers=["RAGSanitizer"],
+        trust_score=score,
+        trust_tier=trust_engine.determine_tier(score)
+    )
     
     if res.is_malicious:
         logger.warning(f"Security Alert at Hook 4 (Memory_Storage): {res.reason}")
-        return "[SANITIZED] Memory storage blocked due to suspicious content."
-    return memory_string
+        return f"{p_tag}\n[SANITIZED] Memory storage blocked due to suspicious content."
+    return f"{p_tag}\n{memory_string}"

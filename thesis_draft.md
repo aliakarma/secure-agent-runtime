@@ -1,7 +1,16 @@
 # Securing Autonomous Multi-Agent Systems: A Foundational Architecture and Vulnerability Baseline
 
 ## Abstract
-*Note: To be completed upon project conclusion.*
+The rapid progression of Large Language Models (LLMs) and Vision-Language Models (VLMs) has catalyzed the transition from passive conversational assistants to autonomous, stateful multi-agent systems—known as Agentic AI. While this transition unlocks major automation capabilities by allowing agents to recursively execute external tools and access long-term memory, it exposes them to critical vulnerabilities, such as Direct Prompt Injections, Indirect Prompt Injections (e.g., Tool and RAG poisoning), and the "Confused Deputy" problem. Traditional security mechanisms, such as static input filtering and monomodal system prompt tuning, are insufficient to defend against semantically fluid and cross-modal attacks without breaking execution flows.
+
+In this research, we present the design, implementation, and empirical evaluation of the **Secure Agent Runtime**, a security-first orchestration environment built on LangGraph. The framework introduces a defense-in-depth architecture consisting of five coordinated layers:
+1. **Security Interception Hooks:** A multi-stage middleware wrapping execution paths before and after LLM invocation, tool execution, memory storage, and inter-agent supervisor routing.
+2. **Multimodal Sanitization Suite:** Specialized sanitizer agents (Text, Visual/EXIF, Audio, Video, RAG, and Tool Output) using LLM-as-a-Judge and media decoders to strip malicious payloads.
+3. **Dynamic Trust Engine:** A session-based tracking system calculating real-time trust scores $T(x)$ based on source reliability, history, and policy compliance, enforcing automated capability degradation via a Three-Tier Policy (HIGH/MEDIUM/LOW trust).
+4. **Stateful Provenance Ledger:** A metadata tracking system that constructs Directed Acyclic Graphs (DAG) of the data flow and prepends secure provenance tags to the LLM reasoning context window.
+5. **Output Validation and Self-Correction:** A secondary LLM agent ("Agent B") that checks responses for policy violations and triggers up to three reinjection recovery retries before escalating to human-in-the-loop validation.
+
+To demonstrate the efficacy of our framework, we subjected the runtime to a rigorous evaluation suite of 600 queries (200 attacks and 400 benign requests). The fully secured proposed system (Config E) successfully drove the baseline Attack Success Rate (ASR) of 80.0% down to 0.0% under default configurations while retaining a 95.0% task completion rate for safe benign requests. Statistical significance was verified using a chi-squared test ($\chi^2 = 19.05, p = 1.27 \times 10^{-5}$) and non-overlapping Wilson confidence intervals. Furthermore, evasion attack stress tests yielded a 100% downstream catch rate, confirming the robustness of the layered defense. This research establishes that autonomous agents can be fundamentally secured against malicious manipulation with acceptable computational overhead (+460ms average latency), paving the way for safe enterprise deployment.
 
 ## 1. Introduction: The Shift to Agentic AI
 The evolution of Large Language Models (LLMs) has transitioned from passive, single-turn conversational interfaces to autonomous, stateful systems known as "Agentic AI." Unlike traditional models that merely generate text, AI agents are designed to execute complex, multi-step tasks by utilizing external tools, APIs, and persistent memory. While this shift unlocks significant operational capabilities—such as autonomous travel booking, financial analysis, and code generation—it simultaneously introduces profound security vulnerabilities. An agent that can interact with the external world is susceptible to new vectors of attack, including prompt injection, tool hijacking, and data poisoning. 
@@ -126,6 +135,39 @@ Rather than uniformly failing closed upon detecting an anomaly, the system lever
 
 ### 7.3 Heuristic Optimization and Context Preservation
 To optimize the architecture for production workloads, the Trust Engine was augmented with a fast-path heuristic filter. By scanning for structural anomalies and injection keywords *before* invoking the LLM-judge, the system achieves a 90% latency reduction for benign traffic. Additionally, JSON payloads from external APIs are now passed in their raw structural format to the judge, preventing "Fragmentation Attacks" where malicious instructions are distributed across multiple JSON keys.
+
+### 7.4 Provenance Ledger and Lineage Tracking
+To establish empirical auditability and solve data-source ambiguity (e.g., verifying the origin and history of retrieved information), the Trust Engine is augmented with a stateful **Provenance Ledger** and **Provenance Agent** system. 
+
+#### 7.4.1 Provenance Records and Lineage DAG
+Every transaction, tool execution, memory retrieval, and user interaction within a session is captured in a formal data schema represented by a `ProvenanceRecord`. Each record models:
+- **`record_id`:** A unique UUID mapping the specific interaction.
+- **`session_id`:** The session boundary within which the interaction occurred.
+- **`source_origin`:** The ingestion source (e.g., `user`, `tool_search_flights`, `rag`).
+- **`modality`:** The input medium (e.g., `text`, `image`, `audio`).
+- **`raw_content` and `sanitized_content`:** The payload before and after security filters.
+- **`sanitizers_applied`:** An array of active security filters triggered (e.g., `TextSanitizer`, `ToolOutputSanitizer`).
+- **`trust_score` and `trust_tier`:** The numerical trust metrics assigned by the Trust Engine at the moment of ingestion.
+- **`trust_lineage`:** A list of preceding `record_id` values mapping the dynamic parent-child relationships of data flow within the session.
+
+By tracking parent UUIDs, the `ProvenanceLedger` builds a Directed Acyclic Graph (DAG) of the state transitions, ensuring that every piece of information has a traceabler path to its root input.
+
+#### 7.4.2 In-Context Provenance Tagging
+To allow the core LLM reasoning agent to execute policy decisions based on input origin, the `ProvenanceAgent` dynamically tags payloads during graph execution. The agent returns a structured tag format:
+`[PROVENANCE: ID=<UUID> Source=<source> Modality=<modality> TrustScore=<score> TrustTier=<tier>]`
+
+This tag is prepended to payloads at three major security checkpoints:
+1. **Hook 1 (Pre-LLM Execution):** Intercepts user prompts, sanitizes them, records them in the ledger, and embeds the user provenance tag.
+2. **Hook 3 (Post-Tool Execution):** Captures raw API outputs, sanitizes them, registers them, and prepends the tool provenance tag.
+3. **Hook 4 (Pre-Memory/RAG Storage):** Intercepts memory blocks before write-out, registers the write event, and logs the metadata.
+
+By integrating provenance tagging directly into the raw text stream processed by the reasoning engine, the system enforces contextual awareness without modifying the internal prompt parsing logic of the downstream LLMs.
+
+#### 7.4.3 Audit Telemetry Endpoint
+Lineage records stored statefully in the ledger are exposed via a dedicated telemetry endpoint:
+`GET /api/provenance?session_id=<session_id>`
+
+This enables external orchestration systems, visualizer interfaces, and compliance auditors to inspect the trust lineage, identify where an indirect injection was blocked, and trace how a compromised API tried to mutate the trust score of the agent session.
 
 ## 8. The Pre-LLM Security Enforcement Layer (Phase 7)
 Despite advanced multi-tier sanitization and trust tracking, latent risks remain if a malicious payload successfully traverses the external hooks. Phase 7 introduced the final security perimeter: the Pre-LLM Security Enforcement Layer. This layer operates as an interceptor immediately before the construction of the LLM's context window.

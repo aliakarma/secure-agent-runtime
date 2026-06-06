@@ -21,7 +21,10 @@ Always end your final response by handing back to the supervisor, you do not nee
 """
 
 # Initialize LLM
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=15, max_retries=1)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=15, max_retries=1).with_fallbacks([
+    ChatOpenAI(model="gpt-4o", temperature=0, timeout=15, max_retries=1),
+    ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=15, max_retries=1)
+])
 
 # Create the internal ReAct agent for Flight
 # This handles tool calling internally

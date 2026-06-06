@@ -26,7 +26,7 @@ class ChromaMemoryManager:
     
     def __init__(self, collection_name: str = "agent_memory"):
         # We use OpenAIEmbeddings for genuine vector store memory search, falling back gracefully
-        self.embeddings = OpenAIEmbeddings()
+        self.embeddings = OpenAIEmbeddings(timeout=15)
 
     def save_memory(self, session_id: str, text: str) -> None:
         """Save a memory fragment with its vector embedding."""

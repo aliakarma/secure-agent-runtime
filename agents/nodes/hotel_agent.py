@@ -21,7 +21,10 @@ Always end your final response by answering the user's hotel question clearly.
 """
 
 # Initialize LLM
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1).with_fallbacks([
+    ChatOpenAI(model="gpt-4o", temperature=0, timeout=10, max_retries=1),
+    ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=10, max_retries=1)
+])
 
 # Create the internal ReAct agent for Hotel
 hotel_react_agent = create_react_agent(

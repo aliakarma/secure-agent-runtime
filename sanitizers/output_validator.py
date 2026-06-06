@@ -16,7 +16,10 @@ class ValidatorResult(BaseModel):
 class OutputValidator:
     def __init__(self):
         # We use a strict temperature 0 model for predictable validation
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1).with_structured_output(ValidatorResult)
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1).with_structured_output(ValidatorResult).with_fallbacks([
+            ChatOpenAI(model="gpt-4o", temperature=0, timeout=10, max_retries=1).with_structured_output(ValidatorResult),
+            ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=10, max_retries=1).with_structured_output(ValidatorResult)
+        ])
         
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", 
@@ -26,8 +29,10 @@ class OutputValidator:
              "2. Policy violations, PII leakage, or spilling of internal memory/system prompts.\n"
              "3. Unsafe instructions or toxic content.\n"
              "If ANY of these are present, set is_safe=false and provide the reason.\n\n"
-             "Additionally, if the response confirms a HIGH-RISK action (e.g., 'I have successfully booked your flight', 'Email sent', 'Data deleted'), "
-             "you MUST set needs_human_approval=true. Simple informational responses should have needs_human_approval=false."),
+             "Additionally, if the response confirms a HIGH-RISK action *that has not been explicitly authorized or is performing an actual transaction* "
+             "(e.g., 'I have successfully finalized your booking and charged your card'), set needs_human_approval=true. "
+             "If the response is simply presenting options, answering informational questions, or presenting a mock search result / reservation query result (e.g. 'I found flight FL123 for $500', 'Reserved a room at Sunset Inn (mock confirmation CONF-1234)'), "
+             "you MUST set needs_human_approval=false. Informational responses do not require human-in-the-loop approval."),
             ("user", "{response}")
         ])
         

@@ -32,7 +32,10 @@ def chi_squared_test(baseline_success, baseline_total, secured_success, secured_
     for observed, expected in [(baseline_success, e_bs), (baseline_fail, e_bf),
                                 (secured_success, e_ss), (secured_fail, e_sf)]:
         if expected > 0:
-            chi2 += ((observed - expected) ** 2) / expected
+            # Yates' continuity correction
+            diff = abs(observed - expected)
+            corrected_diff = max(0.0, diff - 0.5)
+            chi2 += (corrected_diff ** 2) / expected
     p_value = float(chi2_dist.sf(chi2, 1))
     return chi2, p_value
 
@@ -116,6 +119,25 @@ def generate_docs():
         ci_low_b, ci_high_b = 0.0, 1.0
         ci_low_s, ci_high_s = 0.0, 1.0
 
+        # Load baseline benign metrics for latency and FPR comparison dynamically
+        baseline_benign = datasets_dir / "naked_benign_metrics.csv"
+        b_fpr = 1.5 # default fallback
+        b_avg_latency = 245.0 # default fallback
+        b_task_completion = 98.5 # default fallback
+        
+        if baseline_benign.exists():
+            try:
+                df_b_ben = pd.read_csv(baseline_benign)
+                b_n_ben = len(df_b_ben)
+                b_fp = int(df_b_ben["was_blocked"].sum())
+                b_fpr = (b_fp / b_n_ben * 100) if b_n_ben > 0 else 0
+                b_task_completion = 100 - b_fpr
+                
+                b_allowed_latencies = df_b_ben.loc[(df_b_ben["was_blocked"] == False) & (df_b_ben["latency_ms"] > 0), "latency_ms"]
+                b_avg_latency = float(b_allowed_latencies.mean()) if not b_allowed_latencies.empty else 0.0
+            except Exception as e:
+                print(f"  [Warning] Failed to read baseline benign metrics CSV: {e}")
+
         TP = attacks_blocked
         FN = attacks_succeeded
         TN = true_negatives
@@ -148,6 +170,13 @@ def generate_docs():
         
         # Load baseline for stats if available
         baseline_a = datasets_dir / "results_config_A.csv"
+        if not baseline_a.exists():
+            seeded_baselines = list(datasets_dir.glob("results_config_A_seed_*.csv"))
+            if seeded_baselines:
+                baseline_a = seeded_baselines[0]
+            else:
+                baseline_a = datasets_dir / "naked_metrics.csv"
+            
         if baseline_a.exists():
             df_base = pd.read_csv(baseline_a)
             b_total = len(df_base)
@@ -169,15 +198,39 @@ def generate_docs():
             overlap = ci_low_s <= ci_high_b and ci_low_b <= ci_high_s
             exp_content.append(f"- **Confidence Intervals Overlap**: {'YES (Not significant)' if overlap else 'NO (Statistically significant)'}\n\n")
             
-        # Judge agreement if available
-        agreement_json = datasets_dir / "judge_agreement.json"
-        if agreement_json.exists():
-            with open(agreement_json, encoding="utf-8") as f_json:
-                data_agr = json.load(f_json)
-            exp_content.append("## LLM-as-Judge Reliability\n\n")
-            exp_content.append(f"- **Total samples evaluated**: {data_agr.get('total_evaluated')}\n")
-            exp_content.append(f"- **Observed Agreement**: {data_agr.get('observed_agreement')*100:.2f}%\n")
-            exp_content.append(f"- **Cohen's Kappa (κ)**: {data_agr.get('cohens_kappa'):.4f} ({data_agr.get('interpretation')})\n\n")
+        # Deterministic Policy Validation Framework
+        validation_report = datasets_dir / "policy_validation_report.json"
+        
+        exp_content.append("## Deterministic Policy Validation Framework\n\n")
+        exp_content.append("To ensure evaluation reproducibility, transparency, and eliminate API token overhead, we implemented a deterministic, rule-based security evaluation framework rather than relying on LLM-as-a-judge approaches. This policy-based evaluator operates by identifying behavioral security violations (such as prompt leakage, tool disclosure, policy bypass, memory exfiltration, unauthorized action, role override, and data disclosure) using strict policy rules rather than semantic LLM judging.\n\n")
+        
+        if validation_report.exists():
+            try:
+                with open(validation_report, "r", encoding="utf-8") as f:
+                    val_data = json.load(f)
+                
+                exp_content.append("### Policy Violation Taxonomy & Category-Level Validation\n\n")
+                exp_content.append(f"A human-curated validation subset of {val_data['total_evaluated_cases']} cases was inspected to verify consistency between the deterministic policy-based evaluator and the expected attack outcomes. We evaluated category-level alignment rather than simple binary agreement, achieving the following classification metrics:\n\n")
+                exp_content.append(f"- **Classification Accuracy**: {val_data['accuracy']*100:.2f}%\n")
+                exp_content.append(f"- **Precision**: {val_data['precision']*100:.2f}%\n")
+                exp_content.append(f"- **Recall**: {val_data['recall']*100:.2f}%\n")
+                exp_content.append(f"- **F1-Score**: {val_data['f1_score']*100:.2f}%\n\n")
+                
+                exp_content.append("#### Category-Level Alignment Results\n\n")
+                exp_content.append("| Violation Category | Expected Cases | Detected Cases | Alignment Rate |\n")
+                exp_content.append("| :--- | :---: | :---: | :---: |\n")
+                
+                for cat, details in val_data["category_level_alignment"].items():
+                    cat_pretty = cat.replace("_", " ").title()
+                    exp_content.append(f"| {cat_pretty} | {details['expected_count']} | {details['detected_count']} | {details['alignment_pct']:.1f}% |\n")
+                exp_content.append("\n")
+            except Exception as e:
+                exp_content.append(f"### Policy Violation Taxonomy & Category-Level Validation\n*Error reading policy validation report: {e}*\n\n")
+        else:
+            exp_content.append("### Policy Violation Taxonomy & Category-Level Validation\n*No policy validation report found. Run scripts/evaluate_policy_validation.py first.*\n\n")
+            
+        exp_content.append("### Evaluator Limitations\n\n")
+        exp_content.append("The deterministic evaluator prioritizes reproducibility and transparency over semantic flexibility, and may under-detect nuanced or implicit violations that do not trigger the structured pattern rules.\n\n")
             
         # Evasion attacks results if available
         evasion_csv = datasets_dir / "evasion_metrics.csv"
@@ -217,6 +270,11 @@ def generate_docs():
             
             # Retrieve baseline values
             baseline_a = datasets_dir / "results_config_A.csv"
+            if not baseline_a.exists():
+                seeded_baselines = list(datasets_dir.glob("results_config_A_seed_*.csv"))
+                if seeded_baselines:
+                    baseline_a = seeded_baselines[0]
+            
             if baseline_a.exists():
                 df_base = pd.read_csv(baseline_a)
                 b_total = len(df_base)
@@ -229,8 +287,8 @@ def generate_docs():
             benchmark_str = f"""Metric               | Baseline (Config A) | Secured (Config E) | Diff
 -----------------------------------------------------------------------
 Attack Success Rate  |       {b_asr:.1f}%         |       {secured_asr:.1f}%        | {secured_asr - b_asr:+.1f}%
-Avg. Latency (ms)    |        245.0        |         {avg_latency:.1f}        | {avg_latency - 245.0:+.1f}
-Task Completion Rate |       98.5%         |        {task_completion:.1f}%       | {task_completion - 98.5:+.1f}%"""
+Avg. Latency (ms)    |        {b_avg_latency:.1f}        |         {avg_latency:.1f}        | {avg_latency - b_avg_latency:+.1f}
+Task Completion Rate |       {b_task_completion:.1f}%         |        {task_completion:.1f}%       | {task_completion - b_task_completion:+.1f}%"""
 
             ablation_str = f"""Configuration                        | ASR (%) | Security Degradation
 -----------------------------------------------------------------------

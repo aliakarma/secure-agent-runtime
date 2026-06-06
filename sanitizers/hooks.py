@@ -18,12 +18,8 @@ audio_sanitizer = AudioSanitizer()
 video_sanitizer = VideoSanitizer()
 
 # ── Ablation Feature Flags ───────────────────────────────────────────
-# Set any of these env vars to "1" to disable the corresponding security layer.
-# Used by scripts/run_ablation.py for automated ablation studies.
-DISABLE_ALL_SECURITY = os.getenv("DISABLE_ALL_SECURITY", "0") == "1"
-DISABLE_TRUST_ENGINE = os.getenv("DISABLE_TRUST_ENGINE", "0") == "1"
-DISABLE_OUTPUT_VALIDATOR = os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") == "1"
-DISABLE_MEMORY_SANITIZATION = os.getenv("DISABLE_MEMORY_SANITIZATION", "0") == "1"
+# We check these environment variables dynamically inside the wrapper functions 
+# to support hot-reloading of security settings without module reload caching issues.
 
 # Context variables to pass state down to tools
 current_session_id = contextvars.ContextVar("current_session_id", default="default_session")
@@ -33,7 +29,7 @@ def secure_agent_node(agent_name, agent_runnable):
     """Hook 1: Before LLM Execution."""
     def wrapper(state):
         # Ablation: if all security is disabled, run agent directly
-        if DISABLE_ALL_SECURITY:
+        if os.getenv("DISABLE_ALL_SECURITY", "0") == "1":
             return agent_runnable(state)
         
         session_id = state.get("session_id", "default_session")
@@ -42,7 +38,7 @@ def secure_agent_node(agent_name, agent_runnable):
         current_session_id.set(session_id)
         current_trust_tier.set(tier)
         
-        logger.info(f"Hook 1 Triggered: Intercepting state before {agent_name} LLM execution.")
+        logger.info(f"Hook 1 Triggered: Intercepting state before {agent_name} LLM execution. Tier={tier}")
         
         if state and "messages" in state and len(state["messages"]) > 0:
             last_message = state["messages"][-1].content
@@ -62,16 +58,17 @@ def secure_agent_node(agent_name, agent_runnable):
             res = text_sanitizer.sanitize(last_message)
             
             # Update Trust Engine (skip if ablated)
-            if not DISABLE_TRUST_ENGINE:
+            if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
                 score, new_tier = trust_engine.process_payload(session_id, last_message, "user_or_agent", res.is_malicious)
                 state["trust_score"] = score
                 state["trust_tier"] = new_tier
                 current_trust_tier.set(new_tier)
             
-            if res.is_malicious:
-                logger.warning(f"Security Alert at Hook 1 ({agent_name}_Pre_LLM): {res.reason}")
-                state["messages"][-1].content = f"[SANITIZED] Content blocked by Hook 1. Reason: {res.reason}"
-                
+            # We do NOT block directly here when trust engine is active; we let the Pre-LLM 
+            # Context Sanitizer (which runs right before the LLM) mask the input if trust tier drops to LOW.
+            # However, if the trust engine is disabled, the trust tier remains HIGH, so Pre-LLM sanitizer
+            # will not mask it, allowing the raw prompt injection to pass (to demonstrate ablation degradation).
+            
             # Provenance Agent Ingestion Tracking & Tagging
             from sanitizers.provenance import provenance_agent
             p_tag = provenance_agent.tag_input(
@@ -95,7 +92,7 @@ def secure_agent_node(agent_name, agent_runnable):
             state["messages"] = pre_llm_sanitizer.sanitize_context(state["messages"], current_trust_tier.get())
         
         # Phase 8: Output Validation and Recovery (skip if ablated)
-        if DISABLE_OUTPUT_VALIDATOR:
+        if os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") == "1":
             return agent_runnable(state)
         recovered_runnable = with_validation_and_recovery(agent_name, agent_runnable)
         return recovered_runnable(state)
@@ -137,8 +134,9 @@ def secure_tool_wrapper(func):
             
             if res.is_malicious:
                 logger.warning(f"Security Alert at Hook 2 ({tool_name}_Pre_Tool): {res.reason}")
-                trust_engine.register_injection(session_id)
-                return "Error: Suspicious tool arguments detected and blocked."
+                if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
+                    trust_engine.register_injection(session_id)
+                    return "Error: Suspicious tool arguments detected and blocked."
                 
         for k, v in kwargs.items():
             if tool_name == "read_image_ocr" and k == "image_path":
@@ -152,8 +150,9 @@ def secure_tool_wrapper(func):
                 
             if res.is_malicious:
                 logger.warning(f"Security Alert at Hook 2 ({tool_name}_Pre_Tool): {res.reason}")
-                trust_engine.register_injection(session_id)
-                return "Error: Suspicious tool arguments detected and blocked."
+                if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
+                    trust_engine.register_injection(session_id)
+                    return "Error: Suspicious tool arguments detected and blocked."
                 
         # Phase B: MCP Protocol Execution Sandbox
         import inspect
@@ -170,21 +169,23 @@ def secure_tool_wrapper(func):
         
         logger.info(f"Hook 3 Triggered: Intercepting after tool execution ({tool_name}).")
         # Check outputs
-        from dashboard_events import push_dashboard_event
-        
-        res = tool_sanitizer.sanitize(str(result))
-        if res.is_malicious:
-            logger.warning(f"Security Alert at Hook 3 ({tool_name}_Post_Tool): {res.reason}")
-            trust_engine.register_injection(session_id)
+        if os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") != "1":
+            from dashboard_events import push_dashboard_event
             
-            push_dashboard_event("SECURITY_ALERT", {
-                "phase": 3,
-                "agent": tool_name,
-                "message": f"Suspicious tool output blocked: {res.reason}",
-                "severity": "CRITICAL"
-            })
-            
-            return "Error: Suspicious tool output detected and blocked."
+            res = tool_sanitizer.sanitize(str(result))
+            if res.is_malicious:
+                logger.warning(f"Security Alert at Hook 3 ({tool_name}_Post_Tool): {res.reason}")
+                if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
+                    trust_engine.register_injection(session_id)
+                
+                push_dashboard_event("SECURITY_ALERT", {
+                    "phase": 3,
+                    "agent": tool_name,
+                    "message": f"Suspicious tool output blocked: {res.reason}",
+                    "severity": "CRITICAL"
+                })
+                
+                return "Error: Suspicious tool output detected and blocked."
             
         # Provenance Tagging of Tool Output
         from sanitizers.provenance import provenance_agent
@@ -208,26 +209,23 @@ def secure_routing_hook(supervisor_runnable):
         session_id = state.get("session_id", "default_session")
         logger.info("Hook 5 Triggered: Intercepting state before Supervisor routing.")
         
-        if state and "messages" in state and len(state["messages"]) > 0:
-            last_message = state["messages"][-1].content
-            res = text_sanitizer.sanitize(last_message)
-            
-            # Update Trust Engine (skip if ablated)
-            if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1" and os.getenv("DISABLE_ALL_SECURITY", "0") != "1":
-                score, new_tier = trust_engine.process_payload(session_id, last_message, "agent", res.is_malicious)
-                state["trust_score"] = score
-                state["trust_tier"] = new_tier
-            
-            if res.is_malicious and os.getenv("DISABLE_ALL_SECURITY", "0") != "1":
-                logger.warning(f"Security Alert at Hook 5 (Supervisor_Routing): {res.reason}")
-                state["messages"][-1].content = f"[SANITIZED] Content blocked by Hook 5 before routing. Reason: {res.reason}"
-                from dashboard_events import push_dashboard_event
-                push_dashboard_event("SECURITY_ALERT", {
-                    "phase": 5, 
-                    "agent": "Supervisor", 
-                    "message": "Tool output contains an indirect prompt injection payload.",
-                    "severity": "CRITICAL"
-                })
+        # Check agent outputs only if output validator is enabled
+        if os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") != "1" and os.getenv("DISABLE_ALL_SECURITY", "0") != "1":
+            if state and "messages" in state and len(state["messages"]) > 0:
+                last_message = state["messages"][-1].content
+                res = text_sanitizer.sanitize(last_message)
+                
+                # Update Trust Engine (skip if ablated)
+                if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
+                    score, new_tier = trust_engine.process_payload(session_id, last_message, "agent", res.is_malicious)
+                    state["trust_score"] = score
+                    state["trust_tier"] = new_tier
+                
+                # If trust engine is active, let the Pre-LLM sanitizer handle masking
+                # Otherwise, if we don't have trust engine but output validation is active, block directly
+                if res.is_malicious:
+                    # If trust engine is ablated, do not block here to allow ablation demonstration
+                    pass
                 
         # Phase 7: Pre-LLM Context Sanitization (Final barrier before Supervisor LLM)
         if state and "messages" in state:

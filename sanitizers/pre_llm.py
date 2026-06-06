@@ -71,9 +71,11 @@ class PreLLMSanitizer:
                 # 2. Trust-aware context masking
                 if trust_tier == "LOW":
                     content = "[LOW-TRUST CONTENT MASKED]"
-                else:
+                elif trust_tier == "MEDIUM":
                     # 3. Unsafe span removal
                     content = self._remove_unsafe_spans(content)
+                else: # HIGH trust
+                    pass
                     
                 # 4. Final instruction boundary check
                 if "--- USER INPUT START ---" not in content:
@@ -87,8 +89,10 @@ class PreLLMSanitizer:
                 content = str(msg.content)
                 if isinstance(msg, ToolMessage) and trust_tier == "LOW":
                     content = "[LOW-TRUST CONTENT MASKED]"
-                else:
+                elif trust_tier == "MEDIUM":
                     content = self._remove_unsafe_spans(content)
+                else: # HIGH trust
+                    pass
                 
                 msg.content = content
                 sanitized_messages.append(msg)

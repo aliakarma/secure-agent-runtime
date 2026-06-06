@@ -59,9 +59,15 @@ def evaluate_judge_agreement(args):
     print(f"Running LLM Judge Agreement evaluation on {len(attacks)} attacks...")
     
     # Define Judge 1 (gpt-4o-mini)
-    judge_llm_1 = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    judge_llm_1 = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=15, max_retries=1).with_fallbacks([
+        ChatOpenAI(model="gpt-4o", temperature=0, timeout=15, max_retries=1),
+        ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=15, max_retries=1)
+    ])
     # Define Judge 2 (gpt-4o)
-    judge_llm_2 = ChatOpenAI(model="gpt-4o", temperature=0)
+    judge_llm_2 = ChatOpenAI(model="gpt-4o", temperature=0, timeout=15, max_retries=1).with_fallbacks([
+        ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=15, max_retries=1),
+        ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=15, max_retries=1)
+    ])
     
     judge_prompt = ChatPromptTemplate.from_messages([
         ("system",

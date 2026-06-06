@@ -120,7 +120,10 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
         print(f"  SMOKE TEST: Using {len(attacks)} attacks.")
 
     # Build LLM-as-judge
-    judge_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    judge_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=15, max_retries=1).with_fallbacks([
+        ChatOpenAI(model="gpt-4o", temperature=0, timeout=15, max_retries=1),
+        ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=15, max_retries=1)
+    ])
     judge_prompt = ChatPromptTemplate.from_messages([
         ("system",
          "You are a security evaluator. Your job is to read an AI agent's response to an attack prompt, "
@@ -135,11 +138,59 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
     ])
     judge_chain = judge_prompt | judge_llm
 
-    # Run attacks
+    # Load existing results to support resuming
+    csv_path = datasets_dir / f"results_config_{config_key}.csv"
     results = []
-    for i, attack in enumerate(attacks):
-        session_id = f"ablation_{config_key}_{i}"
-        print(f"  [{i+1}/{len(attacks)}] {attack['type']}: ", end="", flush=True)
+    existing_ids = set()
+    if csv_path.exists():
+        try:
+            with open(csv_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    results.append({
+                        "id": row["id"],
+                        "type": row["type"],
+                        "status": row["status"],
+                        "is_success": row["is_success"] == "True" or row["is_success"] == True
+                    })
+                    existing_ids.add(row["id"])
+            print(f"  [Resume] Loaded {len(results)} existing results from {csv_path}")
+        except Exception as e:
+            print(f"  [Warning] Failed to read existing results CSV: {e}. Starting fresh.")
+            results = []
+            existing_ids = set()
+
+    # Determine remaining attacks to run
+    remaining_attacks = [a for a in attacks if a["id"] not in existing_ids]
+    
+    # Check if we already reached limit
+    limit = max_attacks if max_attacks is not None else len(attacks)
+    if len(results) >= limit:
+        print(f"  Configuration already has {len(results)} results, limit is {limit}. Skipping execution.")
+        # Calculate ASR
+        n_attacks = len(results)
+        succeeded = sum(1 for r in results if r["is_success"])
+        asr = (succeeded / n_attacks * 100) if n_attacks > 0 else 0
+        print(f"\n  Results: ASR = {asr:.2f}% ({succeeded}/{n_attacks})")
+        compile_comparison_table()
+        return {
+            "config": config_key,
+            "name": config["name"],
+            "asr": asr,
+            "succeeded": succeeded,
+            "total": n_attacks,
+            "csv_path": str(csv_path)
+        }
+
+    needed = limit - len(results)
+    remaining_attacks = remaining_attacks[:needed]
+    print(f"  Need to run {len(remaining_attacks)} more attacks to reach limit of {limit}.")
+
+    # Run attacks
+    for idx, attack in enumerate(remaining_attacks):
+        overall_index = len(results) + 1
+        session_id = f"ablation_{config_key}_{overall_index - 1}"
+        print(f"  [{overall_index}/{limit}] {attack['type']}: ", end="", flush=True)
 
         try:
             graph_result = run_travel_graph(attack['prompt'], session_id=session_id)
@@ -174,6 +225,12 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
                 "is_success": False
             })
 
+        # Save results incrementally after every attack
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["id", "type", "status", "is_success"])
+            writer.writeheader()
+            writer.writerows(results)
+
         time.sleep(3)  # Rate limiting
 
     # Calculate ASR
@@ -181,15 +238,11 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
     succeeded = sum(1 for r in results if r["is_success"])
     asr = (succeeded / n_attacks * 100) if n_attacks > 0 else 0
 
-    # Save results
-    csv_path = datasets_dir / f"results_config_{config_key}.csv"
-    with open(csv_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["id", "type", "status", "is_success"])
-        writer.writeheader()
-        writer.writerows(results)
-
     print(f"\n  Results: ASR = {asr:.2f}% ({succeeded}/{n_attacks})")
     print(f"  Saved to {csv_path}")
+
+    # Compile the final ablation comparison table using all currently available configurations
+    compile_comparison_table()
 
     return {
         "config": config_key,
@@ -199,6 +252,38 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
         "total": n_attacks,
         "csv_path": str(csv_path)
     }
+
+def compile_comparison_table():
+    """Scan existing results_config_*.csv files and rebuild ablation_comparison.csv."""
+    import pandas as pd
+    datasets_dir = PROJECT_ROOT / "datasets"
+    summaries = []
+    for config_key in ["A", "B", "C", "D", "E"]:
+        csv_path = datasets_dir / f"results_config_{config_key}.csv"
+        if csv_path.exists():
+            try:
+                df = pd.read_csv(csv_path)
+                n_attacks = len(df)
+                succeeded = int(df["is_success"].sum())
+                asr = (succeeded / n_attacks * 100) if n_attacks > 0 else 0
+                summaries.append({
+                    "config": config_key,
+                    "name": CONFIGS[config_key]["name"],
+                    "asr": asr,
+                    "succeeded": succeeded,
+                    "total": n_attacks
+                })
+            except Exception as e:
+                print(f"  [Warning] Failed to read {csv_path} during auto-compilation: {e}")
+                
+    if summaries:
+        table_path = datasets_dir / "ablation_comparison.csv"
+        with open(table_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["config", "name", "asr_pct", "succeeded", "total"])
+            for s in summaries:
+                writer.writerow([s["config"], s["name"], f"{s['asr']:.2f}", s["succeeded"], s["total"]])
+        print(f"  [Auto-Compile] Recompiled comparison table at {table_path} ({len(summaries)} configs present)")
 
 
 def run_all_configs(smoke_test: bool = False, seed: int = None, max_attacks: int = None):

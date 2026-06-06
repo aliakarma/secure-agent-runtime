@@ -42,3 +42,7 @@ htmlcov/
 
 project_12week_timeline.html
 secure_agentic_ai_project_guide.html
+
+# ── Datasets ──────────────────────────────────────────────────────────
+datasets/classifier_*.csv
+Claude_Review.md

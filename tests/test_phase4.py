@@ -24,7 +24,12 @@ def test_hook_1_and_5_node_and_routing():
     
     # Check if any message in the final state has been sanitized
     messages = final_state.get("messages", [])
-    sanitized = any("[SANITIZED]" in msg.content for msg in messages)
+    sanitized = any(
+        "[SANITIZED]" in msg.content or 
+        "[UNSAFE SPAN REMOVED]" in msg.content or 
+        "[LOW-TRUST CONTENT MASKED]" in msg.content 
+        for msg in messages
+    )
     assert sanitized, "Graph hooks failed to sanitize the poisoned message."
 
 def test_hook_2_and_3_tool_wrapper():

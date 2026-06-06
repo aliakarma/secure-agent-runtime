@@ -46,3 +46,10 @@ secure_agentic_ai_project_guide.html
 # ── Datasets ──────────────────────────────────────────────────────────
 datasets/classifier_*.csv
 Claude_Review.md
+models/local_prompt_detector/checkpoint-55/model.safetensors
+models/local_prompt_detector/model.safetensors
+models/local_prompt_detector/checkpoint-110/optimizer.pt
+models/local_prompt_detector/checkpoint-165/model.safetensors
+models/local_prompt_detector/checkpoint-165/optimizer.pt
+models/local_prompt_detector/checkpoint-55/optimizer.pt
+models/local_prompt_detector/checkpoint-110/model.safetensors

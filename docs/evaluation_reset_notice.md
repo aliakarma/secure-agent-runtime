@@ -34,3 +34,4 @@ evaluation pipeline. Only results produced after this reset are valid for
 submission.
 
 See also: `docs/benchmark_provenance.md` for dataset construction details.
+See also: `docs/phase_r3_baseline_vs_secured_results.md` for Phase R3 experiment results.

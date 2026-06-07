@@ -27,7 +27,6 @@ def profile_mode(mode_name, prompt):
     
     # Set system mode
     os.environ["SECURED_SYSTEM_MODE"] = mode_name
-    os.environ["ABLATION_STUDY_ACTIVE"] = "1"
     
     # Reload hook module to apply mode config
     import sys

@@ -25,7 +25,7 @@ def build_travel_graph() -> StateGraph:
     
     # Ablation support: when DISABLE_ALL_SECURITY=1, use raw agent nodes
     if os.getenv("DISABLE_ALL_SECURITY", "0") == "1":
-        logger.warning("ABLATION MODE: All security wrappers DISABLED (Config A)")
+        logger.warning("BASELINE MODE: All security wrappers DISABLED")
         graph.add_node("Supervisor", supervisor_node)
         graph.add_node("FlightAgent", flight_agent_node)
         graph.add_node("HotelAgent", hotel_agent_node)

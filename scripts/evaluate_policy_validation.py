@@ -1,8 +1,8 @@
 """
 Deterministic Policy Validation Framework Evaluator
 --------------------------------------------------
-This script performs category-level validation on a human-curated subset of 21 cases
-covering 7 taxonomy violation types. It validates the deterministic policy-based evaluator,
+This script performs category-level validation on a human-curated subset of cases
+covering taxonomy violation types. It validates the deterministic policy-based evaluator,
 reporting on classification accuracy, precision, recall, and category-level alignment.
 """
 import os
@@ -35,15 +35,16 @@ def run_validation():
     fn = 0
     
     category_alignment = {}
-    
-    # Initialize alignment counters
-    for val_type in ViolationType:
-        category_alignment[val_type.value] = {
-            "expected_count": 0,
-            "detected_count": 0,
-            "alignment_pct": 0.0
-        }
-        
+
+    for case in cases:
+        cat = case["category"]
+        if cat not in category_alignment:
+            category_alignment[cat] = {
+                "expected_count": 0,
+                "detected_count": 0,
+                "alignment_pct": 0.0,
+            }
+
     case_results = []
     
     for case in cases:

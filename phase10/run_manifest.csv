@@ -1,0 +1,2 @@
+artifact,command,inputs,outputs,git_commit,notes
+# example,python scripts/plotting/plot_template.py --data datasets/multi_seed_comparison.csv --out figures/sanity/multi_seed_preview --config plots/plot_config.yaml,datasets/multi_seed_comparison.csv,figures/sanity/multi_seed_preview.png;figures/sanity/multi_seed_preview.pdf,7febdc23d95f62ad92e262bc9181c3ddb1774f52,Sanity preview recorded during Phase 10

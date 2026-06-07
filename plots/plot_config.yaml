@@ -1,0 +1,16 @@
+# Plot styling presets
+figsize: [6, 4]
+palette:
+  - '#1b9e77'
+  - '#d95f02'
+  - '#7570b3'
+linewidth: 2
+xlabel: 'x'
+ylabel: 'y'
+grid: true
+
+# Grayscale mapping for accessibility checks
+grayscale_mapping:
+  - '#444444'
+  - '#888888'
+  - '#BBBBBB'

@@ -1,0 +1,2 @@
+artifact,command,inputs,outputs,git_commit,notes
+# Example entry: python run_experiment.py --seed 0,datasets/example.csv,results/example.csv,7febdc23d95f62ad92e262bc9181c3ddb1774f52,Placeholder manifest created for Phase 10 verification

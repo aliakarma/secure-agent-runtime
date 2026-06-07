@@ -221,11 +221,27 @@ def run_evaluation(args):
         random.seed(args.seed)
         print(f"Random seed set to {args.seed}")
 
-    # Smoke test: sample subsets
-    if args.smoke_test:
+    # Pin exact attack IDs from a prior baseline run (matched-pair evaluation)
+    if getattr(args, 'attack_ids_csv', None) and args.attack_ids_csv:
+        import csv as _csv
+        ids_path = Path(args.attack_ids_csv)
+        if ids_path.exists():
+            with open(ids_path, newline='', encoding='utf-8') as fh:
+                pinned_ids = {row['id'] for row in _csv.DictReader(fh)}
+            attacks = [a for a in attacks if a['id'] in pinned_ids]
+            print(f"Pinned to {len(attacks)} attack IDs from {ids_path.name}")
+        else:
+            print(f"[WARNING] --attack-ids-csv path not found: {ids_path}")
+
+    # Smoke test: sample subsets (only if not already pinned)
+    if args.smoke_test and not (getattr(args, 'attack_ids_csv', None) and args.attack_ids_csv):
         attacks = random.sample(attacks, min(20, len(attacks)))
         benign_requests = random.sample(benign_requests, min(20, len(benign_requests)))
         print(f"SMOKE TEST: Using {len(attacks)} attacks and {len(benign_requests)} benign requests.")
+    elif args.smoke_test:
+        # Still sample benign even when attacks are pinned
+        benign_requests = random.sample(benign_requests, min(20, len(benign_requests)))
+        print(f"PINNED + SMOKE TEST: Using {len(attacks)} pinned attacks and {len(benign_requests)} benign requests.")
 
     n_attacks = len(attacks)
     n_benign = len(benign_requests)
@@ -360,6 +376,9 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducible sampling")
     parser.add_argument("--baseline-csv", type=str, default=None,
                         help="Path to baseline (Config A) metrics CSV for chi-squared comparison")
+    parser.add_argument("--attack-ids-csv", type=str, default=None,
+                        help="Path to a prior baseline metrics CSV; pins evaluation to the EXACT same attack IDs "
+                             "for valid matched-pair statistical comparison (e.g. datasets/naked_metrics.csv)")
     parser.add_argument("--max-attacks", type=int, default=None, help="Maximum number of attacks to run (defaults to all)")
     parser.add_argument("--max-benign", type=int, default=None, help="Maximum number of benign requests to run (defaults to all)")
     args = parser.parse_args()

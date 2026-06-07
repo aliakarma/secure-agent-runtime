@@ -32,37 +32,53 @@ def run_multi_seed_ablation(args):
             res = run_single_config(cfg, smoke_test=args.smoke_test, seed=seed, max_attacks=args.max_attacks)
             results_map[cfg].append(res["asr"])
             
+    def bootstrap_ci(data, num_bootstraps=2000, ci_level=0.95):
+        if len(data) <= 1:
+            return 0.0, 0.0
+        bootstraps = []
+        for _ in range(num_bootstraps):
+            sample = np.random.choice(data, size=len(data), replace=True)
+            bootstraps.append(np.mean(sample))
+        lower_bound = np.percentile(bootstraps, (1.0 - ci_level) / 2.0 * 100.0)
+        upper_bound = np.percentile(bootstraps, (1.0 + ci_level) / 2.0 * 100.0)
+        return lower_bound, upper_bound
+
     # Print and save summary
-    print("\n\n" + "=" * 70)
+    print("\n\n" + "=" * 90)
     print("  MULTI-SEED ABLATION SUMMARY")
-    print("=" * 70)
-    print(f"{'Config':<10} | {'ASR Mean (%)':<15} | {'ASR Std Dev (%)':<15} | {'ASR Runs'}")
-    print("-" * 70)
+    print("=" * 90)
+    print(f"{'Config':<10} | {'Mean (%)':<10} | {'Median (%)':<12} | {'Std Dev (%)':<12} | {'95% Bootstrap CI (%)':<22} | Runs")
+    print("-" * 90)
     
     summary_rows = []
     for cfg in configs:
         asrs = results_map[cfg]
         mean_asr = np.mean(asrs)
+        median_asr = np.median(asrs)
         std_asr = np.std(asrs)
+        ci_lower, ci_upper = bootstrap_ci(asrs)
         runs_str = ", ".join([f"{val:.1f}%" for val in asrs])
-        print(f"{cfg:<10} | {mean_asr:>13.2f}% | {std_asr:>13.2f}% | [{runs_str}]")
+        print(f"{cfg:<10} | {mean_asr:>8.2f}% | {median_asr:>10.2f}% | {std_asr:>10.2f}% | [{ci_lower:>5.2f}%, {ci_upper:>5.2f}%] | [{runs_str}]")
         
         summary_rows.append({
             "config": cfg,
             "mean_asr": round(mean_asr, 2),
+            "median_asr": round(median_asr, 2),
             "std_asr": round(std_asr, 2),
+            "ci_lower": round(ci_lower, 2),
+            "ci_upper": round(ci_upper, 2),
             "runs": asrs
         })
         
-    print("=" * 70)
+    print("=" * 90)
     
     # Save to CSV
     summary_path = PROJECT_ROOT / "datasets" / "multi_seed_comparison.csv"
     with open(summary_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["config", "mean_asr", "std_asr", "runs"])
+        writer.writerow(["config", "mean_asr", "median_asr", "std_asr", "ci_lower", "ci_upper", "runs"])
         for row in summary_rows:
-            writer.writerow([row["config"], row["mean_asr"], row["std_asr"], json.dumps(row["runs"])])
+            writer.writerow([row["config"], row["mean_asr"], row["median_asr"], row["std_asr"], row["ci_lower"], row["ci_upper"], json.dumps(row["runs"])])
     print(f"\nMulti-seed summary saved to {summary_path}")
 
 if __name__ == "__main__":

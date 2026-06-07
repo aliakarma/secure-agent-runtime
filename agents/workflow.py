@@ -89,7 +89,7 @@ def run_travel_graph(user_input: str, session_id: str = "default_session"):
     app = build_travel_graph()
     
     # Set recursion limit to prevent infinite loops if an agent gets stuck
-    config = {"configurable": {"thread_id": session_id}, "recursion_limit": 15}
+    config = {"configurable": {"thread_id": session_id}, "recursion_limit": 25}
     
     try:
         final_state = app.invoke(state, config=config)

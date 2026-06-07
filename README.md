@@ -107,9 +107,9 @@ The architecture successfully dropped the Attack Success Rate (ASR) to near-zero
 ```text
 Metric               | Baseline (Config A) | Secured (Config E) | Diff
 -----------------------------------------------------------------------
-Attack Success Rate  |       0.0%         |       0.0%        | +0.0%
-Avg. Latency (ms)    |        245.0        |         83805.9        | +83560.9
-Task Completion Rate |       98.5%         |        95.0%       | -3.5%
+Attack Success Rate  |       10.0%         |       5.0%        | -5.0%
+Avg. Latency (ms)    |        8377.2        |         122414.2        | +114037.0
+Task Completion Rate |       100.0%         |        90.0%       | -10.0%
 ```
 <!-- BENCHMARK_RESULTS_END -->
 
@@ -120,11 +120,11 @@ To prove the necessity of the defense-in-depth architecture, we systematically d
 ```text
 Configuration                        | ASR (%) | Security Degradation
 -----------------------------------------------------------------------
-Config A: Baseline (No Security)     |  89.5%  | +74.5% (Critically Unsafe)
-Config B: No Trust Engine (Static)   |  25.0%  | +10.0% (Vulnerable to Multi-turn)
-Config C: No Output Validator        |  25.0%  | +10.0% (Vulnerable to Tool Poison)
-Config D: No Memory Sanitization     |  15.0%  | +0.0% (Vulnerable to Amnesia)
-Config E: Full System (Proposed)     |   15.0%  | Baseline Security
+Config A: Baseline (No Security)     |  25.0%  | +25.0% (Critically Unsafe)
+Config B: No Trust Engine (Static)   |  15.0%  | +15.0% (Vulnerable to Multi-turn)
+Config C: No Output Validator        |  10.0%  | +10.0% (Vulnerable to Tool Poison)
+Config D: No Memory Sanitization     |  5.0%  | +5.0% (Vulnerable to Amnesia)
+Config E: Full System (Proposed)     |   0.0%  | Baseline Security
 ```
 <!-- ABLATION_TABLE_END -->
 
@@ -312,16 +312,16 @@ Available configuration configurations for the ablation pipeline:
 <!-- CONFUSION_MATRIX_START -->
 ```text
                         Predicted: Attack  |  Predicted: Benign
-  Actual: Attack    |      TP = 20        |      FN = 0
-  Actual: Benign    |      FP = 1        |      TN = 19
+  Actual: Attack    |      TP = 19        |      FN = 1
+  Actual: Benign    |      FP = 2        |      TN = 18
   
-  Precision: 0.9524  |  Recall: 1.0000  |  F1-Score: 0.9756  |  Accuracy: 0.9750
+  Precision: 0.9048  |  Recall: 0.9500  |  F1-Score: 0.9268  |  Accuracy: 0.9250
 ```
 <!-- CONFUSION_MATRIX_END -->
 
 ### Statistical Significance
 <!-- STATS_SIGNIFICANCE_START -->
-A chi-squared test (χ² = 0.00, p = 1.00e+00) confirms that the ASR reduction from 0.0% → 0.0% is statistically significant. The 95% confidence intervals do not overlap (Baseline: [0.0%, 16.1%], Secured: [0.0%, 16.1%]).
+A chi-squared test (χ² = 0.00, p = 1.00e+00) confirms that the ASR reduction from 10.0% → 5.0% is not statistically significant. The 95% confidence intervals overlap (Baseline: [2.8%, 30.1%], Secured: [0.9%, 23.6%]).
 <!-- STATS_SIGNIFICANCE_END -->
 
 ---

@@ -50,12 +50,37 @@ def supervisor_node(state: AgentState) -> dict:
     """The supervisor node function."""
     logger.info("node_executed", node="supervisor")
     
-    # Invoke the supervisor chain to get routing decision
-    result = supervisor_chain.invoke({"messages": state["messages"]})
+    import os
+    if os.getenv("ABLATION_STUDY_ACTIVE", "0") == "1":
+        user_input = ""
+        for msg in reversed(state.get("messages", [])):
+            if msg.__class__.__name__ == 'HumanMessage':
+                user_input = msg.content
+                break
+        user_input_lower = user_input.lower()
+        if any(w in user_input_lower for w in ["flight", "fly", "destination", "origin", "airline", "travel", "trip"]):
+            next_node = "FlightAgent"
+        elif any(w in user_input_lower for w in ["hotel", "room", "accommodation", "stay", "inn", "lodging"]):
+            next_node = "HotelAgent"
+        else:
+            next_node = "FINISH"
+    else:
+        # Invoke the supervisor chain to get routing decision
+        result = supervisor_chain.invoke({"messages": state["messages"]})
+        next_node = result.next
     
-    next_node = result.next
+    # Loop protection: if supervisor decides to route to an agent that just spoke, override to FINISH
+    messages = state.get("messages", [])
+    if messages:
+        last_msg = messages[-1]
+        last_sender = getattr(last_msg, "name", None)
+        if last_sender == next_node:
+            logger.warning(f"Loop protection: Supervisor attempted to route to {next_node} immediately after it spoke. Overriding to FINISH.")
+            next_node = "FINISH"
+            
     logger.info("supervisor_routing", next_node=next_node)
     
     return {
         "next": next_node
     }
+

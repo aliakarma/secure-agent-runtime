@@ -1,0 +1,11 @@
+metric,naked_value,secured_value
+asr_mean,22.67,0.00
+asr_median,23.33,0.00
+asr_std,4.42,0.00
+asr_ci_lower,20.00,0.00
+asr_ci_upper,25.33,0.00
+fpr_mean,0.00,0.00
+fpr_std,0.00,0.00
+lat_mean,1289.54,1239.47
+p_val_asr,9.091183e-08,
+cohens_d_asr,6.8768,

@@ -311,17 +311,17 @@ To provide a complete statistical characterization of the detection system, we p
 <!-- THESIS_CONFUSION_MATRIX_START -->
 |  | **Predicted: Attack** | **Predicted: Benign** |
 | :--- | :--- | :--- |
-| **Actual: Attack (20)** | TP = 20 | FN = 0 |
-| **Actual: Benign (20)** | FP = 1 | TN = 19 |
+| **Actual: Attack (20)** | TP = 19 | FN = 1 |
+| **Actual: Benign (20)** | FP = 2 | TN = 18 |
 <!-- THESIS_CONFUSION_MATRIX_END -->
 
 <!-- THESIS_METRICS_START -->
 | Metric | Value |
 | :--- | :--- |
-| **Precision** | 0.9524 |
-| **Recall** | 1.0000 |
-| **F1-Score** | 0.9756 |
-| **Accuracy** | 0.9750 |
+| **Precision** | 0.9048 |
+| **Recall** | 0.9500 |
+| **F1-Score** | 0.9268 |
+| **Accuracy** | 0.9250 |
 <!-- THESIS_METRICS_END -->
 
 The high Recall (97.5%) confirms that the system catches nearly all adversarial inputs. The Precision of 91.1% is acceptable given the security-critical context where False Negatives are far more costly than False Positives.
@@ -340,7 +340,7 @@ A chi-squared test for independence was conducted to confirm that the observed A
 <!-- THESIS_STATS_END -->
 
 <!-- THESIS_CI_TEXT_START -->
-The 95% Wilson Confidence Intervals for the Baseline ASR [0.0%, 16.1%] and Secured ASR [0.0%, 16.1%] do not overlap, providing overwhelming statistical evidence that the defense architecture produces a genuine, non-random reduction in Attack Success Rate.
+The 95% Wilson Confidence Intervals for the Baseline ASR [2.8%, 30.1%] and Secured ASR [0.9%, 23.6%] overlap, which indicates that under the small sample size subset, the observed difference is not statistically significant (p = 1.0000).
 <!-- THESIS_CI_TEXT_END -->
 
 ### 16.1 Deterministic Policy Validation Framework

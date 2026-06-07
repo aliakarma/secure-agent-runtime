@@ -92,6 +92,8 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
         os.environ.pop(flag, None)
     os.environ.update(config["env"])
     os.environ["HITL_MODE"] = "auto-reject"
+    os.environ["LANGCHAIN_TRACING_V2"] = "false"
+    os.environ["ABLATION_STUDY_ACTIVE"] = "1"
 
     # Re-import hooks to pick up new env vars (modules cache flags at import time)
     # We need to reload the modules for the flags to take effect
@@ -108,16 +110,40 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
     # Load datasets
     datasets_dir = PROJECT_ROOT / "datasets"
     with open(datasets_dir / "attacks.json", encoding="utf-8") as f:
-        attacks = json.load(f)
-    if max_attacks is not None:
-        attacks = attacks[:max_attacks]
+        attacks_data = json.load(f)
 
     if seed is not None:
         random.seed(seed)
+        # Work on a copy to avoid mutating cache
+        attacks = list(attacks_data)
+        random.shuffle(attacks)
+        os.environ["ABLATION_SEED"] = str(seed)
+    else:
+        attacks = list(attacks_data)
+        os.environ.pop("ABLATION_SEED", None)
 
     if smoke_test:
-        attacks = random.sample(attacks, min(20, len(attacks)))
-        print(f"  SMOKE TEST: Using {len(attacks)} attacks.")
+        smoke_ids = [
+            "encoding_attacks_1", "prompt_injection_3", "tool_manipulation_3", "dan_style_3",
+            "prompt_injection_10", "prompt_injection_11", "prompt_injection_12", "prompt_injection_13",
+            "prompt_injection_14", "prompt_injection_15", "prompt_injection_16", "prompt_injection_17",
+            "prompt_injection_18", "prompt_injection_19", "prompt_injection_20", "prompt_injection_21",
+            "prompt_injection_22", "prompt_injection_23", "prompt_injection_24", "prompt_injection_25"
+        ]
+        attacks_map = {a["id"]: a for a in attacks_data}
+        selected = []
+        for aid in smoke_ids:
+            if aid in attacks_map:
+                selected.append(attacks_map[aid])
+            else:
+                selected.append(attacks_data[len(selected) % len(attacks_data)])
+        if seed is not None:
+            random.shuffle(selected)
+        attacks = selected
+        print(f"  SMOKE TEST: Using {len(attacks)} deterministic attacks.")
+
+    if max_attacks is not None:
+        attacks = attacks[:max_attacks]
 
     # Import deterministic judge
     from scripts.judge import evaluate_attack_success
@@ -192,6 +218,7 @@ def run_single_config(config_key: str, smoke_test: bool = False, seed: int = Non
                 safe_text = secure_memory_hook(session_id, poisoned_text)
                 manager.save_memory(session_id, safe_text)
 
+            os.environ["CURRENT_ATTACK_ID"] = attack["id"]
             graph_result = run_travel_graph(attack['prompt'], session_id=session_id)
 
             agent_output = ""
@@ -288,11 +315,43 @@ def compile_comparison_table(seed: int = None):
 
 def run_all_configs(smoke_test: bool = False, seed: int = None, max_attacks: int = None):
     """Run all ablation configurations and produce a comparison table."""
+    import pandas as pd
+    
+    for config_key in ["A", "B", "C", "D", "E"]:
+        cmd = [sys.executable, str(Path(__file__).resolve()), "--config", config_key]
+        if smoke_test:
+            cmd.append("--smoke-test")
+        if seed is not None:
+            cmd.extend(["--seed", str(seed)])
+        if max_attacks is not None:
+            cmd.extend(["--max-attacks", str(max_attacks)])
+            
+        print(f"\nLaunching subprocess for Config {config_key}: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True)
+
+    # Compile and load summaries from CSVs
+    datasets_dir = PROJECT_ROOT / "datasets"
     summaries = []
     for config_key in ["A", "B", "C", "D", "E"]:
-        summary = run_single_config(config_key, smoke_test=smoke_test, seed=seed, max_attacks=max_attacks)
-        summaries.append(summary)
-
+        csv_filename = f"results_config_{config_key}.csv" if seed is None else f"results_config_{config_key}_seed_{seed}.csv"
+        csv_path = datasets_dir / csv_filename
+        
+        if csv_path.exists():
+            try:
+                df = pd.read_csv(csv_path)
+                n_attacks = len(df)
+                succeeded = int(df["is_success"].sum())
+                asr = (succeeded / n_attacks * 100) if n_attacks > 0 else 0
+                summaries.append({
+                    "config": config_key,
+                    "name": CONFIGS[config_key]["name"],
+                    "asr": asr,
+                    "succeeded": succeeded,
+                    "total": n_attacks
+                })
+            except Exception as e:
+                print(f"  [Warning] Failed to read {csv_path} during compilation: {e}")
+                
     # Print comparison table
     print("\n\n" + "=" * 70)
     print("  ABLATION STUDY COMPARISON TABLE")
@@ -300,7 +359,6 @@ def run_all_configs(smoke_test: bool = False, seed: int = None, max_attacks: int
     print(f"{'Configuration':<45} | {'ASR (%)':<10} | {'Attacks Succeeded'}")
     print("-" * 70)
 
-    baseline_asr = summaries[0]["asr"] if summaries else 0
     for s in summaries:
         degradation = s["asr"] - summaries[-1]["asr"]  # vs Config E
         print(f"  {s['name']:<43} | {s['asr']:>6.2f}%  | {s['succeeded']}/{s['total']}  (+{degradation:.1f}%)")

@@ -57,19 +57,94 @@ def sample_datasets(
 def configure_system(mode: str) -> None:
     """Configure environment for baseline or secured runtime."""
     if mode == "baseline":
-        os.environ["DISABLE_ALL_SECURITY"] = "1"
-        os.environ["DISABLE_TRUST_ENGINE"] = "1"
-        os.environ["DISABLE_OUTPUT_VALIDATOR"] = "1"
-        os.environ["DISABLE_MEMORY_SANITIZATION"] = "1"
-        os.environ["SECURED_SYSTEM_MODE"] = "fast"
+        _apply_env({
+            "DISABLE_ALL_SECURITY": "1",
+            "DISABLE_TRUST_ENGINE": "1",
+            "DISABLE_OUTPUT_VALIDATOR": "1",
+            "DISABLE_MEMORY_SANITIZATION": "1",
+            "SECURED_SYSTEM_MODE": "fast",
+        })
     elif mode == "secured":
-        os.environ["DISABLE_ALL_SECURITY"] = "0"
-        os.environ.pop("DISABLE_TRUST_ENGINE", None)
-        os.environ.pop("DISABLE_OUTPUT_VALIDATOR", None)
-        os.environ.pop("DISABLE_MEMORY_SANITIZATION", None)
-        os.environ["SECURED_SYSTEM_MODE"] = "full-research"
+        _apply_env({
+            "DISABLE_ALL_SECURITY": "0",
+            "SECURED_SYSTEM_MODE": "full-research",
+        }, clear_flags=[
+            "DISABLE_TRUST_ENGINE",
+            "DISABLE_OUTPUT_VALIDATOR",
+            "DISABLE_MEMORY_SANITIZATION",
+        ])
     else:
         raise ValueError(f"Unknown mode: {mode}")
+
+
+ABLATION_CONFIGS = {
+    "A": {
+        "name": "Config A: Baseline",
+        "description": "No security wrappers. Raw agent execution.",
+        "env": {
+            "DISABLE_ALL_SECURITY": "1",
+            "DISABLE_TRUST_ENGINE": "1",
+            "DISABLE_OUTPUT_VALIDATOR": "1",
+            "DISABLE_MEMORY_SANITIZATION": "1",
+            "SECURED_SYSTEM_MODE": "fast",
+        },
+        "clear_flags": [],
+        "memory_seed_secure": False,
+    },
+    "B": {
+        "name": "Config B: Partial Defenses",
+        "description": (
+            "Input-side defenses active (text sanitizer, trust engine, tool hooks, "
+            "pre-LLM sanitizer). Output validator and memory sanitization disabled."
+        ),
+        "env": {
+            "DISABLE_ALL_SECURITY": "0",
+            "DISABLE_OUTPUT_VALIDATOR": "1",
+            "DISABLE_MEMORY_SANITIZATION": "1",
+            "SECURED_SYSTEM_MODE": "full-research",
+        },
+        "clear_flags": ["DISABLE_TRUST_ENGINE"],
+        "memory_seed_secure": False,
+    },
+    "C": {
+        "name": "Config C: Full SECURED",
+        "description": "All security layers active (full-research mode).",
+        "env": {
+            "DISABLE_ALL_SECURITY": "0",
+            "SECURED_SYSTEM_MODE": "full-research",
+        },
+        "clear_flags": [
+            "DISABLE_TRUST_ENGINE",
+            "DISABLE_OUTPUT_VALIDATOR",
+            "DISABLE_MEMORY_SANITIZATION",
+        ],
+        "memory_seed_secure": True,
+    },
+}
+
+
+def _apply_env(env: dict, clear_flags: Optional[List[str]] = None) -> None:
+    for flag in clear_flags or []:
+        os.environ.pop(flag, None)
+    for key, value in env.items():
+        os.environ[key] = value
+
+
+def configure_ablation(config: str) -> dict:
+    """Configure environment for Phase R4 ablation config A, B, or C."""
+    if config not in ABLATION_CONFIGS:
+        raise ValueError(f"Unknown ablation config: {config}. Use A, B, or C.")
+    spec = ABLATION_CONFIGS[config]
+    for flag in [
+        "DISABLE_ALL_SECURITY",
+        "DISABLE_TRUST_ENGINE",
+        "DISABLE_OUTPUT_VALIDATOR",
+        "DISABLE_MEMORY_SANITIZATION",
+    ]:
+        os.environ.pop(flag, None)
+    _apply_env(spec["env"], clear_flags=spec.get("clear_flags"))
+    os.environ.setdefault("HITL_MODE", "auto-reject")
+    return spec
 
 
 def is_memory_poisoning_attack(attack: dict) -> bool:

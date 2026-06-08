@@ -54,3 +54,4 @@ models/local_prompt_detector/checkpoint-165/optimizer.pt
 models/local_prompt_detector/checkpoint-55/optimizer.pt
 models/local_prompt_detector/checkpoint-110/model.safetensors
 phase10/all_results.tar.gz
+Cursor_Review.md

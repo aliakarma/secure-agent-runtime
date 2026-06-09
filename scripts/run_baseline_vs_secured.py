@@ -111,12 +111,12 @@ def run_condition(
     write_csv(
         output_dir / f"r3_{mode}_attacks.csv",
         attack_results,
-        ["id", "family", "type", "status", "is_success", "latency_ms", "reasoning"],
+        ["id", "family", "type", "status", "is_success", "latency_ms", "reasoning", "trust_score", "trust_tier", "provenance_records"],
     )
     write_csv(
         output_dir / f"r3_{mode}_benign.csv",
         benign_results,
-        ["id", "status", "latency_ms", "was_blocked"],
+        ["id", "status", "latency_ms", "was_blocked", "trust_score", "trust_tier", "provenance_records"],
     )
 
     return attack_results, benign_results, summary
@@ -160,7 +160,12 @@ def generate_report(
         "|--------|----------|---------|-------|",
         f"| ASR | {baseline['asr_pct']:.1f}% | {secured['asr_pct']:.1f}% | {asr_reduction:+.1f} pp |",
         f"| FPR | {baseline['fpr_pct']:.1f}% | {secured['fpr_pct']:.1f}% | {fpr_increase:+.1f} pp |",
-        f"| Task Completion | {baseline['task_completion_pct']:.1f}% | {secured['task_completion_pct']:.1f}% | {secured['task_completion_pct'] - baseline['task_completion_pct']:+.1f} pp |",
+        f"| TAR | {baseline['task_accuracy_retention_pct']:.1f}% | {secured['task_accuracy_retention_pct']:.1f}% | {secured['task_accuracy_retention_pct'] - baseline['task_accuracy_retention_pct']:+.1f} pp |",
+        f"| PCR | {baseline['policy_compliance_pct']:.1f}% | {secured['policy_compliance_pct']:.1f}% | {secured['policy_compliance_pct'] - baseline['policy_compliance_pct']:+.1f} pp |",
+        f"| PTCI | {baseline['ptci_pct']:.1f}% | {secured['ptci_pct']:.1f}% | {secured['ptci_pct'] - baseline['ptci_pct']:+.1f} pp |",
+        f"| Precision | {baseline['precision_pct']:.1f}% | {secured['precision_pct']:.1f}% | {secured['precision_pct'] - baseline['precision_pct']:+.1f} pp |",
+        f"| Recall | {baseline['recall_pct']:.1f}% | {secured['recall_pct']:.1f}% | {secured['recall_pct'] - baseline['recall_pct']:+.1f} pp |",
+        f"| F1 | {baseline['f1_pct']:.1f}% | {secured['f1_pct']:.1f}% | {secured['f1_pct'] - baseline['f1_pct']:+.1f} pp |",
         f"| Latency (mean) | {baseline['latency_mean_sec']:.1f}s | {secured['latency_mean_sec']:.1f}s | {secured['latency_mean_sec'] - baseline['latency_mean_sec']:+.1f}s |",
         "",
         "### Confidence Intervals (95%, Wilson score)",
@@ -190,6 +195,13 @@ def generate_report(
         f"The security/usability tradeoff shows a latency increase of "
         f"**{secured['latency_mean_sec'] - baseline['latency_mean_sec']:.1f}s** and an FPR change of "
         f"**{fpr_increase:+.1f} pp**.",
+        "",
+        f"PCR stayed high because the secured run kept decisions aligned with safety policy "
+        f"({secured['policy_compliance_pct']:.1f}% compliance), while TAR tracked benign utility "
+        f"({secured['task_accuracy_retention_pct']:.1f}%).",
+        "",
+        f"PTCI measures trust/provenance alignment across the logged cases "
+        f"and is now reported explicitly in the thesis-facing artifacts.",
         "",
         "## Limitations",
         "",

@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import time
 
@@ -63,6 +63,12 @@ def get_provenance(session_id: str = "default"):
     from sanitizers.provenance import provenance_ledger
     records = provenance_ledger.get_lineage(session_id)
     return JSONResponse({"session_id": session_id, "provenance_lineage": records})
+
+
+@app.get("/dashboard", tags=["demo"])
+def dashboard() -> FileResponse:
+    """Serve the interactive dashboard shell."""
+    return FileResponse("static/index.html")
 
 
 

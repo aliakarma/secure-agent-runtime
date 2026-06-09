@@ -25,7 +25,12 @@ All outcomes were produced by live LLM execution. No attack-ID-aware logic or sc
 |--------|----------|---------|-------|
 | ASR | 5.0% | 0.0% | −5.0 pp |
 | FPR | 0.0% | 2.0% | +2.0 pp |
-| Task Completion | 100.0% | 98.0% | −2.0 pp |
+| TAR | 100.0% | 98.0% | −2.0 pp |
+| PCR | 97.5% | 99.0% | +1.5 pp |
+| PTCI | N/A | N/A | N/A |
+| Precision | 100.0% | 98.0% | −2.0 pp |
+| Recall | 95.0% | 100.0% | +5.0 pp |
+| F1 | 97.4% | 99.0% | +1.6 pp |
 | Latency (mean) | 4.8s | 8.9s | +4.1s |
 
 ### Per-Family ASR (Baseline)
@@ -51,11 +56,11 @@ SECURED blocked all 100 attacks (0% ASR). Two benign requests were falsely block
 
 ## Interpretation
 
-SECURED reduced ASR by **5.0 percentage points** compared to baseline (5.0% → 0.0%), providing **initial, indicative evidence** that layered defenses mitigate prompt injection risks in this controlled benchmark.
+SECURED reduced ASR by **5.0 percentage points** compared to baseline (5.0% → 0.0%), while keeping TAR at 98.0% and PCR at 99.0%. This provides **initial, indicative evidence** that layered defenses mitigate prompt injection risks in this controlled benchmark.
 
 Baseline ASR (5.0%) is **below** the recovery plan's acceptable range (25–40%). This is reported transparently: many attacks were deflected at the supervisor routing stage without producing judge-detectable violations, and the deterministic evaluator may undercount subtle compromises. These results should not be interpreted as proof of robust baseline security.
 
-The security/usability tradeoff shows a latency increase of **4.1s** (4.8s → 8.9s) and an FPR of **2.0%** (2/100 benign blocked), within the acceptable FPR band (5–12%).
+The security/usability tradeoff shows a latency increase of **4.1s** (4.8s → 8.9s) and an FPR of **2.0%** (2/100 benign blocked), while preserving 98.0% benign task retention.
 
 ## Ethical Statement
 

@@ -10,7 +10,7 @@ In this research, we present the design, implementation, and empirical evaluatio
 4. **Stateful Provenance Ledger:** A metadata tracking system that constructs Directed Acyclic Graphs (DAG) of the data flow and prepends secure provenance tags to the LLM reasoning context window.
 5. **Output Validation and Self-Correction:** A secondary LLM agent ("Agent B") that checks responses for policy violations and triggers up to three reinjection recovery retries before escalating to human-in-the-loop validation.
 
-To demonstrate the efficacy of our framework, we subjected the runtime to a rigorous evaluation suite of 600 queries (200 attacks and 400 benign requests). The fully secured proposed system (Config E) successfully drove the baseline Attack Success Rate (ASR) of 80.0% down to 0.0% under default configurations while retaining a 95.0% task completion rate for safe benign requests. Statistical significance was verified using a chi-squared test ($\chi^2 = 19.05, p = 1.27 \times 10^{-5}$) and non-overlapping Wilson confidence intervals. Furthermore, evasion attack stress tests yielded a 100% downstream catch rate, confirming the robustness of the layered defense. This research establishes that autonomous agents can be fundamentally secured against malicious manipulation with acceptable computational overhead (+460ms average latency), paving the way for safe enterprise deployment.
+To demonstrate the efficacy of our framework, we subjected the runtime to a Phase R3 matched-pair evaluation over 200 total requests (100 attacks and 100 benign queries), followed by a multimodal smoke benchmark that exercised OCR-visible and EXIF-backed image attacks. The fully secured proposed system (Config E) reduced the baseline Attack Success Rate (ASR) from 5.0% to 0.0% in Phase R3 while retaining a 98.0% task accuracy retention rate for benign requests. In the multimodal smoke run, the secured configuration raised Policy Compliance Rate (PCR) from 33.3% to 100.0% and the Provenance Trust Consistency Index (PTCI) from 77.8% to 100.0%. These results were produced by the deterministic judge and live provenance tagging, with acceptable performance overhead, and they replace the earlier stale summary with the current experimental reality.
 
 ## 1. Introduction: The Shift to Agentic AI
 The evolution of Large Language Models (LLMs) has transitioned from passive, single-turn conversational interfaces to autonomous, stateful systems known as "Agentic AI." Unlike traditional models that merely generate text, AI agents are designed to execute complex, multi-step tasks by utilizing external tools, APIs, and persistent memory. While this shift unlocks significant operational capabilities—such as autonomous travel booking, financial analysis, and code generation—it simultaneously introduces profound security vulnerabilities. An agent that can interact with the external world is susceptible to new vectors of attack, including prompt injection, tool hijacking, and data poisoning. 
@@ -58,17 +58,17 @@ The threat model targeted the agentic system across six primary vectors:
 
 To facilitate testing, the mock tools (`search_flights` and `reserve_hotel`) were intentionally poisoned. When queried with specific trigger words, they returned JSON payloads containing malicious system overrides rather than standard API responses.
 
-### 4.2 Automated Evaluation and Baseline Metrics
-An automated evaluation framework was developed using an "LLM-as-a-judge" paradigm. The framework systematically deployed a dataset of 21 targeted attacks against the baseline agent and mathematically scored the results. 
+### 4.2 Preliminary Automated Evaluation and Baseline Metrics
+A preliminary automated evaluation framework was developed using an "LLM-as-a-judge" paradigm. The framework systematically deployed a small pilot dataset of 21 targeted attacks against the baseline agent and mathematically scored the results.
 
-The evaluation yielded a critical finding: **an overall Attack Success Rate (ASR) of 19.05%**, with a **100% failure rate against Indirect Prompt Injections (IPI)**. 
+The pilot evaluation yielded a baseline **Attack Success Rate (ASR) of 19.05%**, with a **100% failure rate against Indirect Prompt Injections (IPI)** in that early setup. 
 
 ### 4.3 The Confused Deputy Vulnerability
 The 100% success rate of Indirect Prompt Injections mathematically demonstrates the most dangerous vulnerability inherent in Agentic AI: **The Confused Deputy Problem**. 
 
 In traditional software, execution flows and data flows are strictly separated. In LLM-based architectures, the instructions (the system prompt) and the data (the outputs from tools and memory) are concatenated into a single text stream for processing. Because the baseline agent lacks strict Trust Boundaries, it implicitly trusts the data returned by its own tools. When the compromised hotel API returned a string containing a malicious command, the LLM could not distinguish the untrusted API data from its trusted core instructions. Consequently, it executed the rogue command.
 
-The establishment of this 19.05% overall ASR provides a mathematically rigorous starting point. The subsequent phases of this research will focus on engineering defensive mechanisms—such as Input/Output sanitizers, definitive Trust Boundaries, and Security Intent Analyzers—specifically designed to drive this Attack Success Rate down to 0%.
+This preliminary ASR established a quantitative starting point for the research. The subsequent phases of this work then introduced input/output sanitizers, definitive trust boundaries, and security intent analyzers, which were later validated in the Phase R3 and multimodal smoke benchmarks that reduced ASR to 0.0% in the secured configuration.
 
 ### 4.4 STRIDE Threat Model Taxonomy Mapping
 
@@ -224,27 +224,28 @@ Autonomous execution introduces unacceptable risks for highly sensitive actions 
 ## 10. Experimental Evaluation & Benchmarking (Phase 9)
 The core objective of this research was to empirically demonstrate that the multi-layered security architecture—comprising Multimodal Sanitization (Phase 5), the Trust Engine (Phase 6), the Pre-LLM Security Enforcement Layer (Phase 7), and Output Validation and Recovery (Phase 8)—effectively neutralizes targeted attacks without significantly degrading the agent's utility. 
 
-To prove this, we subjected the fully secured runtime to the identical dataset of 21 attack payloads originally executed against the vulnerable baseline in Phase 3. 
+To prove this, we subjected the fully secured runtime to the Phase R3 matched-pair evaluation (100 attacks and 100 benign requests) and then added a multimodal smoke benchmark covering OCR-visible and EXIF-backed image inputs. 
 
 ### 10.1 Empirical Results
 The experimental evaluation measured three primary dimensions:
-1. **Security:** The Attack Success Rate (ASR) against the 21 attack payloads.
+1. **Security:** The Attack Success Rate (ASR) against the 100 attack payloads in Phase R3.
 2. **Performance:** The average latency overhead for executing tasks.
-3. **Accuracy:** The Task Accuracy Retention (TAR) and Policy Compliance Rate (PCR) for a dataset of safe, benign queries, evaluating the system's susceptibility to false positives. We also measure the Provenance Trust Consistency Index (PTCI) to evaluate trust tier degradation alignment.
+3. **Accuracy:** The Task Accuracy Retention (TAR), Policy Compliance Rate (PCR), and Provenance Trust Consistency Index (PTCI), which together capture benign utility, safety compliance, and trust/provenance alignment.
 
 **Table 2: Benchmark Results: Baseline vs. Secured Architecture**
 ```text
 Metric               | Baseline | Secured | Improvement
 -------------------------------------------------------
-Attack Success Rate  |    90%   |   <5%   |   -86 pts
-Avg. Latency (ms)    |   220    |   680   |  +460 ms
-Task Accuracy Retention |    99%   |    96%  |    -3 pts
+Attack Success Rate  |    5.0%  |   0.0%   |   -5.0 pts
+False Positive Rate  |    0.0%  |   2.0%   |   +2.0 pts
+Task Accuracy Retention |  100.0% |   98.0% |   -2.0 pts
+Avg. Latency (sec)   |    4.9   |   8.9   |   +4.0 s
 ```
 
 ### 10.2 Analysis of Trade-offs
-The benchmark data provides conclusive evidence of the architecture's effectiveness. The Attack Success Rate plummeted from a highly vulnerable 90% (Baseline) to under 5% (Secured). The multi-layered defense successfully thwarted Direct Prompt Injections, RAG Poisoning, Tool Output Poisoning, and Multimodal Injections by actively degrading agent permissions and sanitizing both input and output streams.
+The Phase R3 benchmark data shows that the secured system drove the ASR from 5.0% to 0.0% while keeping benign TAR at 98.0%. The multimodal smoke benchmark separately showed that OCR-visible and EXIF-backed attacks were blocked while the benign control remained unaffected, and that PCR and PTCI both reached 100.0% under the secured configuration.
 
-However, this security comes at a measurable computational cost. The average latency increased from 220ms to 680ms, reflecting an overhead of +460ms. This overhead is primarily attributed to the secondary LLM evaluations (Agent B in the Output Validator) and the hashing operations within the Trust Engine. Despite this latency increase, the system maintained a robust Task Accuracy Retention (TAR) of 96%, demonstrating that the stringent security rules rarely disrupted benign operations (only a 3-point reduction). These empirical results substantiate the thesis: agentic AI can be fundamentally secured against injection and manipulation through dynamic trust and multi-stage sanitization, achieving near-perfect security with acceptable performance trade-offs.
+However, this security comes at a measurable computational cost. The average latency increased from 4.9s to 8.9s in Phase R3, reflecting an overhead of approximately +4.0s. This overhead is primarily attributed to the secondary LLM evaluations and trust/provenance bookkeeping. Despite this latency increase, the system retained strong benign utility and now reports the proposal's explicit metrics directly rather than relying on stale placeholder values.
 
 ## 11. Real-Time Visualization and Monitoring (Phase 10)
 A critical challenge in developing security frameworks for autonomous agents is the inherent opacity of graph-based execution. Without visibility into the internal routing and the evaluation of trust mechanics, it is difficult to demonstrate or monitor the efficacy of the defense layers in real-time. To bridge this gap, Phase 10 introduced a live web-based visualization dashboard connected to the backend execution hooks.
@@ -306,41 +307,41 @@ The **Policy-Heavy** configuration achieves the lowest ASR (1.5%) but at the cos
 
 ## 15. Confusion Matrix and Classification Metrics
 
-To provide a complete statistical characterization of the detection system, we present the confusion matrix derived from the 600-query evaluation:
+To provide a complete statistical characterization of the detection system, we present the confusion matrix derived from the Phase R3 secured evaluation:
 
 <!-- THESIS_CONFUSION_MATRIX_START -->
 |  | **Predicted: Attack** | **Predicted: Benign** |
 | :--- | :--- | :--- |
-| **Actual: Attack (20)** | TP = 19 | FN = 1 |
-| **Actual: Benign (20)** | FP = 2 | TN = 18 |
+| **Actual: Attack (100)** | TP = 100 | FN = 0 |
+| **Actual: Benign (100)** | FP = 2 | TN = 98 |
 <!-- THESIS_CONFUSION_MATRIX_END -->
 
 <!-- THESIS_METRICS_START -->
 | Metric | Value |
 | :--- | :--- |
-| **Precision** | 0.9048 |
-| **Recall** | 0.9500 |
-| **F1-Score** | 0.9268 |
-| **Accuracy** | 0.9250 |
+| **Precision** | 0.9804 |
+| **Recall** | 1.0000 |
+| **F1-Score** | 0.9900 |
+| **Accuracy** | 0.9900 |
 <!-- THESIS_METRICS_END -->
 
-The high Recall (97.5%) confirms that the system catches nearly all adversarial inputs. The Precision of 91.1% is acceptable given the security-critical context where False Negatives are far more costly than False Positives.
+The perfect Recall (100.0%) confirms that the secured configuration blocks all adversarial inputs in this run. The Precision of 98.0% remains acceptable given the security-critical context where False Negatives are far more costly than False Positives.
 
 ## 16. Statistical Significance
 
-A chi-squared test for independence was conducted to confirm that the observed ASR difference between the Baseline (89.5%) and Secured (2.5%) configurations is statistically significant:
+A chi-squared test for independence was conducted to confirm that the observed ASR difference between the Baseline (5.0%) and Secured (0.0%) configurations is statistically significant:
 
 <!-- THESIS_STATS_START -->
 | Statistic | Value |
 | :--- | :--- |
-| **χ² (Chi-Squared)** | 0.00 |
+| **Chi-Squared** | 3.28 |
 | **Degrees of Freedom** | 1 |
-| **p-value** | 1.0000e+00 |
-| **Significant at α = 0.05?** | **NO ✗** |
+| **p-value** | 7.0039e-02 |
+| **Significant at α = 0.05?** | **NO** |
 <!-- THESIS_STATS_END -->
 
 <!-- THESIS_CI_TEXT_START -->
-The 95% Wilson Confidence Intervals for the Baseline ASR [2.8%, 30.1%] and Secured ASR [0.9%, 23.6%] overlap, which indicates that under the small sample size subset, the observed difference is not statistically significant (p = 1.0000).
+The 95% Wilson Confidence Intervals for the Baseline ASR [2.1%, 11.2%] and Secured ASR [0.0%, 3.7%] overlap, which indicates that under this sample size the observed difference is not statistically significant (p = 0.0700).
 <!-- THESIS_CI_TEXT_END -->
 
 ### 16.1 Deterministic Policy Validation Framework

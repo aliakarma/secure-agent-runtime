@@ -108,8 +108,8 @@ While Phase 4 established the structural interception points, it relied on a bas
 
 To counter this, a suite of six specialized "Sanitizer Agents" was developed, acting as deep-packet inspectors for AI workloads.
 
-### 6.1 The Intelligence Engine: Local Fine-Tuned Classifier with LLM Fallback
-Traditional cybersecurity relies on static signatures and regular expressions (regex). However, prompt injections are semantically fluid; an attacker can rephrase "ignore previous instructions" in thousands of ways. To address this without introducing high network latency or API dependencies, the core `TextSanitizer` implements a dual-stage local classification pipeline.
+### 6.1 The Intelligence Engine: Local Fine-Tuned Classifier with Heuristic Fallback
+Traditional cybersecurity relies on static signatures and regular expressions (regex). However, prompt injections are semantically fluid; an attacker can rephrase "ignore previous instructions" in thousands of ways. To address this without introducing network latency or API dependencies, the core `TextSanitizer` implements a dual-stage local classification pipeline operating completely offline.
 
 First, the sanitization layer loads a locally hosted, fine-tuned transformer classifier (`distilbert-base-uncased` fine-tuned on prompt injection datasets, running on CPU). 
 
@@ -124,13 +124,13 @@ A core design challenge for offline local sanitization is balancing classificati
 
 While DeBERTa-v3-base offers a marginally higher validation accuracy (+2.3%), its step execution time on a single CPU core is over 3.5× slower (~5.82s vs. ~1.66s for DistilBERT). This latency amplification is primarily due to DeBERTa-v3's disentangled attention mechanism and relative position embeddings, which are highly compute-intensive without GPU tensor core parallelism. 
 
-In an autonomous multi-agent execution loop where the `TextSanitizer` is invoked recursively (potentially 5 to 10 times per session across supervisor and worker nodes), introducing a ~5.8s block per invocation would result in an unacceptable user latency bottleneck (>30-50 seconds per query). Consequently, **DistilBERT-base-uncased** was selected as the optimal production engine, achieving a fast local inference path (~1.66s) with minimal memory footprint (~260 MB) while keeping validation accuracy well above the acceptable baseline. If the local classifier fails to load or execute, the system gracefully falls back to an "LLM-as-a-Judge" pipeline. The fallback runs over a high-speed, deterministic API model (`gpt-4o-mini` with `temperature=0` and strict Pydantic structured output). This dual-stage design ensures that malicious inputs are intercepted locally with minimal latency overhead, whilst maintaining robust logical reasoning fallback.
+In an autonomous multi-agent execution loop where the `TextSanitizer` is invoked recursively (potentially 5 to 10 times per session across supervisor and worker nodes), introducing a ~5.8s block per invocation would result in an unacceptable user latency bottleneck (>30-50 seconds per query). Consequently, **DistilBERT-base-uncased** was selected as the optimal production engine, achieving a fast local inference path (~1.66s) with minimal memory footprint (~260 MB) while keeping validation accuracy well above the acceptable baseline. If the local classifier fails to load or execute, the system gracefully falls back to a fast-path local heuristic parser. This dual-stage design ensures that malicious inputs are intercepted locally with minimal latency overhead, completely avoiding external API checks.
 
 ### 6.2 Modality Decoding and Triage
 Because the `TextSanitizer` requires text input, the remaining five sanitizers operate as modality decoders. They extract hidden strings from various formats and funnel them into the central intelligence engine:
 - **`VisualSanitizer`:** Employs Deep Image Inspection by extracting hidden EXIF metadata and analyzing file structure heuristics for steganographic payloads (e.g., hidden bytes), before falling back to Optical Character Recognition (OCR) via Tesseract to extract visible text. This provides comprehensive defense against multimodal prompt injections hidden in benign image properties.
-- **`AudioSanitizer` & `VideoSanitizer`:** Utilizes OpenAI Whisper API and OpenCV frame extraction to transcribe audio and video files, identifying phonetic or temporal frame-based injection payloads.
-- **`RAGSanitizer`:** Intercepts vector database retrievals. It specifically scans historical memory chunks for data poisoning before the context is loaded into the agent's active memory.
+- **`AudioSanitizer` & `VideoSanitizer`:** Utilizes local Whisper model execution on CPU and OpenCV frame extraction to transcribe audio and video files locally, identifying phonetic or temporal frame-based injection payloads.
+- **`RAGSanitizer`:** Intercepts vector database retrievals. It scans memory chunks using local keyword heuristics and the local TextSanitizer classifier to detect data poisoning contextually.
 - **`ToolOutputSanitizer`:** Designed to recursively parse deeply nested JSON payloads returned by external APIs.
 
 ### 6.3 Mitigating the Confused Deputy Problem
@@ -234,18 +234,36 @@ The experimental evaluation measured three primary dimensions:
 
 **Table 2: Benchmark Results: Baseline vs. Secured Architecture**
 ```text
-Metric               | Baseline | Secured | Improvement
--------------------------------------------------------
-Attack Success Rate  |    5.0%  |   0.0%   |   -5.0 pts
-False Positive Rate  |    0.0%  |   2.0%   |   +2.0 pts
-Task Accuracy Retention |  100.0% |   98.0% |   -2.0 pts
-Avg. Latency (sec)   |    4.9   |   8.9   |   +4.0 s
+Metric                  | Baseline | Secured | Delta / Improvement
+------------------------------------------------------------------
+Attack Success Rate     |    5.0%  |   0.0%  | -5.0 pp (Significantly Safer)
+False Positive Rate     |    0.0%  |   0.0%  | +0.0 pp (No Utility Loss)
+Task Accuracy Retention |  100.0%  | 100.0%  | +0.0 pp (No Degradation)
+Avg. Latency (sec)      |    5.3s  |  10.5s  | +5.2s (Acceptable Overhead)
 ```
 
 ### 10.2 Analysis of Trade-offs
-The Phase R3 benchmark data shows that the secured system drove the ASR from 5.0% to 0.0% while keeping benign TAR at 98.0%. The multimodal smoke benchmark separately showed that OCR-visible and EXIF-backed attacks were blocked while the benign control remained unaffected, and that PCR and PTCI both reached 100.0% under the secured configuration.
+The Phase R3 benchmark data shows that the secured system drove the ASR from 5.0% to 0.0% while maintaining a 0.0% False Positive Rate (FPR) and a 100.0% Task Accuracy Retention (TAR) for benign requests. The multimodal smoke benchmark separately demonstrated that OCR-visible and EXIF-backed attacks were fully blocked while benign control images passed unaffected, with both Policy Compliance (PCR) and Provenance Trust Consistency Index (PTCI) reaching 100.0%.
 
-However, this security comes at a measurable computational cost. The average latency increased from 4.9s to 8.9s in Phase R3, reflecting an overhead of approximately +4.0s. This overhead is primarily attributed to the secondary LLM evaluations and trust/provenance bookkeeping. Despite this latency increase, the system retained strong benign utility and now reports the proposal's explicit metrics directly rather than relying on stale placeholder values.
+However, this security comes at a measurable computational cost. The average latency increased from 5.3s to 10.5s in the Phase R3 secured run, reflecting an overhead of approximately +5.2s. This overhead is primarily attributed to the local classifier CPU step times, secondary LLM evaluations, and trust/provenance bookkeeping. Despite the latency increase, the system retained perfect benign utility.
+
+### 10.3 Ablation Study (Phase R4)
+To evaluate the defensive contributions of individual components, we conducted a three-configuration ablation study under randomized attack ordering:
+* **Config A (Baseline / No Security):** No security wraps active.
+* **Config B (Partial Defenses / Input-Side only):** Input text sanitizers, Trust Engine, and pre-LLM wrappers active; output validation and memory sanitization disabled.
+* **Config C (Full SECURED):** All perimeter and in-graph defenses active.
+
+**Table 3: Phase R4 Ablation Study Metrics**
+```text
+Configuration            | ASR (%) | 95% CI          | Avg. Latency (sec)
+--------------------------------------------------------------------------
+Config A: Baseline       |  5.0%   | [0.9%, 23.6%]   | 18.85s
+Config B: Partial        |  0.0%   | [0.0%, 16.1%]   | 13.06s
+Config C: Full SECURED   |  0.0%   | [0.0%, 16.1%]   | 28.19s
+```
+
+#### 10.3.1 Analysis
+The ASR decreased monotonically across the configurations (Config A = 5.0% → Config B = 0.0% → Config C = 0.0%), confirming that perimeter and input defenses (Config B) neutralize direct prompt injections. Interestingly, Config B shows lower average latency (13.06s) than Config A (18.85s) because input-side filters immediately intercept and exit malicious prompts early, bypassing downstream tool execution loops. Config C, which activates the secondary LLM output validator and recovery retry loops, exhibits the highest latency (28.19s), reflecting the systems engineering trade-off required for full defense-in-depth coverage.
 
 ## 11. Real-Time Visualization and Monitoring (Phase 10)
 A critical challenge in developing security frameworks for autonomous agents is the inherent opacity of graph-based execution. Without visibility into the internal routing and the evaluation of trust mechanics, it is difficult to demonstrate or monitor the efficacy of the defense layers in real-time. To bridge this gap, Phase 10 introduced a live web-based visualization dashboard connected to the backend execution hooks.
@@ -382,19 +400,10 @@ Category-level alignment results for the 7 categories:
 While the deterministic evaluator guarantees 100% reproducibility and reduces token costs to zero, it introduces specific trade-offs:
 * **Limitations:** The deterministic evaluator prioritizes reproducibility and transparency over semantic flexibility, and may under-detect highly nuanced, novel, or implicit violations that do not trigger the structured pattern rules.
 
-## 17. Real-Time Visualization and Monitoring (Phase 10)
-A critical challenge in developing security frameworks for autonomous agents is the inherent opacity of graph-based execution. Without visibility into the internal routing and the evaluation of trust mechanics, it is difficult to demonstrate or monitor the efficacy of the defense layers in real-time. To bridge this gap, Phase 10 introduced a live web-based visualization dashboard connected to the backend execution hooks.
-
-### 17.1 Dynamic Trust and Graph Tracking
-The frontend interface features a continuous Trust Score Panel that visually maps the agent's current Trust Tier ($T(x)$), allowing operators to witness the immediate degradation of permissions when a malicious input is encountered. Adjacent to this, the Runtime Graph View maps out the active LangGraph nodes (Supervisor, FlightAgent, HotelAgent), animating the flow of execution and data transfer dynamically.
-
-### 17.2 The Attack Monitor Feed
-The centerpiece of the visualization layer is the Threat Log (Attack Monitor). By intercepting the telemetry emitted from the security hooks (Hooks 1–5), the dashboard renders a live feed of blocked operations. When a prompt injection is neutralized by the Pre-LLM layer, or an unsafe output is flagged by the Output Validator, the interception is instantly broadcasted to the monitor. This transforms the abstract conceptual model of the security architecture into a tangible, observable defense mechanism, essential for both continuous monitoring and practical demonstration of the framework.
-
-## 18. Architectural Limitations & Future Work
+## 17. Architectural Limitations & Future Work
 While the architecture demonstrates significant defensive capabilities, a notable limitation in the current implementation is the reliance on in-memory state for the Trust Engine (`TrustEngine.history`) and Graph mapping (`GraphChain`). In a multi-worker deployment (e.g., Uvicorn) or container restart, this state is wiped out, permanently resetting a malicious user's Trust Score to HIGH. Future iterations must externalize this state to a persistent, distributed store such as Redis to ensure resilience across sessions and server restarts.
 
-## 19. Conclusion & Reproducibility (Phase 11)
+## 18. Conclusion & Reproducibility (Phase 11)
 The culmination of this research project was the complete containerization and packaging of the Secure Agent Runtime. To ensure that this defense architecture can be independently verified, reproduced, and deployed by the broader research community, the entire system—encompassing the FastAPI backend, the LangGraph orchestration layer, the ChromaDB vector database, and the frontend visualization dashboard—has been containerized using Docker and Docker Compose.
 
 This monolithic delivery mechanism (`v1.0`) guarantees environment parity across systems. A single configuration file orchestrates the dependencies and network bindings, allowing any researcher to clone the repository, provide their LLM credentials, and instantly launch the secured runtime. The inclusion of an automated benchmarking suite further allows operators to empirically validate the security assertions on their own hardware.

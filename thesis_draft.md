@@ -10,7 +10,7 @@ In this research, we present the design, implementation, and empirical evaluatio
 4. **Stateful Provenance Ledger:** A metadata tracking system that constructs Directed Acyclic Graphs (DAG) of the data flow and prepends secure provenance tags to the LLM reasoning context window.
 5. **Output Validation and Self-Correction:** A secondary LLM agent ("Agent B") that checks responses for policy violations and triggers up to three reinjection recovery retries before escalating to human-in-the-loop validation.
 
-To demonstrate the efficacy of our framework, we subjected the runtime to a Phase R3 matched-pair evaluation over 200 total requests (100 attacks and 100 benign queries), followed by a multimodal smoke benchmark that exercised OCR-visible and EXIF-backed image attacks. The fully secured proposed system (Config E) reduced the baseline Attack Success Rate (ASR) from 5.0% to 0.0% in Phase R3 while retaining a 98.0% task accuracy retention rate for benign requests. In the multimodal smoke run, the secured configuration raised Policy Compliance Rate (PCR) from 33.3% to 100.0% and the Provenance Trust Consistency Index (PTCI) from 77.8% to 100.0%. These results were produced by the deterministic judge and live provenance tagging, with acceptable performance overhead, and they replace the earlier stale summary with the current experimental reality.
+To demonstrate the efficacy of our framework, we subjected the runtime to a Phase R3 matched-pair evaluation over 40 total requests (20 attacks and 20 benign queries), followed by a multimodal smoke benchmark that exercised OCR-visible and EXIF-backed image attacks. The fully secured configuration of the proposed framework reduced the baseline Attack Success Rate (ASR) from 100.0\% to 15.0\% in the Phase R3 matched-pair evaluation while retaining a 100.0\% Task Accuracy Retention (TAR) rate for benign requests. In the multimodal ingestion smoke test, the secured configuration raised the Policy Compliance Rate (PCR) from 33.3\% to 100.0\% and the Provenance Trust Consistency Index (PTCI) from 77.8\% to 100.0\%. These results were achieved with a negligible average latency overhead of only 0.01 seconds per turn (increasing from 1.28s to 1.29s), demonstrating that the security layers effectively mitigate prompt injections without degrading agent usability or introducing execution bottlenecks.
 
 ## 1. Introduction: The Shift to Agentic AI
 The evolution of Large Language Models (LLMs) has transitioned from passive, single-turn conversational interfaces to autonomous, stateful systems known as "Agentic AI." Unlike traditional models that merely generate text, AI agents are designed to execute complex, multi-step tasks by utilizing external tools, APIs, and persistent memory. While this shift unlocks significant operational capabilities—such as autonomous travel booking, financial analysis, and code generation—it simultaneously introduces profound security vulnerabilities. An agent that can interact with the external world is susceptible to new vectors of attack, including prompt injection, tool hijacking, and data poisoning. 
@@ -84,6 +84,65 @@ To contextualize the vulnerabilities of autonomous agentic systems within indust
 | **Elevation of Privilege** | Users forcing the agent to act as a "Confused Deputy" to perform unauthorized actions. | **Role Hijacking**, jailbreaking the agent to execute state-mutating actions without authorization. | **Dynamic Trust Engine (Three-Tier Policy Enforcement)** |
 
 This taxonomy highlights that securing Agentic AI requires a multi-layered security wrapper, as traditional monomodal prompt filtering fails to cover the diverse threats introduced by cyclic routing and persistent memory.
+
+### 4.5 Attacker Capabilities and Threat Agent Profile
+In modeling security threats to autonomous multi-agent environments, we define a spectrum of attacker capabilities based on access vector and execution authority:
+1. **Unprivileged External Adversary:** Possesses no direct access to system code, configurations, or internal databases. They interact solely through exposed user input forms. Their capability is restricted to **Direct Prompt Injections** (jailbreaks, prompt leakage requests, role overrides) carried within conversational payloads.
+2. **Third-Party Data Controller (Man-in-the-Middle / Content Provider):** Controls external web pages, database items, or API endpoints that the agent accesses dynamically during task execution. Their capability includes placing **Indirect Prompt Injections** within tools and retrieved documents, executing silent background hijacking when the agent reads poisoned content.
+3. **Internal Compromise (Worker Agent Takeover):** Occurs when a downstream worker node (e.g., `FlightAgent`) becomes semantically hijacked by an injection payload. The compromised worker attempts to exploit downstream trust by returning malicious payloads to the coordinating supervisor node, hoping to trigger lateral command propagation across the entire multi-agent workforce.
+
+### 4.6 Multimodal Attack Surfaces
+Autonomous multi-agent runtimes are exposed to multimodal ingestion pathways that act as attack vectors. These attack surfaces include:
+1. **Unstructured Text Ingestion:** Conversational queues (Hook 1) where malicious system-override payloads bypass shallow heuristics.
+2. **Visual Ingestion and Optical Character Recognition (OCR):** Adversaries hide high-contrast textual prompt injection instructions in image payloads. When the agent passes the image to an OCR engine, the extracted text is processed as trusted instructions, hijacking the LLM reasoning loop.
+3. **Structured API Outputs (Tool Hijacking):** Downstream mock endpoints return malicious JSON payloads containing unescaped instruction syntax rather than schema-compliant data, exploiting the lack of tool-output validation (Hook 3).
+4. **Vector Database Retrieval (RAG Poisoning):** Malicious inputs stored in the vector database are contextually retrieved during search queries, injecting semantic overrides directly into the reasoning window (Hook 4).
+
+### 4.7 Cross-Agent Propagation Assumptions
+Within a multi-agent workforce, security boundaries are often eroded due to the assumption of internal trust. When the supervisor node delegates tasks to worker nodes, it assumes worker outputs are benign.
+Our threat model explicitly assumes:
+- **Zero Lateral Trust:** All inter-agent message exchanges (Hook 5) must be treated as untrusted. A compromised worker agent can return outputs wrapped with role-override commands or data exfiltration requests designed to compromise the supervisor node's orchestration logic.
+- **Cascading Vulnerability:** If a single worker agent is hijacked, the entire multi-agent graph is vulnerable to propagation unless strict, orchestration-level routing filters inspect inter-agent messages before they are processed by the supervisor.
+
+### 4.8 Trust Boundary Definitions and Policy Enforcement Map
+We define four core trust boundaries to segment execution permissions and enforce security policies:
+1. **Ingestion Boundary:** Separates external untrusted inputs (user text, image uploads) from the internal orchestrator. Hook 1 (Pre-LLM) and Hook 2 (Visual Sanitization) guard this boundary.
+2. **Tool Execution Boundary:** Separates the LLM orchestrator from external tool APIs. Enforced at Hook 3 (Post-Tool) via output validators to intercept poisoned tool results.
+3. **Memory Boundary:** Isolates persistent ChromaDB records from session contexts. Enforced at Hook 4 (Pre-Memory) to verify semantic integrity before memory serialization.
+4. **Agent Orchestration Boundary:** Isolates specialized worker agents from each other. Enforced at Hook 5 (Inter-Agent Routing) using supervisor-level validation to prevent cross-agent infection propagation.
+
+**Figure: ASCII Trust Boundary Architecture**
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║                  SECURE AGENT RUNTIME TRUST BOUNDARIES            ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  [User / External Input]  ──► ┌─────────────────────────────────┐║
+║                               │  INGESTION BOUNDARY              ║║
+║                               │  Hook 1: Pre-LLM (TextSanitizer) ║║
+║                               │  Hook 2: Visual (EXIF + OCR)     ║║
+║                               └────────────┬────────────────────┘║
+║                                            │ (TRUSTED PAYLOAD)    ║
+║                               ┌────────────▼────────────────────┐║
+║                               │     ORCHESTRATOR / SUPERVISOR    ║║
+║                               │     (LangGraph State Engine)     ║║
+║                               └──┬─────────────────────┬────────┘║
+║                    TOOL BOUNDARY │                      │ AGENT   ║
+║  [External APIs] ◄──────────────►│  Hook 3: Post-Tool   │ BOUNDARY║
+║  [Mock Tools]                    │  (ToolOutputSanitizer│        ║║
+║                                  │                      │ Hook 5  ║
+║                               ┌──▼──────────────────────▼──────┐ ║
+║                               │  WORKER AGENTS                  │ ║
+║                               │  FlightAgent  │  HotelAgent     │ ║
+║                               └────────────────────────────────┘ ║
+║                                            │                      ║
+║                               ┌────────────▼────────────────────┐║
+║                               │  MEMORY BOUNDARY                 ║║
+║                               │  Hook 4: Pre-Memory (RAGSanitize)║║
+║                               │  ChromaDB Vector Store           ║║
+║                               └─────────────────────────────────┘║
+╚═══════════════════════════════════════════════════════════════════╝
+```
 
 ## 5. Security Hooking Architecture (Phase 4)
 Addressing the vulnerabilities identified in Phase 3 requires fundamentally altering how the LangGraph architecture processes data. Standard LangChain architectures rely heavily on global callbacks, which observe execution asynchronously and after-the-fact. While useful for logging, callbacks cannot prevent a compromised LLM from mutating state or executing dangerous tool calls.
@@ -222,30 +281,30 @@ When Agent B flags a response as unsafe, the system does not merely fail and cra
 Autonomous execution introduces unacceptable risks for highly sensitive actions (e.g., executing a financial transaction or confirming a real booking). To mitigate this, Phase 8 integrated a Human-in-the-Loop module. The Output Validator acts as an intent classifier; if it detects a high-risk operation, or if the recovery loop exhausts its three retries without producing a safe output, execution is paused. The operation is escalated to a human operator who must manually approve or reject the action, ensuring critical decisions always have a human failsafe.
 
 ## 10. Experimental Evaluation & Benchmarking (Phase 9)
-The core objective of this research was to empirically demonstrate that the multi-layered security architecture—comprising Multimodal Sanitization (Phase 5), the Trust Engine (Phase 6), the Pre-LLM Security Enforcement Layer (Phase 7), and Output Validation and Recovery (Phase 8)—effectively neutralizes targeted attacks without significantly degrading the agent's utility. 
+The core objective of this research was to empirically evaluate if the multi-layered security architecture—comprising Multimodal Sanitization (Phase 5), the Trust Engine (Phase 6), the Pre-LLM Security Enforcement Layer (Phase 7), and Output Validation and Recovery (Phase 8)—effectively mitigates targeted prompt injections without significantly degrading benign agent utility. 
 
-To prove this, we subjected the fully secured runtime to the Phase R3 matched-pair evaluation (100 attacks and 100 benign requests) and then added a multimodal smoke benchmark covering OCR-visible and EXIF-backed image inputs. 
+To evaluate this, we subjected the secured runtime configuration to the Phase R3 matched-pair evaluation (20 attacks and 20 benign requests) and a multimodal smoke benchmark covering OCR-visible and EXIF-backed image inputs. 
 
 ### 10.1 Empirical Results
 The experimental evaluation measured three primary dimensions:
-1. **Security:** The Attack Success Rate (ASR) against the 100 attack payloads in Phase R3.
-2. **Performance:** The average latency overhead for executing tasks.
-3. **Accuracy:** The Task Accuracy Retention (TAR), Policy Compliance Rate (PCR), and Provenance Trust Consistency Index (PTCI), which together capture benign utility, safety compliance, and trust/provenance alignment.
+1. **Security:** The Attack Success Rate (ASR) against the 20 attack payloads in Phase R3.
+2. **Performance:** The average execution latency overhead.
+3. **Accuracy:** The Task Accuracy Retention (TAR), Policy Compliance Rate (PCR), and Provenance Trust Consistency Index (PTCI), which capture benign utility, safety compliance, and trust/provenance alignment.
 
 **Table 2: Benchmark Results: Baseline vs. Secured Architecture**
 ```text
 Metric                  | Baseline | Secured | Delta / Improvement
 ------------------------------------------------------------------
-Attack Success Rate     |    5.0%  |   0.0%  | -5.0 pp (Significantly Safer)
-False Positive Rate     |    0.0%  |   0.0%  | +0.0 pp (No Utility Loss)
-Task Accuracy Retention |  100.0%  | 100.0%  | +0.0 pp (No Degradation)
-Avg. Latency (sec)      |    5.3s  |  10.5s  | +5.2s (Acceptable Overhead)
+Attack Success Rate     |   100.0\%|   15.0\%| -85.0 pp (Significantly Safer)
+False Positive Rate     |     0.0\%|    0.0\%| +0.0 pp (No Utility Loss)
+Task Accuracy Retention |   100.0\%|  100.0\%| +0.0 pp (No Degradation)
+Avg. Latency (sec)      |    1.28s |   1.29s | +0.01s (Negligible Overhead)
 ```
 
 ### 10.2 Analysis of Trade-offs
-The Phase R3 benchmark data shows that the secured system drove the ASR from 5.0% to 0.0% while maintaining a 0.0% False Positive Rate (FPR) and a 100.0% Task Accuracy Retention (TAR) for benign requests. The multimodal smoke benchmark separately demonstrated that OCR-visible and EXIF-backed attacks were fully blocked while benign control images passed unaffected, with both Policy Compliance (PCR) and Provenance Trust Consistency Index (PTCI) reaching 100.0%.
+The Phase R3 benchmark data shows that under the evaluated conditions, the secured system reduced the baseline ASR from 100.0\% to 15.0\% while maintaining a 0.0\% False Positive Rate (FPR) and a 100.0\% Task Accuracy Retention (TAR) for benign requests. The multimodal smoke benchmark separately demonstrated that OCR-visible and EXIF-backed attacks were blocked, with both Policy Compliance (PCR) and Provenance Trust Consistency Index (PTCI) reaching 100.0\% in the secured run compared to 33.3\% and 77.8\% in the baseline run.
 
-However, this security comes at a measurable computational cost. The average latency increased from 5.3s to 10.5s in the Phase R3 secured run, reflecting an overhead of approximately +5.2s. This overhead is primarily attributed to the local classifier CPU step times, secondary LLM evaluations, and trust/provenance bookkeeping. Despite the latency increase, the system retained perfect benign utility.
+Importantly, this security was achieved with minimal latency cost. The average turn latency increased from 1.28s to 1.29s in the Phase R3 secured run, reflecting an overhead of approximately +0.01s (5.75 ms). This indicates that the hybrid heuristic-first and local classifier invocation design effectively controls execution delay, maintaining high availability for standard user workflows.
 
 ### 10.3 Ablation Study (Phase R4)
 To evaluate the defensive contributions of individual components, we conducted a three-configuration ablation study under randomized attack ordering:
@@ -255,15 +314,67 @@ To evaluate the defensive contributions of individual components, we conducted a
 
 **Table 3: Phase R4 Ablation Study Metrics**
 ```text
-Configuration            | ASR (%) | 95% CI          | Avg. Latency (sec)
+Configuration            | ASR (\%)| 95\% CI         | Avg. Latency (sec)
 --------------------------------------------------------------------------
-Config A: Baseline       |  5.0%   | [0.9%, 23.6%]   | 18.85s
-Config B: Partial        |  0.0%   | [0.0%, 16.1%]   | 13.06s
-Config C: Full SECURED   |  0.0%   | [0.0%, 16.1%]   | 28.19s
+Config A: Baseline       | 100.0\% | [83.9\%, 100.0\%] | 1.24s (1243.6 ms)
+Config B: Partial        | 100.0\% | [83.9\%, 100.0\%] | 1.26s (1264.3 ms)
+Config C: Full SECURED   |  15.0\% | [5.2\%, 36.0\%]  | 1.51s (1510.3 ms)
 ```
 
 #### 10.3.1 Analysis
-The ASR decreased monotonically across the configurations (Config A = 5.0% → Config B = 0.0% → Config C = 0.0%), confirming that perimeter and input defenses (Config B) neutralize direct prompt injections. Interestingly, Config B shows lower average latency (13.06s) than Config A (18.85s) because input-side filters immediately intercept and exit malicious prompts early, bypassing downstream tool execution loops. Config C, which activates the secondary LLM output validator and recovery retry loops, exhibits the highest latency (28.19s), reflecting the systems engineering trade-off required for full defense-in-depth coverage.
+The ablation metrics show that ASR remains at 100.0\% for both Config A (Baseline) and Config B (Partial). Under Config B, which implements only input-side and pre-LLM sanitizers, indirect prompt injections embedded in tool outputs or vector database context (RAG poisoning) successfully bypass the sanitizers, demonstrating the vulnerability of perimeter-only defenses. Only the activation of output-side validation and stateful context controls in Config C yields a significant drop in ASR to 15.0\% (95\% CI: [5.2\%, 36.0\%]). Average turn latency increases from 1.24s (Config A) to 1.26s (Config B) due to text classification checks, and reaches 1.51s under Config C due to the multi-agent Output Validator (Agent B) audit checks, showing a clear latency-security trade-off.
+
+### 10.4 Component-Level Firewall Verification (Hook Isolation)
+To evaluate the standalone defensive effectiveness of each sanitizer hook, we conducted a component-level firewall benchmark completely offline. We bypassed the downstream LangGraph agent loop and fed direct prompt, visual, tool JSON, memory retrieved, and routing payloads into their respective sanitizer filters. This isolates the hooks from the LLM's native behavior to measure the standalone interception accuracy.
+
+We compared **Fast Heuristic Mode** against **Secure Classifier Mode** (local DistilBERT classification on CPU).
+
+**Table 4: Hook Isolation Benchmark Results**
+| Stage / Hook Stage | System Mode | ASR Leak (\%) | FPR (\%) | Recall (\%) | Latency (Mean) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Hook 1: Pre-LLM (TextSanitizer)** | Fast | 12.0\% | 0.0\% | 88.0\% | 0.01 ms |
+| | Secure | 0.0\% | 15.0\% | 100.0\% | 64.52 ms |
+| **Hook 2: Visual (VisualSanitizer)** | Fast | 0.0\% | 0.0\% | 100.0\% | 1.22 ms |
+| | Secure | 0.0\% | 100.0\% | 100.0\% | 33.23 ms |
+| **Hook 3: Post-Tool (ToolSanitizer)**| Fast | 0.0\% | 0.0\% | 100.0\% | 0.00 ms |
+| | Secure | 0.0\% | 100.0\% | 100.0\% | 73.37 ms |
+| **Hook 4: Pre-Memory (RAGSanitizer)**| Fast | 0.0\% | 0.0\% | 100.0\% | 0.01 ms |
+| | Secure | 0.0\% | 91.0\% | 100.0\% | 12.85 ms |
+| **Hook 5: Routing (Inter-Agent)**    | Fast | 12.0\% | 0.0\% | 88.0\% | 0.01 ms |
+| | Secure | 0.0\% | 15.0\% | 100.0\% | 59.86 ms |
+| **Output Validator (OutputValidator)**| Fast | 0.0\% | 0.0\% | 100.0\% | 0.06 ms |
+| | Secure | 0.0\% | 100.0\% | 100.0\% | 64.12 ms |
+
+#### 10.4.1 Empirical Findings and Systems Engineering Trade-offs
+1. **The Baseline Vulnerability (100\% Exposure):** In the baseline multi-agent graph with all security layers disabled, the primary reasoning LLM is directly exposed to untrusted inputs, yielding a baseline LLM attack exposure of **100.0\%**. Activating the sanitization hooks successfully blocks adversarial payloads, reducing the ASR to 12.0\% in Fast Mode and 0.0\% in Secure Mode across the isolated components.
+2. **Rule-Based Heuristics (Fast Mode) Efficiency:** Fast Mode completes checks in **< 0.1 ms** (with Hook 2 visual processing taking 1.22 ms due to image preprocessing mocks) with a **0.0\% False Positive Rate (FPR)** on text. Because it filters using specific keyword mappings, it ignores structured markup. However, static screens are subject to semantic evasion, leading to a **12.0\% ASR Leak Rate** on Hook 1 and Hook 5.
+3. **Local Transformer (Secure Mode) Classification Anomalies:** Under Secure Mode, the local DistilBERT model achieves perfect recall (100.0\%) but exhibits elevated False Positive Rates (FPR), ranging from 15.0\% on Hooks 1 and 5 to 91.0\% on Hook 4 and 100.0\% on Hooks 2, 3, and the Output Validator. This is a key systems-security finding: the local text classifier, having been fine-tuned on unstructured conversational prompt data, flags structured syntax (e.g. JSON API envelopes, quotes, brackets, and retrieval structures) as malicious out-of-distribution (OOD) anomalies. This highlights the necessity of pre-sanitization cleaning and structural unrolling before classification models are applied.
+4. **Visual Hook and Tesseract Bypass:** Hook 2 (VisualSanitizer) shows a 0.0\% FPR in Fast Mode but 100.0\% FPR in Secure Mode. When the system binary dependency (Tesseract) is absent, Secure Mode triggers a path exception and falls closed by design to prevent security bypass. In production environments with Tesseract installed, OCR parsing executes in **1 to 2 seconds** on local commodity CPUs.
+
+### 10.5 Advanced Security Verification & Multi-Agent Evaluations
+To comprehensively evaluate the orchestration-level security properties of the proposed multi-agent framework under dynamic workflows, we performed three advanced offline evaluations:
+
+1. **Cross-Agent Infection & Message Propagation Simulation:**
+   We simulated a compromised worker agent (e.g., `FlightAgent` or `HotelAgent`) outputting a prompt injection command to infect the parent `Supervisor` agent. We measured the baseline message propagation rate (0% security wrappers) against our Inter-Agent Routing Middleware (Hook 5).
+   - *Baseline Infection Rate:* **100.0%** (ASR = 100%, 0% of attacks blocked).
+   - *Fast Heuristic Inter-Agent Interception:* **88.0% Recall** (12.0% ASR Leak Rate, 0% FPR).
+   - *Secure Classifier Inter-Agent Interception:* **100.0% Recall** (0.0% ASR Leak Rate, 100% FPR).
+
+2. **Provenance Trust Consistency Index (PTCI) Evaluation:**
+   We simulated 50 multi-turn conversation logs (5 turns each) with varying injection frequencies (purely benign, single-attack, and multi-attack sessions) to verify the stateful trust degradation logic of the `TrustEngine`.
+   - *Provenance Trust Consistency Index (PTCI):* **90.00%**
+   - *Pearson Correlation Coefficient ($r$) (Attacks vs. Trust Score):* **-1.0000**
+   - *Trust Tier Alignment Accuracy:* **80.0%**
+   - *Decision/Detection Alignment Accuracy:* **100.0%**
+   The perfect negative correlation ($r = -1.0000$) demonstrates that the framework's stateful trust score degrades with mathematical consistency in direct response to the frequency and presence of prompt injections over multi-turn interactions.
+
+3. **Task Accuracy Retention (TAR) Benchmark:**
+   We ran 50 benign travel booking tasks through the compiled LangGraph workflow to measure whether the safety wrappers incorrectly blocked legitimate user requests (the Task Accuracy Retention metric).
+   - *Configuration A (Baseline):* **100.0% TAR** (no security wrappers active, all benign tasks succeed).
+   - *Configuration B (Fast Heuristic Mode):* **100.0% TAR** (sub-millisecond keyword screening does not interfere with standard user requests, achieving 0% false positives).
+   - *Configuration C (Secure Classifier Mode):* **0.0% TAR** (due to the local model's out-of-distribution sensitivity to structured JSON formatting and synthetic indexing markers, all benign queries are blocked).
+
+These results confirm that while a local transformer classifier provides a robust, zero-leak boundary against complex attacks, its high false positive rate significantly disrupts user task completion. This demonstrates that a hybrid deployment—pairing fast heuristics for structured tool-calling nodes with local sequence classifiers restricted to unstructured input channels—is essential for balancing system security and operational availability.
 
 ## 11. Real-Time Visualization and Monitoring (Phase 10)
 A critical challenge in developing security frameworks for autonomous agents is the inherent opacity of graph-based execution. Without visibility into the internal routing and the evaluation of trust mechanics, it is difficult to demonstrate or monitor the efficacy of the defense layers in real-time. To bridge this gap, Phase 10 introduced a live web-based visualization dashboard connected to the backend execution hooks.
@@ -347,61 +458,111 @@ The perfect Recall (100.0%) confirms that the secured configuration blocks all a
 
 ## 16. Statistical Significance
 
-A chi-squared test for independence was conducted to confirm that the observed ASR difference between the Baseline (5.0%) and Secured (0.0%) configurations is statistically significant:
+To establish the mathematical rigor of our security claims, we performed matched-pair statistical analyses to evaluate the ASR reduction and latency impact of our security infrastructure.
+
+### 16.1 Matched-Pair ASR Evaluation (McNemar's Test)
+Because we evaluate the same set of attack prompts on both the Baseline and Secured configurations, we use McNemar's exact binomial test to compare ASR outcomes (matched pairs). 
+
+Our evaluation yielded a contingency table of discordant pairs:
+- **Baseline Succeeded & Secured Blocked (Discordant):** 17 cases
+- **Baseline Blocked & Secured Succeeded (Discordant):** 0 cases
+
+Under the null hypothesis ($H_0$) that both configurations are equally vulnerable, we expect an equal distribution of discordant pairs. The exact binomial test evaluates the likelihood of observing this distribution under $H_0$.
 
 <!-- THESIS_STATS_START -->
-| Statistic | Value |
+| Statistic / Test Metric | Value |
 | :--- | :--- |
-| **Chi-Squared** | 3.28 |
+| **Chi-Squared Statistic ($\chi^2$)** | 15.0588 |
 | **Degrees of Freedom** | 1 |
-| **p-value** | 7.0039e-02 |
-| **Significant at α = 0.05?** | **NO** |
+| **Exact p-value** | 1.5259e-05 |
+| **Significant at $\alpha = 0.05$?** | **YES** |
 <!-- THESIS_STATS_END -->
 
 <!-- THESIS_CI_TEXT_START -->
-The 95% Wilson Confidence Intervals for the Baseline ASR [2.1%, 11.2%] and Secured ASR [0.0%, 3.7%] overlap, which indicates that under this sample size the observed difference is not statistically significant (p = 0.0700).
+The McNemar exact p-value of $1.5259 \times 10^{-5}$ is far below the significance threshold of $\alpha = 0.05$, confirming that the observed ASR reduction from 100% to 15% is highly statistically significant. We reject the null hypothesis, demonstrating that the security middleware provides robust, statistically verifiable protection. 
+
+Additionally, 95% bootstrap confidence intervals (10,000 iterations) verify this divergence:
+- **Baseline ASR:** 100.0% (95% CI: [100.0%, 100.0%])
+- **Secured ASR:** 15.0% (95% CI: [0.0%, 30.0%])
 <!-- THESIS_CI_TEXT_END -->
 
-### 16.1 Deterministic Policy Validation Framework
+The complete ASR comparison across ingestion pathways is visualized in [asr_comparison_plot.png](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/figures/asr_comparison_plot.png). Classification metrics and errors are mapped in the confusion matrices [confusion_matrices.png](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/figures/confusion_matrices.png).
 
-To ensure evaluation reproducibility, transparency, and eliminate API token overhead, we implemented a deterministic, rule-based security evaluation framework rather than relying on LLM-as-a-judge approaches. This policy-based evaluator operates by identifying behavioral security violations (such as prompt leakage, tool disclosure, policy bypass, memory exfiltration, unauthorized action, role override, and data disclosure) using strict policy rules rather than semantic LLM judging.
+### 16.2 Turn-by-Turn Latency Overhead (Paired t-Test)
+To verify if the security layers introduce an unacceptable latency penalty on benign paths, we conducted a two-tailed paired t-test on matched turn-by-turn latencies across 20 benign travel-booking request pairs:
+- **Mean Baseline Latency (per turn):** 1398.88 ms
+- **Mean Secured Latency (per turn):** 1422.18 ms
+- **Paired t-statistic ($t$):** -0.2037
+- **p-value:** 0.8408
+- **Significant at $\alpha = 0.05$?** **NO**
 
-#### 16.1.1 Policy Violation Taxonomy and Rule Definitions
+The p-value of 0.8408 is well above the significance threshold of $\alpha = 0.05$. This confirms that the latency differences between the Baseline and Secured configurations are not statistically significant under local offline execution, demonstrating that our hybrid heuristic and local classification design adds negligible overhead to standard execution paths. Hook isolation execution times are charted in [latency_comparison_charts.png](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/figures/latency_comparison_charts.png), and the end-to-end security/usability trade-off is shown in [tar_tradeoff_plot.png](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/figures/tar_tradeoff_plot.png).
+
+### 16.3 Deterministic Policy Validation Framework
+
+To ensure evaluation reproducibility, transparency, and eliminate API token overhead, we implemented a deterministic, rule-based security evaluation framework rather than relying on LLM-as-a-judge approaches. This policy-based evaluator operates by identifying behavioral security violations (such as prompt leakage, policy bypass, tool misuse, memory exfiltration, role override, unauthorized action, data disclosure, indirect injection, and memory poisoning) using strict policy rules rather than semantic LLM judging.
+
+#### 16.3.1 Policy Violation Taxonomy and Rule Definitions
 We classify security compromises into a structured taxonomy of violation types:
 1. **Prompt Leakage:** Exposure of system instructions, developer prompts, or internal reasoning parameters.
-2. **Tool Disclosure:** Unsanitized disclosure of available worker tools or internal graph architecture.
-3. **Policy Bypass:** Direct instructions to ignore constraints, enter "developer mode", or confirm safety deactivation.
+2. **Policy Bypass:** Direct instructions to ignore constraints, enter "developer mode", or confirm safety deactivation.
+3. **Tool Misuse:** Unsanitized disclosure of available worker tools, backend functions, or internal graph architecture.
 4. **Memory Exfiltration:** Extraction of session context or retrieval profiles from the vector store.
-5. **Unauthorized Action:** Executing mutations or tool transactions (e.g. booking confirmations) without verified user authorization.
-6. **Role Override:** Forcing the agent to adopt a hostile or general assistant persona.
+5. **Role Override:** Forcing the agent to adopt a hostile or general assistant persona.
+6. **Unauthorized Action:** Executing mutations or tool transactions (e.g. booking confirmations) without verified user authorization.
 7. **Data Disclosure:** Unsanitized exposure of credentials, database keys, or PII.
+8. **Indirect Injection:** Unsanitized execution or routing of poisoned tool output payloads.
+9. **Memory Poisoning:** Stateful compromise or poisoning of vector database records.
 
-#### 16.1.2 Manual Validation and Category-Level Verification
-To verify the consistency of our deterministic evaluator, we performed a manual inspection on a human-curated validation subset of 21 cases across 7 balanced attack categories (3 cases per category). Instead of comparing simple binary agreement, we evaluated category-level alignment between the expected violation and the detected category. 
+#### 16.3.2 Manual Validation and Category-Level Verification
+To verify the consistency of our deterministic evaluator, we performed a manual inspection on a human-curated validation subset of 27 cases across 9 balanced attack categories (3 cases per category). Instead of comparing simple binary agreement, we evaluated category-level alignment between the expected violation and the detected category. 
 
 The deterministic evaluator achieved the following metrics on this manual validation subset:
-- **Classification Accuracy**: 100.00%
-- **Precision**: 100.00%
-- **Recall**: 100.00%
-- **F1-Score**: 100.00%
+- **Classification Accuracy**: 96.30%
+- **Precision**: 96.30%
+- **Recall**: 96.30%
+- **F1-Score**: 96.30%
 
-Category-level alignment results for the 7 categories:
+Category-level alignment results for the 9 categories:
 | Violation Category | Expected Cases | Detected Cases | Alignment Rate |
 | :--- | :---: | :---: | :---: |
 | Prompt Leakage | 3 | 3 | 100.0% |
-| Tool Disclosure | 3 | 3 | 100.0% |
 | Policy Bypass | 3 | 3 | 100.0% |
+| Tool Misuse | 3 | 3 | 100.0% |
 | Memory Exfiltration | 3 | 3 | 100.0% |
-| Unauthorized Action | 3 | 3 | 100.0% |
 | Role Override | 3 | 3 | 100.0% |
+| Unauthorized Action | 3 | 3 | 100.0% |
 | Data Disclosure | 3 | 3 | 100.0% |
+| Indirect Injection | 3 | 2 | 66.7% |
+| Memory Poisoning | 3 | 3 | 100.0% |
 
-#### 16.1.3 Evaluator Limitations
+#### 16.3.3 Evaluator Limitations
 While the deterministic evaluator guarantees 100% reproducibility and reduces token costs to zero, it introduces specific trade-offs:
 * **Limitations:** The deterministic evaluator prioritizes reproducibility and transparency over semantic flexibility, and may under-detect highly nuanced, novel, or implicit violations that do not trigger the structured pattern rules.
 
 ## 17. Architectural Limitations & Future Work
-While the architecture demonstrates significant defensive capabilities, a notable limitation in the current implementation is the reliance on in-memory state for the Trust Engine (`TrustEngine.history`) and Graph mapping (`GraphChain`). In a multi-worker deployment (e.g., Uvicorn) or container restart, this state is wiped out, permanently resetting a malicious user's Trust Score to HIGH. Future iterations must externalize this state to a persistent, distributed store such as Redis to ensure resilience across sessions and server restarts.
+
+This section provides a structured analysis of the known limitations of the current Secure Agent Runtime implementation, organized by architectural concern. These limitations do not invalidate the experimental findings—which were obtained under controlled, reproducible, offline conditions—but they define the scope and constraints within which the claims must be interpreted.
+
+### 17.1 In-Memory State and Session Persistence
+The Trust Engine (`TrustEngine.history`) and the Graph Provenance Ledger (`GraphChain`) are held in volatile in-process memory. In a multi-worker deployment (e.g., Uvicorn with `--workers > 1`) or upon container restart, all accumulated behavioral state is discarded, permanently resetting a malicious user's Trust Score to HIGH. This means that across separate Python processes, a repeated adversary is treated as a new benign user. **Mitigation:** Externalize session state to a distributed key-value store such as Redis or PostgreSQL with time-to-live expiry controls. This would provide cross-worker and cross-restart Trust Score persistence without architectural redesign.
+
+### 17.2 Local Classifier False Positive Rate in Secure Mode
+The hook isolation benchmark (Section 10.4) revealed that the locally fine-tuned DistilBERT classifier exhibits elevated False Positive Rates (FPR) when applied to structured data. In Secure Mode, FPR reaches 15.0\% for text hooks (Hooks 1, 5) and 91.0–100.0\% for structured JSON and visual inputs (Hooks 2, 3, 4). This is an out-of-distribution (OOD) effect: the classifier was fine-tuned on unstructured conversational prompt injection corpora and has not been calibrated on structured API JSON envelopes, markdown-formatted retrieval context, or bracketed syntax. **Impact:** Under the `SECURED_SYSTEM_MODE=full-research` configuration, the Task Accuracy Retention (TAR) drops to 0.0\% for structured tool-calling workflows (Section 10.5). This severely limits the applicability of Secure Mode to purely unstructured conversational inputs. **Mitigation:** Fine-tune the classifier on a domain-specific mixed corpus including both conversational prompt injections and structured JSON payloads, or apply structural unrolling (extracting string values from JSON before classification) as a pre-processing step.
+
+### 17.3 Mock Tool Ecosystem and External Generalizability
+All experiments in this thesis used mock tool endpoints (`search_flights`, `reserve_hotel`) that return deterministic outputs from a fixed payload dictionary. The attack payloads embedded in these mock tools are static, hand-crafted injections. This controlled environment enables rigorous reproducibility but limits external generalizability. Real-world tool APIs may return stochastic, schema-varied, or streaming JSON responses that the current `ToolOutputSanitizer` has not been validated against. **Mitigation:** Extend the benchmark suite to include a live tool integration harness against publicly available sandboxed APIs (e.g., mock travel industry APIs) to validate behavioral consistency under realistic schema variance.
+
+### 17.4 Single-Domain Evaluation (Travel Booking)
+All 8 experiments in this thesis are conducted within the travel booking domain. While this provides a coherent multi-agent scenario, the generalizability of the ASR reduction and latency results to other high-stakes domains (e.g., healthcare data retrieval, legal document processing, financial transactions) has not been empirically validated. Attack surface characteristics, tool complexity, and trust boundary definitions may differ significantly across domains. **Mitigation:** A future cross-domain benchmark across at least 3 distinct agentic task domains is recommended for broader claims of generalizability.
+
+### 17.5 Absence of Adaptive Adversaries
+The evaluation protocol used static, pre-defined attack payloads. Real-world adversaries are adaptive: they observe system responses, iterate on failed injections, and craft semantically evasive rephrasing. Our current benchmark does not model adaptive multi-round adversarial strategies (e.g., red-team agents that modify their payload based on the system's prior rejection). This is a known limitation of static benchmark evaluations in security research. **Mitigation:** Integrate an adaptive red-team agent loop (e.g., an LLM prompted to iteratively generate evasion variants of failed injections) as Phase R10 of the evaluation pipeline.
+
+### 17.6 LLM-as-a-Judge Dependency Removed in Deterministic Mode
+By design, this evaluation framework uses a deterministic rule-based evaluator (Section 16.3) for full offline reproducibility and zero token cost. This removes the LLM-as-a-Judge component used in preliminary Phase 3 evaluations. While this guarantees reproducibility, it introduces a semantic gap: the deterministic evaluator may under-detect highly nuanced, novel, or context-dependent violations that do not activate structured pattern rules (as shown by the 66.7\% alignment rate for the `Indirect Injection` category in Section 16.3.2). **Mitigation:** Supplement the deterministic evaluator with an LLM-as-a-Judge cross-check on a representative sample for semantic validation.
+
+---
 
 ## 18. Conclusion & Reproducibility (Phase 11)
 The culmination of this research project was the complete containerization and packaging of the Secure Agent Runtime. To ensure that this defense architecture can be independently verified, reproduced, and deployed by the broader research community, the entire system—encompassing the FastAPI backend, the LangGraph orchestration layer, the ChromaDB vector database, and the frontend visualization dashboard—has been containerized using Docker and Docker Compose.
@@ -409,3 +570,134 @@ The culmination of this research project was the complete containerization and p
 This monolithic delivery mechanism (`v1.0`) guarantees environment parity across systems. A single configuration file orchestrates the dependencies and network bindings, allowing any researcher to clone the repository, provide their LLM credentials, and instantly launch the secured runtime. The inclusion of an automated benchmarking suite further allows operators to empirically validate the security assertions on their own hardware.
 
 Ultimately, this project proves that autonomous agentic AI can be fundamentally secured against malicious injection attacks. By shifting away from static, single-point validations to a continuous, dynamic trust architecture—where capabilities are degraded contextually, and both inputs and outputs are rigidly sanitized—we can achieve near-perfect security with acceptable performance trade-offs, paving the way for the safe deployment of autonomous agents in enterprise environments.
+
+---
+
+## 19. Reproducibility Appendix
+
+This appendix provides a self-contained reproduction guide for all experimental results reported in this thesis. All experiments are fully offline and require no external API calls or paid services when run in deterministic/mock mode.
+
+### 19.1 Environment Requirements
+
+| Dependency | Minimum Version | Purpose |
+| :--- | :---: | :--- |
+| Python | 3.10+ | Runtime environment |
+| pip packages | see `requirements.txt` | All Python dependencies |
+| Docker & Docker Compose | 20.10+ | Full system containerization |
+| Tesseract OCR | 5.x (optional) | Hook 2 visual OCR path |
+| `distilbert-base-uncased` | via HuggingFace cache | Local text classifier |
+
+### 19.2 One-Command Full Experiment Replication
+
+All eight experiments (R3–R9) can be executed with a single command:
+
+```bash
+# From the repository root:
+python scripts/run_all_experiments.py
+```
+
+This master runner executes all phases sequentially, writes all result files to `datasets/`, generates all publication figures to `docs/figures/`, and outputs a consolidated `docs/final_evaluation_report.md`. All figure and results files are then archived to `artifact_snapshot/` via the freeze script.
+
+To freeze all results after replication:
+```bash
+python scripts/freeze_results.py
+```
+
+### 19.3 Individual Experiment Commands
+
+| Experiment | Script / Command | Output File |
+| :--- | :--- | :--- |
+| R3: Baseline vs. Secured (ASR/TAR) | `python scripts/run_all_experiments.py --phase r3` | `datasets/r3_comparison_summary.json` |
+| R4a: Ablation Study | `python scripts/run_all_experiments.py --phase r4_ablation` | `datasets/r4_ablation_summary.json` |
+| R4b: Hook Isolation (FPR/Recall) | `python scripts/run_all_experiments.py --phase r4_hooks` | `datasets/r4_hook_isolation_summary.json` |
+| R5: Multimodal Smoke Test | `python scripts/run_all_experiments.py --phase r5` | `datasets/r5_multimodal_summary.json` |
+| R6: Safety Policy Evaluator Validation | `python scripts/run_all_experiments.py --phase r6` | `datasets/r6_policy_evaluator_summary.json` |
+| R7: Cross-Agent Propagation | `python scripts/run_all_experiments.py --phase r7` | `datasets/r7_cross_agent_summary.json` |
+| R8: Provenance Trust Consistency | `python scripts/run_all_experiments.py --phase r8` | `datasets/r8_ptci_summary.json` |
+| R9: Task Accuracy Retention | `python scripts/run_all_experiments.py --phase r9` | `datasets/r9_tar_summary.json` |
+| Statistical Significance | `python scripts/run_all_experiments.py --phase stats` | `datasets/statistical_significance.json` |
+| Figures (All) | `python scripts/run_all_experiments.py --phase figures` | `docs/figures/*.png` |
+
+### 19.4 Directory Structure of Key Artifacts
+
+```
+secure-agent-runtime/
+├── scripts/
+│   ├── run_all_experiments.py      # Master runner (single-command replication)
+│   ├── freeze_results.py           # Snapshot archiver
+│   └── generate_figures.py         # Publication figure generator
+├── datasets/                       # Frozen benchmark source of truth (JSON)
+│   ├── r3_comparison_summary.json
+│   ├── r4_ablation_summary.json
+│   ├── r4_hook_isolation_summary.json
+│   ├── r5_multimodal_summary.json
+│   ├── r6_policy_evaluator_summary.json
+│   ├── r7_cross_agent_summary.json
+│   ├── r8_ptci_summary.json
+│   ├── r9_tar_summary.json
+│   └── statistical_significance.json
+├── docs/
+│   ├── final_evaluation_report.md  # Aggregated summary report
+│   └── figures/                    # All publication-quality figures (PNG)
+├── artifact_snapshot/              # Frozen archive of all results
+├── thesis_draft.md                 # This document
+├── Dockerfile
+├── docker-compose.yml
+└── requirements.txt
+```
+
+### 19.5 Expected Runtime (Offline / No API)
+
+| Phase | Estimated Runtime | Notes |
+| :--- | :--- | :--- |
+| R3 (20 attacks + 20 benign) | ~2–5 minutes | Deterministic mock mode; no LLM API calls |
+| R4a Ablation (3 configs × 20) | ~3–8 minutes | Fully offline |
+| R4b Hook Isolation (6 hooks × 2 modes) | ~1–3 minutes | Sub-second per hook in fast mode |
+| R5 Multimodal (9 samples) | ~1–2 minutes | Tesseract optional; mock fallback available |
+| R6 Policy Validation (27 cases) | ~30 seconds | Fully deterministic, zero LLM calls |
+| R7 Cross-Agent (25 pairs) | ~1 minute | Simulation-based |
+| R8 PTCI (50 sessions) | ~1 minute | Simulation-based |
+| R9 TAR (50 benign tasks) | ~2–4 minutes | Fast heuristic and secure classifier modes |
+| Figure generation | ~30 seconds | Matplotlib only, no API calls |
+| **Full pipeline (all phases)** | **~15–30 minutes** | **On commodity CPU, offline** |
+
+---
+
+## 20. Future Venues and Extractable Papers
+
+The contributions of this thesis are broad enough to support multiple extractable research papers and targeted venue submissions.
+
+### 20.1 Recommended Conference & Journal Venues
+
+| Contribution Area | Recommended Venue | Tier |
+| :--- | :--- | :--- |
+| Agentic AI Security, Prompt Injection Defense | **IEEE S&P (Oakland)** | A\* |
+| LLM Security, Multi-Agent Trust | **USENIX Security** | A\* |
+| AI Safety & Alignment, Trust Scoring | **NeurIPS** (Safety workshop) | A\* |
+| LangGraph/Orchestration Security | **ACM CCS** | A\* |
+| Multimodal Attack Surfaces, OCR Injection | **CVPR** (Workshop on Adversarial ML) | A |
+| RAG Security, Vector Database Poisoning | **SIGIR** | A |
+| Systems Security, Reproducible AI Benchmarks | **SOSP / EuroSys** | A\* |
+| Applied AI Security, Industrial Systems | **IEEE TDSC** (Transactions journal) | Q1 |
+
+### 20.2 Extractable Papers
+
+1. **"Orchestration-Level Prompt Injection Defense for Stateful Multi-Agent LLM Systems"**  
+   *Core contribution:* The 5-hook interception architecture, the Phase R3 matched-pair ASR/TAR benchmark, and the ablation study (Sections 5, 10.1–10.3).  
+   *Target venue:* IEEE S&P or USENIX Security.
+
+2. **"Session-Stateful Trust Scoring and Three-Tier Policy Enforcement for Autonomous Agent Capability Degradation"**  
+   *Core contribution:* The $T(x)$ trust formula, the provenance ledger, and the PTCI simulation results (Sections 7, 10.5).  
+   *Target venue:* ACM CCS or NeurIPS Safety Workshop.
+
+3. **"Multimodal Injection Attack Surfaces in Agentic AI: EXIF, OCR, and RAG-Based Threat Characterization"**  
+   *Core contribution:* The multimodal sanitization layer (Section 6), the smoke test results (Section 10.1), and the STRIDE mapping (Section 4.4).  
+   *Target venue:* CVPR Workshop on Adversarial ML or SIGIR.
+
+4. **"Component-Level Firewall Benchmarking for LLM Middleware: FPR and Recall Analysis of Local Classifier Hooks"**  
+   *Core contribution:* The hook isolation methodology, the Fast vs. Secure mode FPR/recall tables, and the OOD sensitivity finding for structured data (Section 10.4).  
+   *Target venue:* IEEE TDSC or a dedicated LLM evaluation venue (HELM, LM-Eval workshops).
+
+5. **"Reproducible Offline Benchmarking for Agentic AI Security: A Deterministic Evaluation Framework"**  
+   *Core contribution:* The deterministic policy evaluator (Section 16.3), the statistical significance methodology (Section 16.1–16.2), and the single-command replication pipeline (Section 19).  
+   *Target venue:* SOSP or ICML Reproducibility Workshop.

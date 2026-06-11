@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Secure Agent Runtime — real-time defense monitoring dashboard for autonomous multi-agent AI systems with trust scoring, provenance tracking, and prompt injection interception.">
     <title>Secure Agentic Runtime Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="app.css">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -12,6 +13,10 @@
     <div class="bg-orb bg-orb-one"></div>
     <div class="bg-orb bg-orb-two"></div>
     <div class="bg-grid"></div>
+
+    <!-- Toast notification container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <div class="dashboard-container">
         <aside class="sidebar glass-panel">
             <div class="brand">
@@ -58,13 +63,7 @@
                 </div>
             </div>
 
-            <div class="nav-menu">
-                <button class="nav-item active" data-target="monitoring" type="button"><i data-lucide="activity"></i><span>Live Monitoring</span></button>
-                <button class="nav-item" data-target="graph" type="button"><i data-lucide="network"></i><span>Graph Inspector</span></button>
-                <button class="nav-item" data-target="threats" type="button"><i data-lucide="shield-alert"></i><span>Threat Logs</span></button>
-                <button class="nav-item" data-target="provenance" type="button"><i data-lucide="fingerprint"></i><span>Provenance</span></button>
-                <button class="nav-item" data-target="policies" type="button"><i data-lucide="settings-2"></i><span>Policies</span></button>
-            </div>
+
             
             <div class="status-indicator">
                 <div class="pulse-dot"></div>
@@ -84,7 +83,7 @@
                 </div>
                 <div class="hero-badges">
                     <span class="hero-badge" id="graph-status">IDLE</span>
-                    <span class="hero-badge subtle">Auto-polling</span>
+                    <span class="hero-badge subtle" id="auto-polling-badge">Auto-polling</span>
                     <span class="hero-badge subtle" id="latency-val">0ms avg</span>
                 </div>
             </section>

@@ -1,6 +1,6 @@
 # Phase R5: Multimodal Smoke Evaluation
 
-**Generated:** 2026-06-09 08:22 UTC
+**Generated:** 2026-06-10 19:54 UTC
 
 ## Setup
 

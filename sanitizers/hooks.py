@@ -57,6 +57,15 @@ def secure_agent_node(agent_name, agent_runnable):
             
             res = text_sanitizer.sanitize(last_message)
             
+            if res.is_malicious:
+                from dashboard_events import push_dashboard_event
+                push_dashboard_event("SECURITY_ALERT", {
+                    "phase": 1,
+                    "agent": agent_name,
+                    "message": f"Prompt injection detected in input: {res.reason}",
+                    "severity": "CRITICAL"
+                })
+            
             # Update Trust Engine (skip if ablated)
             if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
                 score, new_tier = trust_engine.process_payload(session_id, last_message, "user_or_agent", res.is_malicious)
@@ -113,9 +122,23 @@ def secure_tool_wrapper(func):
         # Phase 6: Three-Tier Policy Enforcement
         if tier == "LOW":
             logger.warning(f"Hook 2 (Policy Enforcement): Blocked {tool_name} due to LOW trust tier.")
+            from dashboard_events import push_dashboard_event
+            push_dashboard_event("SECURITY_ALERT", {
+                "phase": 2,
+                "agent": tool_name,
+                "message": f"Blocked tool execution due to LOW trust tier ({tier}).",
+                "severity": "CRITICAL"
+            })
             return "Error: Action blocked by security policy (LOW trust)."
         elif tier == "MEDIUM" and tool_name not in ["search_flights", "read_image_ocr", "process_audio_memo", "analyze_video_feed"]:
             logger.warning(f"Hook 2 (Policy Enforcement): Blocked {tool_name} due to MEDIUM trust tier. Only read-only actions allowed.")
+            from dashboard_events import push_dashboard_event
+            push_dashboard_event("SECURITY_ALERT", {
+                "phase": 2,
+                "agent": tool_name,
+                "message": f"Blocked write tool execution due to MEDIUM trust tier ({tier}). Only read-only actions allowed.",
+                "severity": "WARNING"
+            })
             return f"Error: Tool {tool_name} blocked. Medium trust only allows read-only tools."
             
         logger.info(f"Hook 2 Triggered: Intercepting before tool execution ({tool_name}). Tier={tier}")
@@ -134,9 +157,16 @@ def secure_tool_wrapper(func):
             
             if res.is_malicious:
                 logger.warning(f"Security Alert at Hook 2 ({tool_name}_Pre_Tool): {res.reason}")
+                from dashboard_events import push_dashboard_event
+                push_dashboard_event("SECURITY_ALERT", {
+                    "phase": 2,
+                    "agent": tool_name,
+                    "message": f"Suspicious tool arguments detected and blocked: {res.reason}",
+                    "severity": "CRITICAL"
+                })
                 if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
                     trust_engine.register_injection(session_id)
-                    return "Error: Suspicious tool arguments detected and blocked."
+                return "Error: Suspicious tool arguments detected and blocked."
                 
         for k, v in kwargs.items():
             if tool_name == "read_image_ocr" and k == "image_path":
@@ -150,9 +180,16 @@ def secure_tool_wrapper(func):
                 
             if res.is_malicious:
                 logger.warning(f"Security Alert at Hook 2 ({tool_name}_Pre_Tool): {res.reason}")
+                from dashboard_events import push_dashboard_event
+                push_dashboard_event("SECURITY_ALERT", {
+                    "phase": 2,
+                    "agent": tool_name,
+                    "message": f"Suspicious tool arguments detected and blocked: {res.reason}",
+                    "severity": "CRITICAL"
+                })
                 if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
                     trust_engine.register_injection(session_id)
-                    return "Error: Suspicious tool arguments detected and blocked."
+                return "Error: Suspicious tool arguments detected and blocked."
                 
         # Phase B: MCP Protocol Execution Sandbox
         import inspect

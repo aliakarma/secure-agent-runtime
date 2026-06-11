@@ -1,3 +1,7 @@
+/* ══════════════════════════════════════════════════════════
+   Secure Agent Runtime — Dashboard Controller
+   ══════════════════════════════════════════════════════════ */
+
 let lastEventId = -1;
 const POLL_INTERVAL = 500;
 
@@ -7,6 +11,7 @@ let searchQuery = '';
 let processedEvents = 0;
 let blockedEvents = 0;
 
+/* ── DOM references ──────────────────────────────────────── */
 const sidebarTrustScore = document.getElementById('sidebar-trust-score');
 const metricTrustScore = document.getElementById('metric-trust-score');
 const trustProgress = document.getElementById('trust-progress');
@@ -33,19 +38,61 @@ const pauseToggle = document.getElementById('pause-toggle');
 const clearFeedButton = document.getElementById('clear-feed');
 const refreshProvenanceButton = document.getElementById('refresh-provenance');
 const copySessionButton = document.getElementById('copy-session');
+const autoPollingBadge = document.getElementById('auto-polling-badge');
+const pulseDot = document.querySelector('.pulse-dot');
 
+/* ══════════════════════════════════════════════════════════
+   TOAST NOTIFICATION SYSTEM
+   ══════════════════════════════════════════════════════════ */
+function showToast(message, type = 'info', duration = 3500) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        toast.addEventListener('animationend', () => toast.remove());
+    }, duration);
+}
+
+/* ══════════════════════════════════════════════════════════
+   CONNECTION STATE
+   ══════════════════════════════════════════════════════════ */
 function setConnectionState(state, label) {
-    if (!connectionStateEl) return;
-    connectionStateEl.textContent = label;
-    if (state === 'live') {
-        connectionStateEl.style.color = 'var(--accent-green)';
-    } else if (state === 'degraded') {
-        connectionStateEl.style.color = 'var(--accent-orange)';
-    } else {
-        connectionStateEl.style.color = 'var(--text-secondary)';
+    if (connectionStateEl) {
+        connectionStateEl.textContent = label;
+    }
+
+    // Sync the pulse dot class
+    if (pulseDot) {
+        pulseDot.classList.remove('degraded', 'error');
+        if (state === 'degraded') {
+            pulseDot.classList.add('degraded');
+        } else if (state === 'error') {
+            pulseDot.classList.add('error');
+        }
+    }
+
+    if (connectionStateEl) {
+        if (state === 'live') {
+            connectionStateEl.style.color = 'var(--accent-green)';
+        } else if (state === 'degraded') {
+            connectionStateEl.style.color = 'var(--accent-orange)';
+        } else if (state === 'error') {
+            connectionStateEl.style.color = 'var(--accent-red)';
+        } else {
+            connectionStateEl.style.color = 'var(--text-secondary)';
+        }
     }
 }
 
+/* ══════════════════════════════════════════════════════════
+   COUNTERS & METRICS
+   ══════════════════════════════════════════════════════════ */
 function updateCounters() {
     if (eventCountEl) eventCountEl.textContent = String(processedEvents);
     if (blockedCountEl) blockedCountEl.textContent = String(blockedEvents);
@@ -59,6 +106,9 @@ function updateLatency(ms) {
     if (latencyVal) latencyVal.textContent = `${rounded}ms avg`;
 }
 
+/* ══════════════════════════════════════════════════════════
+   TRUST METER
+   ══════════════════════════════════════════════════════════ */
 function updateTrustMeter(score, tier) {
     const safeScore = Number.isFinite(score) ? score : 0;
     const formattedScore = safeScore.toFixed(2);
@@ -76,23 +126,26 @@ function updateTrustMeter(score, tier) {
     trustTierBadge.textContent = `TIER: ${tier}`;
 
     if (tier === 'HIGH') {
-        trustProgress.style.stroke = 'var(--accent-green)';
+        if (trustProgress) trustProgress.style.stroke = 'var(--accent-green)';
         trustTierBadge.style.color = 'var(--accent-green)';
-        trustTierBadge.style.background = 'rgba(16, 185, 129, 0.2)';
-        trustTierBadge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+        trustTierBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+        trustTierBadge.style.borderColor = 'rgba(16, 185, 129, 0.25)';
     } else if (tier === 'MEDIUM') {
-        trustProgress.style.stroke = 'var(--accent-orange)';
+        if (trustProgress) trustProgress.style.stroke = 'var(--accent-orange)';
         trustTierBadge.style.color = 'var(--accent-orange)';
-        trustTierBadge.style.background = 'rgba(245, 158, 11, 0.2)';
-        trustTierBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        trustTierBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+        trustTierBadge.style.borderColor = 'rgba(245, 158, 11, 0.25)';
     } else {
-        trustProgress.style.stroke = 'var(--accent-red)';
+        if (trustProgress) trustProgress.style.stroke = 'var(--accent-red)';
         trustTierBadge.style.color = 'var(--accent-red)';
-        trustTierBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-        trustTierBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        trustTierBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+        trustTierBadge.style.borderColor = 'rgba(239, 68, 68, 0.25)';
     }
 }
 
+/* ══════════════════════════════════════════════════════════
+   GRAPH TRACE LOG
+   ══════════════════════════════════════════════════════════ */
 function addTrace(message) {
     if (!graphTraceContainer) return;
     const entry = document.createElement('div');
@@ -102,6 +155,9 @@ function addTrace(message) {
     graphTraceContainer.scrollTop = graphTraceContainer.scrollHeight;
 }
 
+/* ══════════════════════════════════════════════════════════
+   SECURITY ALERT ITEMS
+   ══════════════════════════════════════════════════════════ */
 function renderAlertItem(phase, agent, message, severity) {
     const alertItem = document.createElement('div');
     alertItem.className = `alert-item ${severity === 'WARNING' ? 'warning' : ''}`;
@@ -147,6 +203,9 @@ function addSecurityAlert(phase, agent, message, severity) {
     applyAlertFilters();
 }
 
+/* ══════════════════════════════════════════════════════════
+   NODE GRAPH ACTIVATION
+   ══════════════════════════════════════════════════════════ */
 function setNodeActive(nodeName) {
     document.querySelectorAll('.node').forEach((n) => n.classList.remove('active'));
     document.querySelectorAll('.edge').forEach((e) => e.classList.remove('active'));
@@ -165,6 +224,9 @@ function setNodeActive(nodeName) {
     if (insightNode) insightNode.textContent = nodeName || 'Idle';
 }
 
+/* ══════════════════════════════════════════════════════════
+   PROVENANCE RENDERING
+   ══════════════════════════════════════════════════════════ */
 function renderProvenance(records) {
     if (!provenanceFeed) return;
     provenanceFeed.innerHTML = '';
@@ -232,45 +294,58 @@ async function loadProvenance(sessionId = currentSession?.textContent?.trim() ||
     }
 }
 
+/* ══════════════════════════════════════════════════════════
+   EVENT PROCESSING
+   ══════════════════════════════════════════════════════════ */
 function processEvent(event) {
     const data = event.data || {};
     processedEvents += 1;
 
     switch (event.type) {
         case 'GRAPH_START':
-            graphStatus.textContent = 'EXECUTING';
-            graphBadge.textContent = 'EXECUTING';
-            graphStatus.style.background = 'rgba(59, 130, 246, 0.2)';
-            graphStatus.style.color = 'var(--accent-blue)';
-            currentSession.textContent = data.session_id || currentSession.textContent;
+            if (graphStatus) {
+                graphStatus.textContent = 'EXECUTING';
+                graphStatus.style.background = 'rgba(59, 130, 246, 0.16)';
+                graphStatus.style.color = 'var(--accent-blue)';
+            }
+            if (graphBadge) graphBadge.textContent = 'EXECUTING';
+            if (currentSession) currentSession.textContent = data.session_id || currentSession.textContent;
             if (graphTraceContainer) graphTraceContainer.innerHTML = '';
             addTrace(`Input: "${data.input || ''}"`);
-            loadProvenance(currentSession.textContent.trim());
+            loadProvenance(currentSession?.textContent?.trim());
             break;
+
         case 'GRAPH_END':
-            graphStatus.textContent = 'COMPLETED';
-            graphBadge.textContent = 'COMPLETED';
-            graphStatus.style.background = 'rgba(16, 185, 129, 0.2)';
-            graphStatus.style.color = 'var(--accent-green)';
+            if (graphStatus) {
+                graphStatus.textContent = 'COMPLETED';
+                graphStatus.style.background = 'rgba(16, 185, 129, 0.16)';
+                graphStatus.style.color = 'var(--accent-green)';
+            }
+            if (graphBadge) graphBadge.textContent = 'COMPLETED';
             addTrace('Graph execution finished.');
+            loadProvenance(currentSession?.textContent?.trim());
             setTimeout(() => {
                 document.querySelectorAll('.node').forEach((n) => n.classList.remove('active'));
                 document.querySelectorAll('.edge').forEach((e) => e.classList.remove('active'));
             }, 1000);
             break;
+
         case 'TRUST_UPDATE':
             updateTrustMeter(data.score, data.tier);
             addTrace(`Trust updated to ${Number(data.score || 0).toFixed(2)} (${data.tier || 'UNKNOWN'})`);
             break;
+
         case 'NODE_ACTIVE':
             setNodeActive(data.node);
             addTrace(`Node activated: ${data.node}`);
             break;
+
         case 'SECURITY_ALERT':
             blockedEvents += 1;
             addSecurityAlert(data.phase, data.agent, data.message, data.severity);
             addTrace(`SECURITY BLOCK: Phase ${data.phase}`);
             break;
+
         default:
             break;
     }
@@ -278,6 +353,9 @@ function processEvent(event) {
     updateCounters();
 }
 
+/* ══════════════════════════════════════════════════════════
+   EVENT POLLING
+   ══════════════════════════════════════════════════════════ */
 async function pollEvents() {
     if (isPaused) {
         setTimeout(pollEvents, POLL_INTERVAL);
@@ -305,6 +383,9 @@ async function pollEvents() {
     setTimeout(pollEvents, POLL_INTERVAL);
 }
 
+/* ══════════════════════════════════════════════════════════
+   SVG EDGE LINE CALCULATION
+   ══════════════════════════════════════════════════════════ */
 function updateLines() {
     const sup = document.getElementById('node-Supervisor');
     const fli = document.getElementById('node-FlightAgent');
@@ -338,6 +419,9 @@ function updateLines() {
     if (pathH) pathH.setAttribute('d', `M ${startX},${startY} C ${startX + 60},${startY} ${endXH - 60},${endYH} ${endXH},${endYH}`);
 }
 
+/* ══════════════════════════════════════════════════════════
+   QUICK PROMPT CHIPS
+   ══════════════════════════════════════════════════════════ */
 function attachQuickPromptButtons() {
     document.querySelectorAll('.quick-chip').forEach((button) => {
         button.addEventListener('click', () => {
@@ -347,6 +431,9 @@ function attachQuickPromptButtons() {
     });
 }
 
+/* ══════════════════════════════════════════════════════════
+   FORM SUBMISSION
+   ══════════════════════════════════════════════════════════ */
 attackForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const input = attackInput?.value?.trim();
@@ -371,34 +458,23 @@ attackForm?.addEventListener('submit', async (event) => {
             if (Number.isFinite(result.trust_score)) {
                 updateTrustMeter(result.trust_score, result.trust_tier || 'HIGH');
             }
+            showToast('Payload executed successfully', 'success');
+        } else {
+            showToast(`Server error: HTTP ${response.status}`, 'error');
         }
     } catch (error) {
         console.error('Failed to run graph', error);
+        showToast('Backend unreachable — is the server running?', 'error');
     } finally {
         if (submitButton) submitButton.disabled = false;
     }
 });
 
-document.querySelectorAll('.nav-item').forEach((item) => {
-    item.addEventListener('click', () => {
-        document.querySelectorAll('.nav-item').forEach((nav) => nav.classList.remove('active'));
-        item.classList.add('active');
 
-        const target = item.getAttribute('data-target');
-        if (target === 'graph') {
-            document.querySelector('.graph-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (target === 'threats') {
-            document.querySelector('.security-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (target === 'policies') {
-            alert('Policy management is currently managed via the backend TrustEngine configuration.');
-        } else if (target === 'monitoring') {
-            document.getElementById('monitoring-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (target === 'provenance') {
-            document.querySelector('.provenance-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    });
-});
 
+/* ══════════════════════════════════════════════════════════
+   FILTER & SEARCH
+   ══════════════════════════════════════════════════════════ */
 filterInput?.addEventListener('input', (event) => {
     searchQuery = String(event.target.value || '').toLowerCase();
     applyAlertFilters();
@@ -413,10 +489,24 @@ document.querySelectorAll('.filter-pill').forEach((pill) => {
     });
 });
 
+/* ══════════════════════════════════════════════════════════
+   TOOLBAR ACTIONS
+   ══════════════════════════════════════════════════════════ */
 pauseToggle?.addEventListener('click', () => {
     isPaused = !isPaused;
-    pauseToggle.innerHTML = isPaused ? '<i data-lucide="play"></i>Resume feed' : '<i data-lucide="pause"></i>Pause feed';
+    pauseToggle.innerHTML = isPaused
+        ? '<i data-lucide="play"></i>Resume feed'
+        : '<i data-lucide="pause"></i>Pause feed';
     window.lucide?.createIcons();
+
+    // Sync auto-polling badge
+    if (autoPollingBadge) {
+        autoPollingBadge.textContent = isPaused ? 'Paused' : 'Auto-polling';
+        autoPollingBadge.style.background = isPaused ? 'rgba(245, 158, 11, 0.14)' : '';
+        autoPollingBadge.style.color = isPaused ? 'var(--accent-orange)' : '';
+        autoPollingBadge.style.borderColor = isPaused ? 'rgba(245, 158, 11, 0.25)' : '';
+    }
+
     setConnectionState(isPaused ? 'degraded' : 'live', isPaused ? 'Feed paused' : 'Backend Connected');
 });
 
@@ -435,23 +525,33 @@ clearFeedButton?.addEventListener('click', () => {
     emptyState.appendChild(text);
     securityFeed.appendChild(emptyState);
     window.lucide?.createIcons();
+    showToast('Console cleared', 'info');
 });
 
-refreshProvenanceButton?.addEventListener('click', () => loadProvenance(currentSession.textContent.trim()));
+refreshProvenanceButton?.addEventListener('click', () => {
+    loadProvenance(currentSession?.textContent?.trim());
+    showToast('Provenance refreshed', 'info');
+});
 
 copySessionButton?.addEventListener('click', async () => {
     try {
-        await navigator.clipboard.writeText(currentSession.textContent.trim());
-        copySessionButton.textContent = 'Copied';
+        await navigator.clipboard.writeText(currentSession?.textContent?.trim() || '');
+        copySessionButton.textContent = 'Copied!';
+        showToast('Session ID copied to clipboard', 'success');
         setTimeout(() => {
             copySessionButton.innerHTML = '<i data-lucide="copy"></i>Copy';
             window.lucide?.createIcons();
         }, 1200);
     } catch (error) {
         console.error('Copy failed', error);
+        showToast('Failed to copy — clipboard access denied', 'warning');
     }
 });
 
+
+/* ══════════════════════════════════════════════════════════
+   EDGE RESIZE OBSERVER
+   ══════════════════════════════════════════════════════════ */
 const nodeSystem = document.querySelector('.node-system');
 if (nodeSystem && window.ResizeObserver) {
     const observer = new ResizeObserver(() => updateLines());
@@ -459,6 +559,9 @@ if (nodeSystem && window.ResizeObserver) {
     setTimeout(updateLines, 200);
 }
 
+/* ══════════════════════════════════════════════════════════
+   INITIALIZATION
+   ══════════════════════════════════════════════════════════ */
 attachQuickPromptButtons();
 setConnectionState('connecting', 'Connecting to backend');
 updateCounters();

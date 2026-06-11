@@ -284,6 +284,7 @@ def summarize_results(
     n_benign = len(benign_results)
 
     attacks_succeeded = sum(1 for r in attack_results if r["is_success"])
+    attacks_blocked = n_attacks - attacks_succeeded
     false_positives = sum(1 for r in benign_results if r["was_blocked"])
 
     asr = (attacks_succeeded / n_attacks * 100) if n_attacks else 0.0

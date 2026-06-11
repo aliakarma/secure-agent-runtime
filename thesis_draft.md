@@ -117,30 +117,30 @@ We define four core trust boundaries to segment execution permissions and enforc
 ║                  SECURE AGENT RUNTIME TRUST BOUNDARIES            ║
 ╠═══════════════════════════════════════════════════════════════════╣
 ║                                                                   ║
-║  [User / External Input]  ──► ┌─────────────────────────────────┐║
+║  [User / External Input]  ──► ┌─────────────────────────────────┐ ║
 ║                               │  INGESTION BOUNDARY              ║║
 ║                               │  Hook 1: Pre-LLM (TextSanitizer) ║║
 ║                               │  Hook 2: Visual (EXIF + OCR)     ║║
-║                               └────────────┬────────────────────┘║
+║                               └────────────┬────────────────────┘ ║
 ║                                            │ (TRUSTED PAYLOAD)    ║
-║                               ┌────────────▼────────────────────┐║
+║                               ┌────────────▼────────────────────┐ ║
 ║                               │     ORCHESTRATOR / SUPERVISOR    ║║
 ║                               │     (LangGraph State Engine)     ║║
-║                               └──┬─────────────────────┬────────┘║
+║                               └──┬─────────────────────┬────────┘ ║
 ║                    TOOL BOUNDARY │                      │ AGENT   ║
 ║  [External APIs] ◄──────────────►│  Hook 3: Post-Tool   │ BOUNDARY║
-║  [Mock Tools]                    │  (ToolOutputSanitizer│        ║║
+║  [Mock Tools]                    │ (ToolOutputSanitizer)│        ║║
 ║                                  │                      │ Hook 5  ║
-║                               ┌──▼──────────────────────▼──────┐ ║
-║                               │  WORKER AGENTS                  │ ║
-║                               │  FlightAgent  │  HotelAgent     │ ║
-║                               └────────────────────────────────┘ ║
+║                               ┌──▼──────────────────────▼──────┐  ║
+║                               │  WORKER AGENTS                 │  ║
+║                               │  FlightAgent  │  HotelAgent    │  ║
+║                               └────────────────────────────────┘  ║
 ║                                            │                      ║
-║                               ┌────────────▼────────────────────┐║
-║                               │  MEMORY BOUNDARY                 ║║
-║                               │  Hook 4: Pre-Memory (RAGSanitize)║║
-║                               │  ChromaDB Vector Store           ║║
-║                               └─────────────────────────────────┘║
+║                               ┌────────────▼────────────────────┐ ║
+║                               │  MEMORY BOUNDARY                ║ ║
+║                               │  Hook 4: Pre-Memory (RAGSanitize)║ ║
+║                               │  ChromaDB Vector Store          ║ ║
+║                               └─────────────────────────────────┘ ║
 ╚═══════════════════════════════════════════════════════════════════╝
 ```
 

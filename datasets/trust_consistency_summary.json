@@ -1,0 +1,8 @@
+{
+  "total_sessions": 50,
+  "mean_trust_score": 0.8,
+  "provenance_trust_consistency_index_pct": 90.0,
+  "pearson_correlation_attack_vs_score": -1.0,
+  "trust_alignment_pct": 80.0,
+  "decision_alignment_pct": 100.0
+}

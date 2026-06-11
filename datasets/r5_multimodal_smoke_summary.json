@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-09T08:22:37.946636+00:00",
+  "generated_at": "2026-06-10T19:54:41.707370+00:00",
   "cases": [
     {
       "id": "ocr_injection",
@@ -70,6 +70,6 @@
     "recall_pct": 100.0,
     "f1_pct": 100.0,
     "ptci_pct": 100.0,
-    "latency_mean_ms": 0.01
+    "latency_mean_ms": 0.02
   }
 }

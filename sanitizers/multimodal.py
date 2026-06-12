@@ -37,11 +37,25 @@ class TextSanitizer:
                 logger.info("Local prompt injection classifier successfully loaded.")
             except Exception as e:
                 self.init_error = str(e)
+                if os.getenv("STRICT_SECURITY", "0") == "1":
+                    raise RuntimeError(
+                        "STRICT_SECURITY=1: local prompt injection classifier is required "
+                        f"but failed to load: {e}. Train it via scripts/train_local_classifier.py."
+                    ) from e
                 logger.warning(f"Failed to load local prompt injection classifier: {e}. Falling back to local heuristics.")
-        
+
     def _fast_heuristic_filter(self, text: str) -> bool:
-        """Fast path check. Returns True if suspicious keywords found."""
-        suspicious_keywords = ["ignore", "override", "bypass", "system", "jailbreak", "admin", "pwned", "hackville"]
+        """Latency fast-path check. Returns True if suspicious keywords found.
+
+        NOTE: This is a coarse pre-filter, not the detector. It deliberately
+        contains only generic injection vocabulary — benchmark-specific canary
+        tokens (e.g. location names used in the attack dataset) must never be
+        added here, or evaluation becomes circular.
+        """
+        suspicious_keywords = [
+            "ignore", "disregard", "override", "bypass", "system", "jailbreak",
+            "admin", "you are now", "new instructions", "previous instructions",
+        ]
         text_lower = text.lower()
         return any(keyword in text_lower for keyword in suspicious_keywords)
 
@@ -74,23 +88,32 @@ class TextSanitizer:
             is_malicious = self._fast_heuristic_filter(text)
             return SanitizerResult(is_malicious=is_malicious, reason="Secure mode fallback to heuristics", confidence=0.7)
 
-        # Fast Path Heuristics (Latency Fix)
-        if not self._fast_heuristic_filter(text):
-            return SanitizerResult(is_malicious=False, reason="Fast filter passed: No suspicious keywords.", confidence=1.0)
-        
-        # 1. Execute local classifier if successfully initialized
+        # Full-research mode: classifier-first.
+        # A previous revision short-circuited to "benign, confidence 1.0" when
+        # no keyword matched, so paraphrased (keyword-free) injections never
+        # reached the classifier at all. The classifier now sees every input;
+        # keywords are only the emergency fallback when no classifier exists.
         if self.local_classifier is not None:
             try:
                 res = self.local_classifier(str(text))[0]
                 label = res["label"]
                 score = res["score"]
                 is_malicious = (label in ["INJECTION", "LABEL_1"])
-                reason = f"Local classifier flagged content as {label}."
+                reason = f"Local classifier verdict: {label}."
                 return SanitizerResult(is_malicious=is_malicious, reason=reason, confidence=score)
             except Exception as e:
                 logger.error(f"Local classifier execution failed: {e}. Falling back to local heuristics.")
-        
-        # 2. Hard fallback on keywords
+                if os.getenv("STRICT_SECURITY", "0") == "1":
+                    raise RuntimeError(
+                        f"STRICT_SECURITY=1: classifier execution failed: {e}"
+                    ) from e
+
+        # Hard fallback on keywords (classifier unavailable)
+        if os.getenv("STRICT_SECURITY", "0") == "1":
+            raise RuntimeError(
+                "STRICT_SECURITY=1: refusing keyword-only fallback in full-research mode. "
+                f"Classifier init error: {self.init_error}"
+            )
         is_malicious = self._fast_heuristic_filter(text)
         return SanitizerResult(
             is_malicious=is_malicious,
@@ -174,6 +197,8 @@ class AudioSanitizer:
             logger.info(f"AudioSanitizer transcribed: {transcript[:100]}...")
             return self.text_sanitizer.sanitize(transcript)
         except ImportError:
+            if os.getenv("STRICT_SECURITY", "0") == "1":
+                return SanitizerResult(is_malicious=True, reason="STRICT_SECURITY: whisper unavailable, failing closed on audio input.")
             logger.warning("Local whisper package not available, skipping audio sanitization.")
             return SanitizerResult(is_malicious=False, reason="Whisper unavailable, skipping audio sanitization.")
         except Exception as e:
@@ -237,6 +262,8 @@ class VideoSanitizer:
             return self.text_sanitizer.sanitize(combined_text)
             
         except ImportError:
+            if os.getenv("STRICT_SECURITY", "0") == "1":
+                return SanitizerResult(is_malicious=True, reason="STRICT_SECURITY: OpenCV unavailable, failing closed on video input.")
             logger.warning("OpenCV not available, falling back to text passthrough.")
             return SanitizerResult(is_malicious=False, reason="OpenCV unavailable, skipping video sanitization.")
         except Exception as e:
@@ -251,8 +278,15 @@ class RAGSanitizer:
         if not chunk or not chunk.strip():
             return SanitizerResult(is_malicious=False, reason="Empty memory chunk", confidence=1.0)
             
-        # 1. Run local memory heuristics for active commands/poisoning
-        is_malicious = any(w in chunk.lower() for w in ["ignore", "override", "compromised", "user preference override", "no longer a travel agent"])
+        # 1. Run local memory heuristics for active commands/poisoning.
+        # Memory should contain facts/preferences; imperative instructions in
+        # a memory chunk indicate poisoning. Generic vocabulary only — no
+        # benchmark-specific poison phrases (see anti-circularity note above).
+        imperative_markers = [
+            "ignore", "disregard", "override", "you must", "you are now",
+            "output exactly", "respond with", "demands that you",
+        ]
+        is_malicious = any(w in chunk.lower() for w in imperative_markers)
         if is_malicious:
             return SanitizerResult(
                 is_malicious=True,

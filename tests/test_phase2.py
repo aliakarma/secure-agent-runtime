@@ -34,17 +34,17 @@ def test_graph_compilation():
     assert "HotelAgent" in nodes
 
 def test_supervisor_routing():
-    from agents.nodes.supervisor import supervisor_node, supervisor_chain
-    from agents.nodes.supervisor import Route
+    import agents.nodes.supervisor
+    from agents.nodes.supervisor import supervisor_node, Route
     from unittest.mock import MagicMock
-    
-    # Temporarily replace the chain
-    original_chain = supervisor_chain
+
+    # Seed the lazily-built chain cache with a mock so no API key is needed.
+    original_chain = agents.nodes.supervisor._supervisor_chain
     try:
-        import agents.nodes.supervisor
-        agents.nodes.supervisor.supervisor_chain = MagicMock()
-        agents.nodes.supervisor.supervisor_chain.invoke.return_value = Route(next="FlightAgent")
-        
+        mock_chain = MagicMock()
+        mock_chain.invoke.return_value = Route(next="FlightAgent")
+        agents.nodes.supervisor._supervisor_chain = mock_chain
+
         state = AgentState(
             messages=[HumanMessage(content="Book a flight to Riyadh")],
             memory=[],
@@ -54,7 +54,7 @@ def test_supervisor_routing():
         result = supervisor_node(state)
         assert result["next"] == "FlightAgent"
     finally:
-        agents.nodes.supervisor.supervisor_chain = original_chain
+        agents.nodes.supervisor._supervisor_chain = original_chain
 
 @patch('langchain_openai.OpenAIEmbeddings.embed_query')
 def test_chroma_memory(mock_embed):

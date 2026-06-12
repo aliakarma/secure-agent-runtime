@@ -1,21 +1,30 @@
 /* ══════════════════════════════════════════════════════════
    Secure Agent Runtime — Dashboard Controller
+   Vanilla JS, no build step. All rendering is textContent-based
+   (XSS-safe); server data is never injected as HTML.
    ══════════════════════════════════════════════════════════ */
 
 let lastEventId = -1;
 const POLL_INTERVAL = 500;
+const POLL_BACKOFF_MAX = 5000;
+const MAX_TRACE_ENTRIES = 200;
+const MAX_ALERT_ITEMS = 100;
 
+let pollDelay = POLL_INTERVAL;
 let isPaused = false;
 let activeAlertFilter = 'all';
 let searchQuery = '';
 let processedEvents = 0;
 let blockedEvents = 0;
+let latencySamples = [];
 
 /* ── DOM references ──────────────────────────────────────── */
 const sidebarTrustScore = document.getElementById('sidebar-trust-score');
 const metricTrustScore = document.getElementById('metric-trust-score');
 const trustProgress = document.getElementById('trust-progress');
 const trustTierBadge = document.getElementById('trust-tier-badge');
+const trustMeter = document.getElementById('trust-meter');
+const trustLiveBadge = document.getElementById('trust-live-badge');
 const graphStatus = document.getElementById('graph-status');
 const currentSession = document.getElementById('current-session');
 const graphTraceContainer = document.getElementById('graph-trace-container');
@@ -23,6 +32,7 @@ const securityFeed = document.getElementById('security-feed');
 const provenanceFeed = document.getElementById('provenance-feed');
 const attackForm = document.getElementById('attack-form');
 const attackInput = document.getElementById('attack-input');
+const executeBtn = document.getElementById('execute-btn');
 const eventCountEl = document.getElementById('event-count');
 const blockedCountEl = document.getElementById('blocked-count');
 const activeNodeEl = document.getElementById('active-node');
@@ -33,61 +43,76 @@ const processingTimeEl = document.getElementById('processing-time');
 const graphBadge = document.getElementById('graph-badge');
 const latencyVal = document.getElementById('latency-val');
 const connectionStateEl = document.getElementById('connection-state');
+const connectionDetailEl = document.getElementById('connection-detail');
+const filterStateEl = document.getElementById('filter-state');
 const filterInput = document.getElementById('event-filter');
 const pauseToggle = document.getElementById('pause-toggle');
 const clearFeedButton = document.getElementById('clear-feed');
 const refreshProvenanceButton = document.getElementById('refresh-provenance');
 const copySessionButton = document.getElementById('copy-session');
 const autoPollingBadge = document.getElementById('auto-polling-badge');
-const pulseDot = document.querySelector('.pulse-dot');
+const statusIndicator = document.querySelector('.status-indicator');
+const alertPulse = document.getElementById('alert-pulse');
+
+function refreshIcons() {
+    window.lucide?.createIcons();
+}
 
 /* ══════════════════════════════════════════════════════════
    TOAST NOTIFICATION SYSTEM
    ══════════════════════════════════════════════════════════ */
+const TOAST_ICONS = {
+    info: 'info',
+    success: 'check-circle-2',
+    warning: 'alert-triangle',
+    error: 'x-circle',
+};
+
 function showToast(message, type = 'info', duration = 3500) {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.textContent = message;
-    container.appendChild(toast);
 
-    setTimeout(() => {
+    const icon = document.createElement('i');
+    icon.setAttribute('data-lucide', TOAST_ICONS[type] || TOAST_ICONS.info);
+    icon.setAttribute('aria-hidden', 'true');
+
+    const text = document.createElement('span');
+    text.textContent = message;
+
+    toast.appendChild(icon);
+    toast.appendChild(text);
+    container.appendChild(toast);
+    refreshIcons();
+
+    const dismiss = () => {
+        if (toast.classList.contains('fade-out')) return;
         toast.classList.add('fade-out');
-        toast.addEventListener('animationend', () => toast.remove());
-    }, duration);
+        toast.addEventListener('animationend', () => toast.remove(), { once: true });
+        // Fallback removal in case animations are disabled (reduced motion)
+        setTimeout(() => toast.remove(), 400);
+    };
+
+    toast.addEventListener('click', dismiss);
+    setTimeout(dismiss, duration);
 }
 
 /* ══════════════════════════════════════════════════════════
-   CONNECTION STATE
+   CONNECTION STATE MACHINE
+   Only touches the DOM when the state actually changes, so the
+   label doesn't flicker on every poll cycle.
    ══════════════════════════════════════════════════════════ */
+let connectionState = null;
+
 function setConnectionState(state, label) {
-    if (connectionStateEl) {
-        connectionStateEl.textContent = label;
-    }
+    if (state === connectionState && connectionStateEl?.textContent === label) return;
+    connectionState = state;
 
-    // Sync the pulse dot class
-    if (pulseDot) {
-        pulseDot.classList.remove('degraded', 'error');
-        if (state === 'degraded') {
-            pulseDot.classList.add('degraded');
-        } else if (state === 'error') {
-            pulseDot.classList.add('error');
-        }
-    }
-
-    if (connectionStateEl) {
-        if (state === 'live') {
-            connectionStateEl.style.color = 'var(--accent-green)';
-        } else if (state === 'degraded') {
-            connectionStateEl.style.color = 'var(--accent-orange)';
-        } else if (state === 'error') {
-            connectionStateEl.style.color = 'var(--accent-red)';
-        } else {
-            connectionStateEl.style.color = 'var(--text-secondary)';
-        }
-    }
+    if (connectionStateEl) connectionStateEl.textContent = label;
+    if (statusIndicator) statusIndicator.dataset.state = state;
+    if (connectionDetailEl) connectionDetailEl.textContent = label;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -100,46 +125,59 @@ function updateCounters() {
     if (lastUpdateEl) lastUpdateEl.textContent = new Date().toLocaleTimeString();
 }
 
-function updateLatency(ms) {
-    const rounded = Math.max(0, Math.round(ms || 0));
-    if (processingTimeEl) processingTimeEl.textContent = `${rounded}ms`;
-    if (latencyVal) latencyVal.textContent = `${rounded}ms avg`;
+function recordLatency(ms) {
+    const value = Math.max(0, Math.round(ms || 0));
+    latencySamples.push(value);
+    if (latencySamples.length > 50) latencySamples.shift();
+
+    if (processingTimeEl) processingTimeEl.textContent = `${value}ms`;
+
+    if (latencyVal) {
+        const avg = Math.round(latencySamples.reduce((a, b) => a + b, 0) / latencySamples.length);
+        latencyVal.textContent = `${avg}ms avg (${latencySamples.length} run${latencySamples.length === 1 ? '' : 's'})`;
+    }
 }
 
 /* ══════════════════════════════════════════════════════════
    TRUST METER
    ══════════════════════════════════════════════════════════ */
 function updateTrustMeter(score, tier) {
-    const safeScore = Number.isFinite(score) ? score : 0;
+    const safeScore = Number.isFinite(score) ? Math.min(1, Math.max(0, score)) : 0;
     const formattedScore = safeScore.toFixed(2);
+    const safeTier = String(tier || 'HIGH').toUpperCase();
 
     if (sidebarTrustScore) sidebarTrustScore.textContent = formattedScore;
     if (metricTrustScore) metricTrustScore.textContent = formattedScore;
+    if (trustMeter) trustMeter.setAttribute('aria-valuenow', formattedScore);
 
     if (trustProgress) {
-        const offset = 283 - (safeScore * 283);
-        trustProgress.style.strokeDashoffset = offset;
+        trustProgress.style.strokeDashoffset = 283 - (safeScore * 283);
+        const strokeByTier = {
+            HIGH: 'var(--accent-green)',
+            MEDIUM: 'var(--accent-orange)',
+            LOW: 'var(--accent-red)',
+        };
+        trustProgress.style.stroke = strokeByTier[safeTier] || strokeByTier.LOW;
     }
 
-    if (!trustTierBadge) return;
+    if (trustTierBadge) {
+        trustTierBadge.textContent = `TIER: ${safeTier}`;
+        trustTierBadge.dataset.tier = ['HIGH', 'MEDIUM'].includes(safeTier) ? safeTier.toLowerCase() : 'low';
+    }
+}
 
-    trustTierBadge.textContent = `TIER: ${tier}`;
-
-    if (tier === 'HIGH') {
-        if (trustProgress) trustProgress.style.stroke = 'var(--accent-green)';
-        trustTierBadge.style.color = 'var(--accent-green)';
-        trustTierBadge.style.background = 'rgba(16, 185, 129, 0.15)';
-        trustTierBadge.style.borderColor = 'rgba(16, 185, 129, 0.25)';
-    } else if (tier === 'MEDIUM') {
-        if (trustProgress) trustProgress.style.stroke = 'var(--accent-orange)';
-        trustTierBadge.style.color = 'var(--accent-orange)';
-        trustTierBadge.style.background = 'rgba(245, 158, 11, 0.15)';
-        trustTierBadge.style.borderColor = 'rgba(245, 158, 11, 0.25)';
-    } else {
-        if (trustProgress) trustProgress.style.stroke = 'var(--accent-red)';
-        trustTierBadge.style.color = 'var(--accent-red)';
-        trustTierBadge.style.background = 'rgba(239, 68, 68, 0.15)';
-        trustTierBadge.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+/* ══════════════════════════════════════════════════════════
+   GRAPH STATUS
+   ══════════════════════════════════════════════════════════ */
+function setGraphState(state) {
+    const label = state.toUpperCase();
+    if (graphStatus) {
+        graphStatus.textContent = label;
+        graphStatus.dataset.state = state;
+    }
+    if (graphBadge) {
+        graphBadge.textContent = label;
+        graphBadge.dataset.state = state;
     }
 }
 
@@ -152,16 +190,30 @@ function addTrace(message) {
     entry.className = 'trace-entry';
     entry.textContent = `> ${message}`;
     graphTraceContainer.appendChild(entry);
+
+    while (graphTraceContainer.children.length > MAX_TRACE_ENTRIES) {
+        graphTraceContainer.firstChild.remove();
+    }
+
     graphTraceContainer.scrollTop = graphTraceContainer.scrollHeight;
 }
 
 /* ══════════════════════════════════════════════════════════
    SECURITY ALERT ITEMS
    ══════════════════════════════════════════════════════════ */
+function severityClass(severity) {
+    const s = String(severity || 'CRITICAL').toUpperCase();
+    if (s === 'WARNING') return 'warning';
+    if (s === 'INFO') return 'info';
+    return 'critical';
+}
+
 function renderAlertItem(phase, agent, message, severity) {
+    const sev = severityClass(severity);
     const alertItem = document.createElement('div');
-    alertItem.className = `alert-item ${severity === 'WARNING' ? 'warning' : ''}`;
-    alertItem.dataset.severity = String(severity || 'INFO').toLowerCase();
+    // 'critical' uses the base red styling; warning/info get modifier classes
+    alertItem.className = `alert-item${sev !== 'critical' ? ` ${sev}` : ''}`;
+    alertItem.dataset.severity = sev;
     alertItem.dataset.search = `${phase} ${agent} ${message} ${severity}`.toLowerCase();
 
     const header = document.createElement('div');
@@ -186,29 +238,79 @@ function renderAlertItem(phase, agent, message, severity) {
     return alertItem;
 }
 
+function updateFilterPillCounts() {
+    const items = Array.from(document.querySelectorAll('.alert-item'));
+    document.querySelectorAll('.filter-pill').forEach((pill) => {
+        const filter = pill.dataset.filter || 'all';
+        const count = filter === 'all'
+            ? items.length
+            : items.filter((item) => item.dataset.severity === filter).length;
+
+        let countEl = pill.querySelector('.pill-count');
+        if (count === 0) {
+            countEl?.remove();
+            return;
+        }
+        if (!countEl) {
+            countEl = document.createElement('span');
+            countEl.className = 'pill-count';
+            pill.appendChild(countEl);
+        }
+        countEl.textContent = String(count);
+    });
+}
+
 function applyAlertFilters() {
     document.querySelectorAll('.alert-item').forEach((item) => {
         const matchesFilter = activeAlertFilter === 'all' || item.dataset.severity === activeAlertFilter;
         const matchesSearch = !searchQuery || (item.dataset.search || '').includes(searchQuery);
         item.classList.toggle('hidden', !(matchesFilter && matchesSearch));
     });
+    updateFilterPillCounts();
+}
+
+function showFeedEmptyState() {
+    if (!securityFeed) return;
+    const emptyState = document.createElement('div');
+    emptyState.className = 'empty-state';
+
+    const icon = document.createElement('i');
+    icon.setAttribute('data-lucide', 'check-circle-2');
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('p');
+    text.textContent = 'No active threats detected.';
+
+    emptyState.appendChild(icon);
+    emptyState.appendChild(text);
+    securityFeed.appendChild(emptyState);
+    refreshIcons();
 }
 
 function addSecurityAlert(phase, agent, message, severity) {
-    const emptyState = securityFeed?.querySelector('.empty-state');
-    if (emptyState) emptyState.remove();
+    if (!securityFeed) return;
+    securityFeed.querySelector('.empty-state')?.remove();
 
     const alertItem = renderAlertItem(phase, agent, message, severity);
     securityFeed.prepend(alertItem);
+
+    while (securityFeed.querySelectorAll('.alert-item').length > MAX_ALERT_ITEMS) {
+        securityFeed.querySelector('.alert-item:last-of-type')?.remove();
+    }
+
+    alertPulse?.classList.add('armed');
     applyAlertFilters();
 }
 
 /* ══════════════════════════════════════════════════════════
    NODE GRAPH ACTIVATION
    ══════════════════════════════════════════════════════════ */
-function setNodeActive(nodeName) {
+function clearNodeActivation() {
     document.querySelectorAll('.node').forEach((n) => n.classList.remove('active'));
     document.querySelectorAll('.edge').forEach((e) => e.classList.remove('active'));
+}
+
+function setNodeActive(nodeName) {
+    clearNodeActivation();
 
     const node = document.getElementById(`node-${nodeName}`);
     if (node) node.classList.add('active');
@@ -227,6 +329,16 @@ function setNodeActive(nodeName) {
 /* ══════════════════════════════════════════════════════════
    PROVENANCE RENDERING
    ══════════════════════════════════════════════════════════ */
+function showProvenanceSkeleton() {
+    if (!provenanceFeed || provenanceFeed.querySelector('.provenance-entry')) return;
+    provenanceFeed.innerHTML = '';
+    for (let i = 0; i < 3; i += 1) {
+        const row = document.createElement('div');
+        row.className = 'skeleton-row';
+        provenanceFeed.appendChild(row);
+    }
+}
+
 function renderProvenance(records) {
     if (!provenanceFeed) return;
     provenanceFeed.innerHTML = '';
@@ -237,13 +349,14 @@ function renderProvenance(records) {
 
         const icon = document.createElement('i');
         icon.setAttribute('data-lucide', 'sparkles');
+        icon.setAttribute('aria-hidden', 'true');
         const text = document.createElement('p');
-        text.textContent = 'Load the session to inspect provenance lineage.';
+        text.textContent = 'Run a request to inspect provenance lineage.';
 
         emptyState.appendChild(icon);
         emptyState.appendChild(text);
         provenanceFeed.appendChild(emptyState);
-        window.lucide?.createIcons();
+        refreshIcons();
         if (provenanceCountEl) provenanceCountEl.textContent = '0';
         return;
     }
@@ -280,7 +393,6 @@ function renderProvenance(records) {
     });
 
     if (provenanceCountEl) provenanceCountEl.textContent = String(records.length);
-    window.lucide?.createIcons();
 }
 
 async function loadProvenance(sessionId = currentSession?.textContent?.trim() || 'default') {
@@ -303,12 +415,7 @@ function processEvent(event) {
 
     switch (event.type) {
         case 'GRAPH_START':
-            if (graphStatus) {
-                graphStatus.textContent = 'EXECUTING';
-                graphStatus.style.background = 'rgba(59, 130, 246, 0.16)';
-                graphStatus.style.color = 'var(--accent-blue)';
-            }
-            if (graphBadge) graphBadge.textContent = 'EXECUTING';
+            setGraphState('executing');
             if (currentSession) currentSession.textContent = data.session_id || currentSession.textContent;
             if (graphTraceContainer) graphTraceContainer.innerHTML = '';
             addTrace(`Input: "${data.input || ''}"`);
@@ -316,18 +423,10 @@ function processEvent(event) {
             break;
 
         case 'GRAPH_END':
-            if (graphStatus) {
-                graphStatus.textContent = 'COMPLETED';
-                graphStatus.style.background = 'rgba(16, 185, 129, 0.16)';
-                graphStatus.style.color = 'var(--accent-green)';
-            }
-            if (graphBadge) graphBadge.textContent = 'COMPLETED';
+            setGraphState('completed');
             addTrace('Graph execution finished.');
             loadProvenance(currentSession?.textContent?.trim());
-            setTimeout(() => {
-                document.querySelectorAll('.node').forEach((n) => n.classList.remove('active'));
-                document.querySelectorAll('.edge').forEach((e) => e.classList.remove('active'));
-            }, 1000);
+            setTimeout(clearNodeActivation, 1000);
             break;
 
         case 'TRUST_UPDATE':
@@ -354,7 +453,7 @@ function processEvent(event) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   EVENT POLLING
+   EVENT POLLING (with backoff on failure)
    ══════════════════════════════════════════════════════════ */
 async function pollEvents() {
     if (isPaused) {
@@ -363,7 +462,6 @@ async function pollEvents() {
     }
 
     try {
-        setConnectionState('connecting', 'Polling live events');
         const response = await fetch(`/api/events?since_id=${lastEventId}`);
         if (response.ok) {
             const payload = await response.json();
@@ -371,16 +469,18 @@ async function pollEvents() {
                 processEvent(event);
                 lastEventId = Math.max(lastEventId, event.id);
             }
-            setConnectionState('live', 'Backend Connected');
+            pollDelay = POLL_INTERVAL;
+            setConnectionState('live', 'Backend connected');
         } else {
-            setConnectionState('degraded', 'Event stream degraded');
+            pollDelay = Math.min(pollDelay * 2, POLL_BACKOFF_MAX);
+            setConnectionState('degraded', `Event stream degraded (HTTP ${response.status})`);
         }
     } catch (error) {
-        console.error('Polling error', error);
-        setConnectionState('degraded', 'Connection unstable');
+        pollDelay = Math.min(pollDelay * 2, POLL_BACKOFF_MAX);
+        setConnectionState('error', 'Backend unreachable — retrying');
     }
 
-    setTimeout(pollEvents, POLL_INTERVAL);
+    setTimeout(pollEvents, pollDelay);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -433,15 +533,16 @@ function attachQuickPromptButtons() {
 
 /* ══════════════════════════════════════════════════════════
    FORM SUBMISSION
+   The input is only cleared after a successful run, so a failed
+   request never destroys what the user typed.
    ══════════════════════════════════════════════════════════ */
 attackForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const input = attackInput?.value?.trim();
     if (!input) return;
 
-    attackInput.value = '';
-    const submitButton = attackForm.querySelector('button[type="submit"]');
-    if (submitButton) submitButton.disabled = true;
+    executeBtn?.classList.add('loading');
+    if (executeBtn) executeBtn.disabled = true;
 
     const sessionId = `dash_session_${Date.now()}`;
 
@@ -453,12 +554,16 @@ attackForm?.addEventListener('submit', async (event) => {
         if (response.ok) {
             const result = await response.json();
             if (Number.isFinite(result.processing_time_ms)) {
-                updateLatency(result.processing_time_ms);
+                recordLatency(result.processing_time_ms);
             }
             if (Number.isFinite(result.trust_score)) {
                 updateTrustMeter(result.trust_score, result.trust_tier || 'HIGH');
             }
-            showToast('Payload executed successfully', 'success');
+            if (attackInput) attackInput.value = '';
+            showToast(
+                result.security_blocked ? 'Payload intercepted by the security layer' : 'Run completed',
+                result.security_blocked ? 'warning' : 'success'
+            );
         } else {
             showToast(`Server error: HTTP ${response.status}`, 'error');
         }
@@ -466,15 +571,21 @@ attackForm?.addEventListener('submit', async (event) => {
         console.error('Failed to run graph', error);
         showToast('Backend unreachable — is the server running?', 'error');
     } finally {
-        if (submitButton) submitButton.disabled = false;
+        executeBtn?.classList.remove('loading');
+        if (executeBtn) executeBtn.disabled = false;
     }
 });
-
-
 
 /* ══════════════════════════════════════════════════════════
    FILTER & SEARCH
    ══════════════════════════════════════════════════════════ */
+const FILTER_LABELS = {
+    all: 'All severities',
+    critical: 'Critical only',
+    warning: 'Warning only',
+    info: 'Info only',
+};
+
 filterInput?.addEventListener('input', (event) => {
     searchQuery = String(event.target.value || '').toLowerCase();
     applyAlertFilters();
@@ -482,9 +593,14 @@ filterInput?.addEventListener('input', (event) => {
 
 document.querySelectorAll('.filter-pill').forEach((pill) => {
     pill.addEventListener('click', () => {
-        document.querySelectorAll('.filter-pill').forEach((button) => button.classList.remove('active'));
+        document.querySelectorAll('.filter-pill').forEach((button) => {
+            button.classList.remove('active');
+            button.setAttribute('aria-pressed', 'false');
+        });
         pill.classList.add('active');
+        pill.setAttribute('aria-pressed', 'true');
         activeAlertFilter = pill.dataset.filter || 'all';
+        if (filterStateEl) filterStateEl.textContent = FILTER_LABELS[activeAlertFilter] || FILTER_LABELS.all;
         applyAlertFilters();
     });
 });
@@ -492,62 +608,65 @@ document.querySelectorAll('.filter-pill').forEach((pill) => {
 /* ══════════════════════════════════════════════════════════
    TOOLBAR ACTIONS
    ══════════════════════════════════════════════════════════ */
+function setToolbarButtonContent(button, iconName, label) {
+    button.innerHTML = '';
+    const icon = document.createElement('i');
+    icon.setAttribute('data-lucide', iconName);
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.className = 'btn-label';
+    text.textContent = label;
+    button.appendChild(icon);
+    button.appendChild(text);
+    refreshIcons();
+}
+
 pauseToggle?.addEventListener('click', () => {
     isPaused = !isPaused;
-    pauseToggle.innerHTML = isPaused
-        ? '<i data-lucide="play"></i>Resume feed'
-        : '<i data-lucide="pause"></i>Pause feed';
-    window.lucide?.createIcons();
+    pauseToggle.setAttribute('aria-pressed', String(isPaused));
+    setToolbarButtonContent(pauseToggle, isPaused ? 'play' : 'pause', isPaused ? 'Resume feed' : 'Pause feed');
 
-    // Sync auto-polling badge
     if (autoPollingBadge) {
         autoPollingBadge.textContent = isPaused ? 'Paused' : 'Auto-polling';
-        autoPollingBadge.style.background = isPaused ? 'rgba(245, 158, 11, 0.14)' : '';
-        autoPollingBadge.style.color = isPaused ? 'var(--accent-orange)' : '';
-        autoPollingBadge.style.borderColor = isPaused ? 'rgba(245, 158, 11, 0.25)' : '';
+        autoPollingBadge.classList.toggle('paused', isPaused);
+    }
+    if (trustLiveBadge) {
+        trustLiveBadge.textContent = isPaused ? 'Paused' : 'Live';
+        trustLiveBadge.classList.toggle('paused', isPaused);
     }
 
-    setConnectionState(isPaused ? 'degraded' : 'live', isPaused ? 'Feed paused' : 'Backend Connected');
+    if (isPaused) {
+        setConnectionState('paused', 'Feed paused by user');
+    } else {
+        pollDelay = POLL_INTERVAL;
+        setConnectionState('live', 'Backend connected');
+    }
 });
 
 clearFeedButton?.addEventListener('click', () => {
     if (!securityFeed) return;
     securityFeed.innerHTML = '';
-    const emptyState = document.createElement('div');
-    emptyState.className = 'empty-state';
-
-    const icon = document.createElement('i');
-    icon.setAttribute('data-lucide', 'check-circle-2');
-    const text = document.createElement('p');
-    text.textContent = 'No active threats detected.';
-
-    emptyState.appendChild(icon);
-    emptyState.appendChild(text);
-    securityFeed.appendChild(emptyState);
-    window.lucide?.createIcons();
+    showFeedEmptyState();
+    alertPulse?.classList.remove('armed');
+    updateFilterPillCounts();
     showToast('Console cleared', 'info');
 });
 
 refreshProvenanceButton?.addEventListener('click', () => {
+    showProvenanceSkeleton();
     loadProvenance(currentSession?.textContent?.trim());
-    showToast('Provenance refreshed', 'info');
 });
 
 copySessionButton?.addEventListener('click', async () => {
     try {
         await navigator.clipboard.writeText(currentSession?.textContent?.trim() || '');
-        copySessionButton.textContent = 'Copied!';
-        showToast('Session ID copied to clipboard', 'success');
-        setTimeout(() => {
-            copySessionButton.innerHTML = '<i data-lucide="copy"></i>Copy';
-            window.lucide?.createIcons();
-        }, 1200);
+        setToolbarButtonContent(copySessionButton, 'check', 'Copied!');
+        setTimeout(() => setToolbarButtonContent(copySessionButton, 'copy', 'Copy'), 1200);
     } catch (error) {
         console.error('Copy failed', error);
         showToast('Failed to copy — clipboard access denied', 'warning');
     }
 });
-
 
 /* ══════════════════════════════════════════════════════════
    EDGE RESIZE OBSERVER
@@ -556,15 +675,15 @@ const nodeSystem = document.querySelector('.node-system');
 if (nodeSystem && window.ResizeObserver) {
     const observer = new ResizeObserver(() => updateLines());
     observer.observe(nodeSystem);
-    setTimeout(updateLines, 200);
 }
 
 /* ══════════════════════════════════════════════════════════
    INITIALIZATION
    ══════════════════════════════════════════════════════════ */
+refreshIcons();
 attachQuickPromptButtons();
-setConnectionState('connecting', 'Connecting to backend');
+setConnectionState('degraded', 'Connecting…');
 updateCounters();
-updateLatency(0);
 loadProvenance(currentSession?.textContent?.trim() || 'default');
 pollEvents();
+setTimeout(updateLines, 200);

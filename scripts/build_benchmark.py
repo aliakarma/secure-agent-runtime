@@ -163,11 +163,13 @@ DIFFICULTY = ["Easy", "Medium", "Hard"]
 def build_attacks(seed: int = 42) -> List[dict]:
     rng = random.Random(seed)
     attacks: List[dict] = []
-    for family, spec in FAMILIES.items():
+    # Enumerate for a stable per-family offset — never use hash(family), which
+    # is salted per interpreter run (PYTHONHASHSEED) and breaks reproducibility.
+    for fam_idx, (family, spec) in enumerate(FAMILIES.items()):
         payloads = spec["payloads"]
         for i in range(PER_FAMILY):
             text, keyword_free = payloads[i % len(payloads)]
-            preamble = PREAMBLES[(i + hash(family)) % len(PREAMBLES)]
+            preamble = PREAMBLES[(i + fam_idx) % len(PREAMBLES)]
             core = text.format(canary=spec["canary"])
             # Light per-instance variation guarantees uniqueness without
             # re-introducing template padding noise.

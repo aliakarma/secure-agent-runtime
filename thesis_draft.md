@@ -1,5 +1,24 @@
 # Securing Autonomous Multi-Agent Systems: A Foundational Architecture and Vulnerability Baseline
 
+> **⚠️ Reproducibility & integrity notice (numbers pending regeneration).**
+> A scientific-integrity pass (documented in [`docs/remediation_status.md`](docs/remediation_status.md))
+> identified that the evaluation reported throughout this draft was partly
+> **circular** — the attack dataset, the runtime keyword detector, and the
+> deterministic judge shared canary vocabulary, so a baseline agent that merely
+> echoed or refused a request could be scored "compromised," inflating the
+> baseline ASR — and that the trained DistilBERT detector's weights were absent
+> (the runtime silently fell back to keyword matching). The judge, detector,
+> datasets (now de-duplicated, with keyword-free and hard-negative cases), and
+> evaluation harness have since been corrected. **Consequently, every empirical
+> figure below — ASR (100.0%→15.0%), TAR, PCR/PTCI, the secure-mode FPR
+> anomalies, the confusion matrix, and the χ²/McNemar statistics — reflects the
+> pre-remediation pipeline and must be regenerated before it can be cited as
+> final.** The regeneration commands are listed in the remediation notice and
+> the README; they require network access to the LLM API and Hugging Face. The
+> architecture, methodology, and qualitative findings (e.g. that perimeter-only
+> defenses miss tool/RAG injections, and that a conversationally-trained
+> classifier over-flags structured JSON) are unaffected by this notice.
+
 ## Abstract
 The rapid progression of Large Language Models (LLMs) and Vision-Language Models (VLMs) has catalyzed the transition from passive conversational assistants to autonomous, stateful multi-agent systems—known as Agentic AI. While this transition unlocks major automation capabilities by allowing agents to recursively execute external tools and access long-term memory, it exposes them to critical vulnerabilities, such as Direct Prompt Injections, Indirect Prompt Injections (e.g., Tool and RAG poisoning), and the "Confused Deputy" problem. Traditional security mechanisms, such as static input filtering and monomodal system prompt tuning, are insufficient to defend against semantically fluid and cross-modal attacks without breaking execution flows.
 

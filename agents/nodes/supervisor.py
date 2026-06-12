@@ -30,27 +30,34 @@ If the user wants both, route to one of them first. Once that agent finishes and
 If all tasks requested by the user are complete, or the user is just saying hello, respond with FINISH.
 """
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1).with_fallbacks([
-    ChatOpenAI(model="gpt-4o", temperature=0, timeout=10, max_retries=1),
-    ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=10, max_retries=1)
-])
-
-# We use with_structured_output to force the LLM to output our Route schema
-supervisor_llm = llm.with_structured_output(Route)
-
 prompt = ChatPromptTemplate.from_messages([
     ("system", system_prompt),
     MessagesPlaceholder(variable_name="messages"),
     ("system", "Given the conversation above, who should act next? Or should we FINISH?")
 ])
 
-supervisor_chain = prompt | supervisor_llm
+# Build the LLM chain lazily so importing this module does not require an
+# OPENAI_API_KEY (keeps tests collectable offline and avoids constructing a
+# client at import time).
+_supervisor_chain = None
+
+
+def get_supervisor_chain():
+    global _supervisor_chain
+    if _supervisor_chain is None:
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1).with_fallbacks([
+            ChatOpenAI(model="gpt-4o", temperature=0, timeout=10, max_retries=1),
+            ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=10, max_retries=1)
+        ])
+        _supervisor_chain = prompt | llm.with_structured_output(Route)
+    return _supervisor_chain
+
 
 def supervisor_node(state: AgentState) -> dict:
     """The supervisor node function."""
     logger.info("node_executed", node="supervisor")
-    
-    result = supervisor_chain.invoke({"messages": state["messages"]})
+
+    result = get_supervisor_chain().invoke({"messages": state["messages"]})
     next_node = result.next
     
     # Loop protection: if supervisor decides to route to an agent that just spoke, override to FINISH

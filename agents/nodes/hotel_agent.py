@@ -20,24 +20,31 @@ Do not assist with flights or general queries outside of hotels.
 Always end your final response by answering the user's hotel question clearly.
 """
 
-# Initialize LLM
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1).with_fallbacks([
-    ChatOpenAI(model="gpt-4o", temperature=0, timeout=10, max_retries=1),
-    ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=10, max_retries=1)
-])
+# Build the ReAct agent lazily so importing this module does not require an
+# OPENAI_API_KEY (keeps tests collectable offline).
+_hotel_react_agent = None
 
-# Create the internal ReAct agent for Hotel
-hotel_react_agent = create_react_agent(
-    model=llm,
-    tools=[reserve_hotel, read_image_ocr],
-    prompt=HOTEL_AGENT_PROMPT
-)
+
+def get_hotel_react_agent():
+    global _hotel_react_agent
+    if _hotel_react_agent is None:
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1).with_fallbacks([
+            ChatOpenAI(model="gpt-4o", temperature=0, timeout=10, max_retries=1),
+            ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=10, max_retries=1)
+        ])
+        _hotel_react_agent = create_react_agent(
+            model=llm,
+            tools=[reserve_hotel, read_image_ocr],
+            prompt=HOTEL_AGENT_PROMPT
+        )
+    return _hotel_react_agent
+
 
 def hotel_agent_node(state: AgentState) -> dict:
     """The hotel agent node function."""
     logger.info("node_executed", node="hotel_agent")
 
-    result = hotel_react_agent.invoke(state)
+    result = get_hotel_react_agent().invoke(state)
     new_messages = result["messages"]
     if new_messages and isinstance(new_messages[-1], AIMessage):
         new_messages[-1].name = "HotelAgent"

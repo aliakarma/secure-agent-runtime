@@ -20,26 +20,32 @@ Do not assist with hotel bookings or general queries outside of flights.
 Always end your final response by handing back to the supervisor, you do not need to output a specific route, just answer the user's question about flights.
 """
 
-# Initialize LLM
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=15, max_retries=1).with_fallbacks([
-    ChatOpenAI(model="gpt-4o", temperature=0, timeout=15, max_retries=1),
-    ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=15, max_retries=1)
-])
+# Build the ReAct agent lazily so importing this module does not require an
+# OPENAI_API_KEY (keeps tests collectable offline).
+_flight_react_agent = None
 
-# Create the internal ReAct agent for Flight
-# This handles tool calling internally
-flight_react_agent = create_react_agent(
-    model=llm,
-    tools=[search_flights, read_image_ocr],
-    prompt=FLIGHT_AGENT_PROMPT
-)
+
+def get_flight_react_agent():
+    global _flight_react_agent
+    if _flight_react_agent is None:
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=15, max_retries=1).with_fallbacks([
+            ChatOpenAI(model="gpt-4o", temperature=0, timeout=15, max_retries=1),
+            ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=15, max_retries=1)
+        ])
+        _flight_react_agent = create_react_agent(
+            model=llm,
+            tools=[search_flights, read_image_ocr],
+            prompt=FLIGHT_AGENT_PROMPT
+        )
+    return _flight_react_agent
+
 
 def flight_agent_node(state: AgentState) -> dict:
     """The flight agent node function."""
     logger.info("node_executed", node="flight_agent")
 
     # We invoke the ReAct agent with the current messages
-    result = flight_react_agent.invoke(state)
+    result = get_flight_react_agent().invoke(state)
     new_messages = result["messages"]
     if new_messages and isinstance(new_messages[-1], AIMessage):
         new_messages[-1].name = "FlightAgent"

@@ -1,23 +1,12 @@
 # Securing Autonomous Multi-Agent Systems: A Foundational Architecture and Vulnerability Baseline
 
-> **⚠️ Reproducibility & integrity notice (numbers pending regeneration).**
-> A scientific-integrity pass (documented in [`docs/remediation_status.md`](docs/remediation_status.md))
-> identified that the evaluation reported throughout this draft was partly
-> **circular** — the attack dataset, the runtime keyword detector, and the
-> deterministic judge shared canary vocabulary, so a baseline agent that merely
-> echoed or refused a request could be scored "compromised," inflating the
-> baseline ASR — and that the trained DistilBERT detector's weights were absent
-> (the runtime silently fell back to keyword matching). The judge, detector,
-> datasets (now de-duplicated, with keyword-free and hard-negative cases), and
-> evaluation harness have since been corrected. **Consequently, every empirical
-> figure below — ASR (100.0%→15.0%), TAR, PCR/PTCI, the secure-mode FPR
-> anomalies, the confusion matrix, and the χ²/McNemar statistics — reflects the
-> pre-remediation pipeline and must be regenerated before it can be cited as
-> final.** The regeneration commands are listed in the remediation notice and
-> the README; they require network access to the LLM API and Hugging Face. The
-> architecture, methodology, and qualitative findings (e.g. that perimeter-only
-> defenses miss tool/RAG injections, and that a conversationally-trained
-> classifier over-flags structured JSON) are unaffected by this notice.
+> **Reproducibility notice.** All empirical figures in this document were
+> regenerated on 2026-06-13 under the corrected evaluation pipeline documented
+> in [`docs/remediation_status.md`](docs/remediation_status.md). The evaluation
+> uses a de-circularized judge (`scripts/judge.py`), keyword-free attack
+> variants, hard-negative benign cases, and a trained DistilBERT classifier
+> (66M parameters). All results are derived from live LLM execution (GPT-4o-mini)
+> with deterministic seeding (seed=42) and no attack-ID-aware logic.
 
 ## Abstract
 The rapid progression of Large Language Models (LLMs) and Vision-Language Models (VLMs) has catalyzed the transition from passive conversational assistants to autonomous, stateful multi-agent systems—known as Agentic AI. While this transition unlocks major automation capabilities by allowing agents to recursively execute external tools and access long-term memory, it exposes them to critical vulnerabilities, such as Direct Prompt Injections, Indirect Prompt Injections (e.g., Tool and RAG poisoning), and the "Confused Deputy" problem. Traditional security mechanisms, such as static input filtering and monomodal system prompt tuning, are insufficient to defend against semantically fluid and cross-modal attacks without breaking execution flows.
@@ -29,7 +18,7 @@ In this research, we present the design, implementation, and empirical evaluatio
 4. **Stateful Provenance Ledger:** A metadata tracking system that constructs Directed Acyclic Graphs (DAG) of the data flow and prepends secure provenance tags to the LLM reasoning context window.
 5. **Output Validation and Self-Correction:** A secondary LLM agent ("Agent B") that checks responses for policy violations and triggers up to three reinjection recovery retries before escalating to human-in-the-loop validation.
 
-To demonstrate the efficacy of our framework, we subjected the runtime to a Phase R3 matched-pair evaluation over 40 total requests (20 attacks and 20 benign queries), followed by a multimodal smoke benchmark that exercised OCR-visible and EXIF-backed image attacks. The fully secured configuration of the proposed framework reduced the baseline Attack Success Rate (ASR) from 100.0\% to 15.0\% in the Phase R3 matched-pair evaluation while retaining a 100.0\% Task Accuracy Retention (TAR) rate for benign requests. In the multimodal ingestion smoke test, the secured configuration raised the Policy Compliance Rate (PCR) from 33.3\% to 100.0\% and the Provenance Trust Consistency Index (PTCI) from 77.8\% to 100.0\%. These results were achieved with a negligible average latency overhead of only 0.01 seconds per turn (increasing from 1.28s to 1.29s), demonstrating that the security layers effectively mitigate prompt injections without degrading agent usability or introducing execution bottlenecks.
+To demonstrate the efficacy of our framework, we subjected the runtime to a Phase R3 matched-pair evaluation over 196 total requests (100 attacks across 5 families and 96 benign queries). The fully secured configuration reduced the baseline Attack Success Rate (ASR) from 8.0\% to 0.0\% (McNemar $\chi^2=6.125$, $p=0.0078$), achieving perfect recall against all attack families. GPT-4o-mini's native safety training accounts for the moderate 8.0\% baseline ASR; the security middleware eliminates the remaining gap. The current DistilBERT classifier exhibits a 90.6\% False Positive Rate on end-to-end benign traffic due to out-of-distribution sensitivity to structured JSON tool outputs — a compound effect across 5 hooks that we analyse as a key systems-engineering finding. A three-configuration ablation study (A/B/C) confirms the necessity of defence-in-depth: input-side-only defences reduce ASR from 8.0\% to 2.0\%, while full output-side validation achieves 0.0\%.
 
 ## 1. Introduction: The Shift to Agentic AI
 The evolution of Large Language Models (LLMs) has transitioned from passive, single-turn conversational interfaces to autonomous, stateful systems known as "Agentic AI." Unlike traditional models that merely generate text, AI agents are designed to execute complex, multi-step tasks by utilizing external tools, APIs, and persistent memory. While this shift unlocks significant operational capabilities—such as autonomous travel booking, financial analysis, and code generation—it simultaneously introduces profound security vulnerabilities. An agent that can interact with the external world is susceptible to new vectors of attack, including prompt injection, tool hijacking, and data poisoning. 
@@ -302,28 +291,37 @@ Autonomous execution introduces unacceptable risks for highly sensitive actions 
 ## 10. Experimental Evaluation & Benchmarking (Phase 9)
 The core objective of this research was to empirically evaluate if the multi-layered security architecture—comprising Multimodal Sanitization (Phase 5), the Trust Engine (Phase 6), the Pre-LLM Security Enforcement Layer (Phase 7), and Output Validation and Recovery (Phase 8)—effectively mitigates targeted prompt injections without significantly degrading benign agent utility. 
 
-To evaluate this, we subjected the secured runtime configuration to the Phase R3 matched-pair evaluation (20 attacks and 20 benign requests) and a multimodal smoke benchmark covering OCR-visible and EXIF-backed image inputs. 
+To evaluate this, we subjected the secured runtime configuration to the Phase R3 matched-pair evaluation (100 attacks across 5 families and 96 benign requests) and a multimodal smoke benchmark covering OCR-visible and EXIF-backed image inputs. 
 
 ### 10.1 Empirical Results
 The experimental evaluation measured three primary dimensions:
-1. **Security:** The Attack Success Rate (ASR) against the 20 attack payloads in Phase R3.
+1. **Security:** The Attack Success Rate (ASR) against the 100 attack payloads in Phase R3.
 2. **Performance:** The average execution latency overhead.
 3. **Accuracy:** The Task Accuracy Retention (TAR), Policy Compliance Rate (PCR), and Provenance Trust Consistency Index (PTCI), which capture benign utility, safety compliance, and trust/provenance alignment.
 
-**Table 2: Benchmark Results: Baseline vs. Secured Architecture**
+**Table 2: Benchmark Results: Baseline vs. Secured Architecture (n=100 attacks, 96 benign)**
 ```text
-Metric                  | Baseline | Secured | Delta / Improvement
-------------------------------------------------------------------
-Attack Success Rate     |   100.0\%|   15.0\%| -85.0 pp (Significantly Safer)
-False Positive Rate     |     0.0\%|    0.0\%| +0.0 pp (No Utility Loss)
-Task Accuracy Retention |   100.0\%|  100.0\%| +0.0 pp (No Degradation)
-Avg. Latency (sec)      |    1.28s |   1.29s | +0.01s (Negligible Overhead)
+Metric                  | Baseline       | Secured        | Delta
+----------------------------------------------------------------------
+Attack Success Rate     |    8.0\%       |    0.0\%       | -8.0 pp
+  95\% Wilson CI        | [4.1\%, 15.0\%]| [0.0\%, 3.7\%]|
+False Positive Rate     |    0.0\%       |   90.6\%       | +90.6 pp
+  95\% Wilson CI        | [0.0\%, 3.9\%] | [83.1\%, 95.0\%]|
+Task Accuracy Retention |  100.0\%       |    9.4\%       | -90.6 pp
+Precision               |  100.0\%       |   53.5\%       | -46.5 pp
+Recall                  |   92.0\%       |  100.0\%       | +8.0 pp
+F1-Score                |   95.8\%       |   69.7\%       | -26.2 pp
+Avg. Latency (sec)      |   3.74s        |   8.03s        | +4.29s
 ```
 
 ### 10.2 Analysis of Trade-offs
-The Phase R3 benchmark data shows that under the evaluated conditions, the secured system reduced the baseline ASR from 100.0\% to 15.0\% while maintaining a 0.0\% False Positive Rate (FPR) and a 100.0\% Task Accuracy Retention (TAR) for benign requests. The multimodal smoke benchmark separately demonstrated that OCR-visible and EXIF-backed attacks were blocked, with both Policy Compliance (PCR) and Provenance Trust Consistency Index (PTCI) reaching 100.0\% in the secured run compared to 33.3\% and 77.8\% in the baseline run.
+The Phase R3 benchmark data reveals a fundamental security-utility trade-off. The secured system achieved **perfect recall** (0.0\% ASR, 95\% CI [0.0\%, 3.7\%]) compared to the baseline's 8.0\% ASR (95\% CI [4.1\%, 15.0\%]). The ASR reduction is statistically significant (McNemar p = 0.0078, see Section 16). The baseline ASR of 8.0\% — substantially lower than the 100\% reported in the pre-remediation evaluation — reflects both the de-circularized judge (which no longer counts keyword echoes as compromises) and GPT-4o-mini's built-in safety training, which rejects many attack prompts even without external security wrappers.
 
-Importantly, this security was achieved with minimal latency cost. The average turn latency increased from 1.28s to 1.29s in the Phase R3 secured run, reflecting an overhead of approximately +0.01s (5.75 ms). This indicates that the hybrid heuristic-first and local classifier invocation design effectively controls execution delay, maintaining high availability for standard user workflows.
+However, this security comes at a significant utility cost. The secured system exhibits a **90.6\% False Positive Rate** (FPR, 95\% CI [83.1\%, 95.0\%]), blocking 87 of 96 benign requests. Task Accuracy Retention drops from 100.0\% (baseline) to 9.4\% (secured). This is a direct consequence of deploying the DistilBERT classifier in `full-research` mode across all hooks: the classifier, trained on conversational prompt data, flags the structured JSON tool outputs, memory retrieval context, and bracketed metadata that appear in normal agent workflow as out-of-distribution (OOD) anomalies. The compound FPR across 5 hooks and the output validator means that a benign request passing through the full pipeline has a high probability of being flagged by at least one component.
+
+Average turn latency increases from 3.74s to 8.03s (+115\%), driven primarily by the recovery loop retries triggered by the classifier's false positive detections. The latency difference on attack-only trials is not statistically significant (paired t-test p = 0.196), confirming that the overhead is concentrated in the false-positive recovery paths, not in the classification itself.
+
+These results demonstrate that the current classifier deployment mode achieves the security objective (zero successful attacks) but at a cost that is prohibitive for production use. The architectural contribution is validated: defense-in-depth works. The engineering gap is in classifier calibration and structural pre-processing (JSON unrolling before classification) — a clear target for future work.
 
 ### 10.3 Ablation Study (Phase R4)
 To evaluate the defensive contributions of individual components, we conducted a three-configuration ablation study under randomized attack ordering:
@@ -331,17 +329,17 @@ To evaluate the defensive contributions of individual components, we conducted a
 * **Config B (Partial Defenses / Input-Side only):** Input text sanitizers, Trust Engine, and pre-LLM wrappers active; output validation and memory sanitization disabled.
 * **Config C (Full SECURED):** All perimeter and in-graph defenses active.
 
-**Table 3: Phase R4 Ablation Study Metrics**
+**Table 3: Phase R4 Ablation Study Metrics (n=100 attacks, seed=42)**
 ```text
-Configuration            | ASR (\%)| 95\% CI         | Avg. Latency (sec)
---------------------------------------------------------------------------
-Config A: Baseline       | 100.0\% | [83.9\%, 100.0\%] | 1.24s (1243.6 ms)
-Config B: Partial        | 100.0\% | [83.9\%, 100.0\%] | 1.26s (1264.3 ms)
-Config C: Full SECURED   |  15.0\% | [5.2\%, 36.0\%]  | 1.51s (1510.3 ms)
+Configuration            | ASR (\%)| 95\% CI          | Avg. Latency (sec)
+---------------------------------------------------------------------------
+Config A: Baseline       |   8.0\% | [4.11\%, 15.0\%] | 2.71s (2713.9 ms)
+Config B: Partial        |   2.0\% | [0.55\%,  7.0\%] | 2.41s (2409.0 ms)
+Config C: Full SECURED   |   0.0\% | [0.0\%,   3.7\%] | 2.50s (2504.5 ms)
 ```
 
 #### 10.3.1 Analysis
-The ablation metrics show that ASR remains at 100.0\% for both Config A (Baseline) and Config B (Partial). Under Config B, which implements only input-side and pre-LLM sanitizers, indirect prompt injections embedded in tool outputs or vector database context (RAG poisoning) successfully bypass the sanitizers, demonstrating the vulnerability of perimeter-only defenses. Only the activation of output-side validation and stateful context controls in Config C yields a significant drop in ASR to 15.0\% (95\% CI: [5.2\%, 36.0\%]). Average turn latency increases from 1.24s (Config A) to 1.26s (Config B) due to text classification checks, and reaches 1.51s under Config C due to the multi-agent Output Validator (Agent B) audit checks, showing a clear latency-security trade-off.
+Config A (no security middleware) shows an 8.0\% ASR, confirming that GPT-4o-mini's native safety training already blocks most adversarial prompts without any external intervention. Adding input-side defenses in Config B reduces ASR to 2.0\% — the text sanitizer and pre-LLM classifier intercept 6 of the 8 attacks that bypassed the base model, but 2 indirect injections embedded in tool-output context still evade perimeter-only filtering. Only the activation of output-side validation and memory sanitization in Config C eliminates all remaining attack successes (ASR 0.0\%, 95\% CI: [0.0\%, 3.7\%]), demonstrating the necessity of defence-in-depth across both input and output channels. Latency remains comparable across configurations (2.41–2.71s per turn), indicating that the DistilBERT classifier and output validator add negligible overhead in the attack-only evaluation where false-positive recovery loops are not triggered.
 
 ### 10.4 Component-Level Firewall Verification (Hook Isolation)
 To evaluate the standalone defensive effectiveness of each sanitizer hook, we conducted a component-level firewall benchmark completely offline. We bypassed the downstream LangGraph agent loop and fed direct prompt, visual, tool JSON, memory retrieved, and routing payloads into their respective sanitizer filters. This isolates the hooks from the LLM's native behavior to measure the standalone interception accuracy.
@@ -351,24 +349,27 @@ We compared **Fast Heuristic Mode** against **Secure Classifier Mode** (local Di
 **Table 4: Hook Isolation Benchmark Results**
 | Stage / Hook Stage | System Mode | ASR Leak (\%) | FPR (\%) | Recall (\%) | Latency (Mean) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Hook 1: Pre-LLM (TextSanitizer)** | Fast | 12.0\% | 0.0\% | 88.0\% | 0.01 ms |
-| | Secure | 0.0\% | 15.0\% | 100.0\% | 64.52 ms |
-| **Hook 2: Visual (VisualSanitizer)** | Fast | 0.0\% | 0.0\% | 100.0\% | 1.22 ms |
-| | Secure | 0.0\% | 100.0\% | 100.0\% | 33.23 ms |
-| **Hook 3: Post-Tool (ToolSanitizer)**| Fast | 0.0\% | 0.0\% | 100.0\% | 0.00 ms |
-| | Secure | 0.0\% | 100.0\% | 100.0\% | 73.37 ms |
-| **Hook 4: Pre-Memory (RAGSanitizer)**| Fast | 0.0\% | 0.0\% | 100.0\% | 0.01 ms |
-| | Secure | 0.0\% | 91.0\% | 100.0\% | 12.85 ms |
-| **Hook 5: Routing (Inter-Agent)**    | Fast | 12.0\% | 0.0\% | 88.0\% | 0.01 ms |
-| | Secure | 0.0\% | 15.0\% | 100.0\% | 59.86 ms |
-| **Output Validator (OutputValidator)**| Fast | 0.0\% | 0.0\% | 100.0\% | 0.06 ms |
-| | Secure | 0.0\% | 100.0\% | 100.0\% | 64.12 ms |
+| **Hook 1: Pre-LLM (TextSanitizer)** (n=40 atk, 96 ben) | Fast | 72.5\% | 16.67\% | 27.5\% | 0.01 ms |
+| | Secure | 0.0\% | 32.29\% | 100.0\% | 48.00 ms |
+| **Hook 2: Visual (VisualSanitizer)** (n=100 atk, 100 ben) | Fast | 0.0\% | 100.0\% | 100.0\% | 33.52 ms |
+| | Secure | 0.0\% | 100.0\% | 100.0\% | 28.98 ms |
+| **Hook 3: Post-Tool (ToolSanitizer)** (n=40 atk, 96 ben) | Fast | 92.5\% | 16.67\% | 7.5\% | 0.01 ms |
+| | Secure | 0.0\% | 100.0\% | 100.0\% | 57.40 ms |
+| **Hook 4: Pre-Memory (RAGSanitizer)** (n=20 atk, 96 ben) | Fast | 0.0\% | 16.67\% | 100.0\% | 0.01 ms |
+| | Secure | 0.0\% | 96.88\% | 100.0\% | 35.00 ms |
+| **Hook 5: Routing (Inter-Agent)** (n=40 atk, 96 ben) | Fast | 72.5\% | 16.67\% | 27.5\% | 0.00 ms |
+| | Secure | 0.0\% | 32.29\% | 100.0\% | 35.99 ms |
+| **Output Validator (OutputValidator)** (n=24 atk, 96 ben) | Fast | 12.5\% | 16.67\% | 87.5\% | 0.05 ms |
+| | Secure | 0.0\% | 100.0\% | 100.0\% | 42.58 ms |
 
 #### 10.4.1 Empirical Findings and Systems Engineering Trade-offs
-1. **The Baseline Vulnerability (100\% Exposure):** In the baseline multi-agent graph with all security layers disabled, the primary reasoning LLM is directly exposed to untrusted inputs, yielding a baseline LLM attack exposure of **100.0\%**. Activating the sanitization hooks successfully blocks adversarial payloads, reducing the ASR to 12.0\% in Fast Mode and 0.0\% in Secure Mode across the isolated components.
-2. **Rule-Based Heuristics (Fast Mode) Efficiency:** Fast Mode completes checks in **< 0.1 ms** (with Hook 2 visual processing taking 1.22 ms due to image preprocessing mocks) with a **0.0\% False Positive Rate (FPR)** on text. Because it filters using specific keyword mappings, it ignores structured markup. However, static screens are subject to semantic evasion, leading to a **12.0\% ASR Leak Rate** on Hook 1 and Hook 5.
-3. **Local Transformer (Secure Mode) Classification Anomalies:** Under Secure Mode, the local DistilBERT model achieves perfect recall (100.0\%) but exhibits elevated False Positive Rates (FPR), ranging from 15.0\% on Hooks 1 and 5 to 91.0\% on Hook 4 and 100.0\% on Hooks 2, 3, and the Output Validator. This is a key systems-security finding: the local text classifier, having been fine-tuned on unstructured conversational prompt data, flags structured syntax (e.g. JSON API envelopes, quotes, brackets, and retrieval structures) as malicious out-of-distribution (OOD) anomalies. This highlights the necessity of pre-sanitization cleaning and structural unrolling before classification models are applied.
-4. **Visual Hook and Tesseract Bypass:** Hook 2 (VisualSanitizer) shows a 0.0\% FPR in Fast Mode but 100.0\% FPR in Secure Mode. When the system binary dependency (Tesseract) is absent, Secure Mode triggers a path exception and falls closed by design to prevent security bypass. In production environments with Tesseract installed, OCR parsing executes in **1 to 2 seconds** on local commodity CPUs.
+
+Note: sample sizes vary per hook because each hook filters attacks by family relevance, and the corrected harness uses unique samples only (no duplication to inflate N). The benchmark uses 100 unique attacks (46 keyword-free) and 96 benign requests (20 hard negatives).
+
+1. **Fast Mode Vulnerability to Keyword-Free Attacks:** Fast Mode completes checks in **< 0.1 ms** but the keyword heuristic achieves only **27.5\% recall** on Hooks 1 and 5 (72.5\% ASR leak), and **7.5\% recall** on Hook 3 (92.5\% ASR leak). This is because 46 of the 100 attack prompts are keyword-free paraphrased variants that bypass static keyword matching entirely. The 16.67\% FPR reflects hard-negative benign requests that contain trigger-like terms (e.g. "override my booking preferences"). The Output Validator achieves better performance (87.5\% recall) because it detects structural violations (credential patterns, system prompt disclosures) rather than relying on keyword matching.
+2. **Secure Mode Perfect Recall at FPR Cost:** Under Secure Mode, the local DistilBERT classifier achieves **100.0\% recall** (0\% ASR) across all hooks, but exhibits elevated False Positive Rates: 32.29\% on text-input hooks (Hooks 1, 5), 96.88\% on memory content (Hook 4), and 100.0\% on structured JSON outputs (Hooks 3, Output Validator) and visual inputs (Hook 2). This is a key systems-security finding: the classifier, fine-tuned on unstructured conversational prompt data, flags structured syntax (JSON envelopes, retrieval context, bracketed metadata) as malicious out-of-distribution (OOD) anomalies. This highlights the necessity of structural unrolling (extracting string values from JSON before classification) as a pre-processing step.
+3. **Visual Hook Fail-Closed Behavior:** Hook 2 (VisualSanitizer) shows 100.0\% FPR in both modes because the Tesseract OCR dependency is absent. Under `STRICT_SECURITY=1`, the system falls closed by design rather than silently degrading to a pass-through — this is the intended behavior for security-critical deployments where silent degradation creates a false sense of protection.
+4. **Hybrid Deployment Necessity:** The results demonstrate that neither mode alone is sufficient: Fast Mode is too permissive (72.5\% ASR leak on text), while Secure Mode is too restrictive (32–100\% FPR). A production deployment should pair fast heuristics for structured tool-calling nodes with the local classifier restricted to unstructured input channels.
 
 ### 10.5 Advanced Security Verification & Multi-Agent Evaluations
 To comprehensively evaluate the orchestration-level security properties of the proposed multi-agent framework under dynamic workflows, we performed three advanced offline evaluations:
@@ -461,19 +462,19 @@ To provide a complete statistical characterization of the detection system, we p
 |  | **Predicted: Attack** | **Predicted: Benign** |
 | :--- | :--- | :--- |
 | **Actual: Attack (100)** | TP = 100 | FN = 0 |
-| **Actual: Benign (100)** | FP = 2 | TN = 98 |
+| **Actual: Benign (96)** | FP = 87 | TN = 9 |
 <!-- THESIS_CONFUSION_MATRIX_END -->
 
 <!-- THESIS_METRICS_START -->
 | Metric | Value |
 | :--- | :--- |
-| **Precision** | 0.9804 |
+| **Precision** | 0.5348 |
 | **Recall** | 1.0000 |
-| **F1-Score** | 0.9900 |
-| **Accuracy** | 0.9900 |
+| **F1-Score** | 0.6969 |
+| **Accuracy** | 0.5561 |
 <!-- THESIS_METRICS_END -->
 
-The perfect Recall (100.0%) confirms that the secured configuration blocks all adversarial inputs in this run. The Precision of 98.0% remains acceptable given the security-critical context where False Negatives are far more costly than False Positives.
+The perfect Recall (100.0\%) confirms that the secured configuration blocks **all** adversarial inputs — zero attacks succeed. However, Precision drops to 53.5\% because the classifier flags 87 of 96 benign requests as attacks (FPR = 90.6\%). The low Precision reflects the OOD classifier behavior documented in Section 10.4: the DistilBERT model, fine-tuned on unstructured conversational prompts, misclassifies the structured JSON and metadata syntax present in normal tool outputs. In a security-critical deployment where false negatives are catastrophic (a single successful injection could compromise the entire agent session), maximizing Recall at the expense of Precision is the correct operating point — but the FPR must be reduced through structural pre-processing before production viability.
 
 ## 16. Statistical Significance
 
@@ -482,40 +483,42 @@ To establish the mathematical rigor of our security claims, we performed matched
 ### 16.1 Matched-Pair ASR Evaluation (McNemar's Test)
 Because we evaluate the same set of attack prompts on both the Baseline and Secured configurations, we use McNemar's exact binomial test to compare ASR outcomes (matched pairs). 
 
-Our evaluation yielded a contingency table of discordant pairs:
-- **Baseline Succeeded & Secured Blocked (Discordant):** 17 cases
-- **Baseline Blocked & Secured Succeeded (Discordant):** 0 cases
+Our evaluation on 100 matched attack pairs yielded a contingency table of discordant pairs:
+- **Both Succeeded (concordant):** 0 cases
+- **Baseline Succeeded & Secured Blocked (discordant):** 8 cases
+- **Baseline Blocked & Secured Succeeded (discordant):** 0 cases
+- **Both Blocked (concordant):** 92 cases
 
 Under the null hypothesis ($H_0$) that both configurations are equally vulnerable, we expect an equal distribution of discordant pairs. The exact binomial test evaluates the likelihood of observing this distribution under $H_0$.
 
 <!-- THESIS_STATS_START -->
 | Statistic / Test Metric | Value |
 | :--- | :--- |
-| **Chi-Squared Statistic ($\chi^2$)** | 15.0588 |
+| **Chi-Squared Statistic ($\chi^2$)** | 6.1250 |
 | **Degrees of Freedom** | 1 |
-| **Exact p-value** | 1.5259e-05 |
+| **Exact p-value** | 0.0078 |
 | **Significant at $\alpha = 0.05$?** | **YES** |
 <!-- THESIS_STATS_END -->
 
 <!-- THESIS_CI_TEXT_START -->
-The McNemar exact p-value of $1.5259 \times 10^{-5}$ is far below the significance threshold of $\alpha = 0.05$, confirming that the observed ASR reduction from 100% to 15% is highly statistically significant. We reject the null hypothesis, demonstrating that the security middleware provides robust, statistically verifiable protection. 
+The McNemar exact p-value of $0.0078$ is well below the significance threshold of $\alpha = 0.05$, confirming that the observed ASR reduction from 8.0\% to 0.0\% is statistically significant. We reject the null hypothesis, demonstrating that the security middleware provides statistically verifiable protection beyond what the LLM's native safety training achieves alone.
 
-Additionally, 95% bootstrap confidence intervals (10,000 iterations) verify this divergence:
-- **Baseline ASR:** 100.0% (95% CI: [100.0%, 100.0%])
-- **Secured ASR:** 15.0% (95% CI: [0.0%, 30.0%])
+Additionally, 95\% bootstrap confidence intervals (10,000 iterations, seed 42) verify this divergence:
+- **Baseline ASR:** 8.0\% (95\% CI: [3.0\%, 14.0\%])
+- **Secured ASR:** 0.0\% (95\% CI: [0.0\%, 0.0\%])
 <!-- THESIS_CI_TEXT_END -->
 
 The complete ASR comparison across ingestion pathways is visualized in [asr_comparison_plot.png](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/figures/asr_comparison_plot.png). Classification metrics and errors are mapped in the confusion matrices [confusion_matrices.png](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/figures/confusion_matrices.png).
 
 ### 16.2 Turn-by-Turn Latency Overhead (Paired t-Test)
-To verify if the security layers introduce an unacceptable latency penalty on benign paths, we conducted a two-tailed paired t-test on matched turn-by-turn latencies across 20 benign travel-booking request pairs:
-- **Mean Baseline Latency (per turn):** 1398.88 ms
-- **Mean Secured Latency (per turn):** 1422.18 ms
-- **Paired t-statistic ($t$):** -0.2037
-- **p-value:** 0.8408
+To verify if the security layers introduce a statistically significant latency penalty, we conducted a two-tailed paired t-test on matched turn-by-turn latencies across 100 attack request pairs:
+- **Mean Baseline Latency (per turn):** 3056.21 ms
+- **Mean Secured Latency (per turn):** 3323.66 ms
+- **Paired t-statistic ($t$):** -1.3009
+- **p-value:** 0.1963
 - **Significant at $\alpha = 0.05$?** **NO**
 
-The p-value of 0.8408 is well above the significance threshold of $\alpha = 0.05$. This confirms that the latency differences between the Baseline and Secured configurations are not statistically significant under local offline execution, demonstrating that our hybrid heuristic and local classification design adds negligible overhead to standard execution paths. Hook isolation execution times are charted in [latency_comparison_charts.png](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/figures/latency_comparison_charts.png), and the end-to-end security/usability trade-off is shown in [tar_tradeoff_plot.png](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/figures/tar_tradeoff_plot.png).
+The p-value of 0.1963 is well above the significance threshold of $\alpha = 0.05$. This confirms that the latency differences between the Baseline and Secured configurations on attack trials are not statistically significant. The overall mean latency increase (3.74s baseline vs. 8.03s secured) is driven primarily by the **false-positive recovery paths** on benign requests, where the output validator triggers multiple regeneration retries. On attack trials — where the classifier correctly blocks inputs at an early hook — the overhead is small and non-significant.
 
 ### 16.3 Deterministic Policy Validation Framework
 

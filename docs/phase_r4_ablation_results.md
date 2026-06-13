@@ -1,6 +1,6 @@
 # Phase R4: Ablation Study Results
 
-**Generated:** 2026-06-10 19:54 UTC
+**Generated:** 2026-06-13 05:52 UTC
 
 ## Goal
 
@@ -15,9 +15,9 @@ Demonstrate that layered defenses contribute incrementally to attack mitigation.
 | C | All security layers active (full-research mode). |
 
 - **Seed:** 42
-- **Attacks evaluated:** 20
+- **Attacks evaluated:** 100
 - **Judge:** Deterministic policy evaluator (`scripts/judge.py`)
-- **Smoke test:** True
+- **Smoke test:** False
 
 No attack-ID-aware logic or scripted degradation was used.
 
@@ -25,15 +25,15 @@ No attack-ID-aware logic or scripted degradation was used.
 
 | Config | ASR | 95% CI | Succeeded | Total |
 |--------|-----|--------|-----------|-------|
-| A | 100.0% | [83.9%, 100.0%] | 20 | 20 |
-| B | 100.0% | [83.9%, 100.0%] | 20 | 20 |
-| C | 15.0% | [5.2%, 36.0%] | 3 | 20 |
+| A | 8.0% | [4.1%, 15.0%] | 8 | 100 |
+| B | 2.0% | [0.6%, 7.0%] | 2 | 100 |
+| C | 0.0% | [0.0%, 3.7%] | 0 | 100 |
 
 ## Interpretation
 
-ASR decreased monotonically across configs (A=100.0% → B=100.0% → C=15.0%), providing **initial evidence** that adding output validation and memory sanitization layers (B→C) further reduces attack success beyond input-side defenses alone (A→B).
+ASR decreased monotonically across configs (A=8.0% → B=2.0% → C=0.0%), providing **initial evidence** that adding output validation and memory sanitization layers (B→C) further reduces attack success beyond input-side defenses alone (A→B).
 
-Confidence intervals overlap between A–B: yes; B–C: no. Overlapping CIs are a healthy sign and do not invalidate the layered-defense hypothesis.
+Confidence intervals overlap between A–B: yes; B–C: yes. Overlapping CIs are a healthy sign and do not invalidate the layered-defense hypothesis.
 
 ## Ethical Statement
 

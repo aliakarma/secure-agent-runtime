@@ -17,23 +17,23 @@ This evaluation benchmarks each security hook directly in isolation on hook-spec
 
 | Hook Stage / Component | ASR Leak | FPR | Recall | F1-Score | Latency (Mean) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Hook 1: Pre-LLM (TextSanitizer) | 12.0% | 0.0% | 88.0% | 93.6% | 0.01 ms |
-| Hook 2: Visual (VisualSanitizer) | 0.0% | 0.0% | 100.0% | 100.0% | 1.22 ms |
-| Hook 3: Post-Tool (ToolSanitizer) | 0.0% | 0.0% | 100.0% | 100.0% | 0.00 ms |
-| Hook 4: Pre-Memory (RAGSanitizer) | 0.0% | 0.0% | 100.0% | 100.0% | 0.01 ms |
-| Hook 5: Routing (Inter-Agent) | 12.0% | 0.0% | 88.0% | 93.6% | 0.01 ms |
-| Output Validator (OutputValidator) | 0.0% | 0.0% | 100.0% | 100.0% | 0.06 ms |
+| Hook 1: Pre-LLM (TextSanitizer) | 72.5% | 16.7% | 27.5% | 32.8% | 0.01 ms |
+| Hook 2: Visual (VisualSanitizer) | 0.0% | 100.0% | 100.0% | 66.7% | 33.52 ms |
+| Hook 3: Post-Tool (ToolSanitizer) | 92.5% | 16.7% | 7.5% | 10.2% | 0.01 ms |
+| Hook 4: Pre-Memory (RAGSanitizer) | 0.0% | 16.7% | 100.0% | 71.4% | 0.01 ms |
+| Hook 5: Routing (Inter-Agent) | 72.5% | 16.7% | 27.5% | 32.8% | 0.00 ms |
+| Output Validator (OutputValidator) | 12.5% | 16.7% | 87.5% | 68.8% | 0.05 ms |
 
 ### 2. Secure Classifier Mode (`SECURED_SYSTEM_MODE=secure`)
 
 | Hook Stage / Component | ASR Leak | FPR | Recall | F1-Score | Latency (Mean) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Hook 1: Pre-LLM (TextSanitizer) | 0.0% | 15.0% | 100.0% | 93.0% | 64.52 ms |
-| Hook 2: Visual (VisualSanitizer) | 0.0% | 100.0% | 100.0% | 66.7% | 33.23 ms |
-| Hook 3: Post-Tool (ToolSanitizer) | 0.0% | 100.0% | 100.0% | 66.7% | 73.37 ms |
-| Hook 4: Pre-Memory (RAGSanitizer) | 0.0% | 91.0% | 100.0% | 68.7% | 12.85 ms |
-| Hook 5: Routing (Inter-Agent) | 0.0% | 15.0% | 100.0% | 93.0% | 59.86 ms |
-| Output Validator (OutputValidator) | 0.0% | 100.0% | 100.0% | 66.7% | 64.12 ms |
+| Hook 1: Pre-LLM (TextSanitizer) | 0.0% | 32.3% | 100.0% | 72.1% | 48.00 ms |
+| Hook 2: Visual (VisualSanitizer) | 0.0% | 100.0% | 100.0% | 66.7% | 28.98 ms |
+| Hook 3: Post-Tool (ToolSanitizer) | 0.0% | 100.0% | 100.0% | 45.5% | 57.40 ms |
+| Hook 4: Pre-Memory (RAGSanitizer) | 0.0% | 96.9% | 100.0% | 30.1% | 35.00 ms |
+| Hook 5: Routing (Inter-Agent) | 0.0% | 32.3% | 100.0% | 72.1% | 35.99 ms |
+| Output Validator (OutputValidator) | 0.0% | 100.0% | 100.0% | 33.3% | 42.58 ms |
 
 ---
 

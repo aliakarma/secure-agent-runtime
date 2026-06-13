@@ -1,34 +1,34 @@
 {
     "mcnemar_asr": {
-        "both_succeeded": 3,
-        "baseline_succeeded_secured_blocked": 17,
+        "both_succeeded": 0,
+        "baseline_succeeded_secured_blocked": 8,
         "baseline_blocked_secured_succeeded": 0,
-        "both_blocked": 0,
-        "chi2_statistic": 15.0588,
-        "p_value": 1.52587890625e-05,
+        "both_blocked": 92,
+        "chi2_statistic": 6.125,
+        "p_value": 0.0078125,
         "significant_at_alpha_0_05": true
     },
     "latency_paired_t_test": {
-        "sample_size": 20,
-        "mean_baseline_latency_ms": 1398.88,
-        "mean_secured_latency_ms": 1422.18,
-        "t_statistic": -0.2037,
-        "p_value": 0.8407738574717548,
+        "sample_size": 100,
+        "mean_baseline_latency_ms": 3056.21,
+        "mean_secured_latency_ms": 3323.66,
+        "t_statistic": -1.3009,
+        "p_value": 0.19631453007144964,
         "significant_at_alpha_0_05": false
     },
     "bootstrap_confidence_intervals": {
         "baseline_asr": {
-            "mean": 100.0,
+            "mean": 8.0,
             "ci_95": [
-                100.0,
-                100.0
+                3.0,
+                14.0
             ]
         },
         "secured_asr": {
-            "mean": 15.0,
+            "mean": 0.0,
             "ci_95": [
                 0.0,
-                30.0
+                0.0
             ]
         },
         "baseline_tar": {
@@ -39,10 +39,10 @@
             ]
         },
         "secured_tar": {
-            "mean": 100.0,
+            "mean": 9.38,
             "ci_95": [
-                100.0,
-                100.0
+                4.17,
+                15.62
             ]
         }
     }

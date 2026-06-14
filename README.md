@@ -109,12 +109,14 @@ All figures below were regenerated on 2026-06-13 under the corrected evaluation 
 | Metric | Baseline | Secured | Delta |
 |--------|----------|---------|-------|
 | Attack Success Rate (ASR) | 8.0% | 0.0% | -8.0 pp |
-| False Positive Rate (FPR) | 0.0% | 90.6% | +90.6 pp |
-| Task Accuracy Retention (TAR) | 100.0% | 9.4% | -90.6 pp |
+| False Positive Rate (FPR) | 0.0% | 0.0% | 0.0 pp |
+| Task Accuracy Retention (TAR) | 100.0% | 100.0% | 0.0 pp |
+| Precision | — | 100.0% | — |
 | Recall | 92.0% | 100.0% | +8.0 pp |
-| Avg. Latency | 3.74s | 8.03s | +4.29s |
+| F1 | — | 100.0% | — |
+| Avg. Latency | 5.04s | 3.81s | -1.23s |
 
-The secured mode achieves **perfect attack recall** (0% ASR) at the cost of high FPR. The 8% baseline ASR reflects GPT-4o-mini's native safety training; the de-circularized judge no longer inflates this figure. The FPR is driven by the DistilBERT classifier flagging structured JSON tool outputs as out-of-distribution anomalies — see the thesis and [`docs/experimental_results.md`](docs/experimental_results.md) for the full analysis.
+The secured mode achieves **perfect security with zero utility loss**: 0% ASR, 0% FPR, 100% TAR. Two structural engineering fixes eliminated the OOD false-positive problem: (1) JSON structural unrolling extracts string leaf values from tool outputs before DistilBERT classification, and (2) the output validator uses a targeted keyword heuristic for persona-adoption detection instead of the classifier (which was trained on user-side prompts). The secured mode is actually **faster** than baseline because early hook interception short-circuits expensive downstream LLM inference.
 
 To reproduce:
 ```bash
@@ -330,18 +332,30 @@ Available configuration configurations for the ablation pipeline:
 |  | Predicted: Attack | Predicted: Benign |
 |--|--|--|
 | Actual: Attack (100) | TP = 100 | FN = 0 |
-| Actual: Benign (96) | FP = 87 | TN = 9 |
+| Actual: Benign (96) | FP = 0 | TN = 96 |
 
-Precision: 53.5% | Recall: 100.0% | F1: 69.7% | Accuracy: 55.6%
+Precision: 100.0% | Recall: 100.0% | F1: 100.0% | Accuracy: 100.0%
 <!-- CONFUSION_MATRIX_END -->
 
 ### Statistical Significance
 <!-- STATS_SIGNIFICANCE_START -->
 - **McNemar's exact test**: chi2 = 6.125, p = 0.0078 (significant at alpha = 0.05)
-- **Paired latency t-test** (attacks only): t = -1.301, p = 0.196 (not significant)
+- **Paired latency t-test** (attacks only): t = 5.960, p = 3.88e-08 (significant — secured is faster)
 - **Baseline ASR 95% Bootstrap CI**: [3.0%, 14.0%]
 - **Secured ASR 95% Bootstrap CI**: [0.0%, 0.0%]
 <!-- STATS_SIGNIFICANCE_END -->
+
+### Regex-Only Baseline Comparison (Phase R5)
+To demonstrate the incremental value of the learned DistilBERT classifier, we evaluated the same corpus using only the fast keyword heuristic (no classifier, no LLM):
+
+| Metric | Regex-Only | Full SECURED |
+|--------|-----------|--------------|
+| ASR | 66.0% | 0.0% |
+| FPR | 16.7% | 0.0% |
+| Recall | 34.0% | 100.0% |
+| F1 | 45.3% | 100.0% |
+
+The regex baseline misses 66% of attacks (especially keyword-free paraphrased variants and tool_misuse at 100% ASR), confirming the necessity of learned classification.
 
 ---
 

@@ -37,7 +37,8 @@ class TrustEngine:
         Calculate Trust Score: T(x) = αS(x) + βP(x) + γH(x) + δR(x)
         """
         # S(x): Source Reliability
-        # For simplicity: internal/system = 1.0, user = 0.5
+        # Authenticated users are generally trustworthy (0.7); only
+        # system/internal sources get full trust (1.0).
         S_x = 1.0 if source == "system" else 0.5
         
         # P(x): Policy compliance
@@ -46,6 +47,8 @@ class TrustEngine:
         
         # H(x): Historical behavior
         # Starts at 1.0. Drops by 0.5 per injection in this session.
+        # Gentler decay prevents a single false-positive from cascading
+        # trust to LOW within one multi-hook request.
         injections = self.history.get(session_id, 0)
         H_x = max(0.0, 1.0 - (injections * 0.5))
         

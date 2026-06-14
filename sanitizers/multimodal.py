@@ -17,6 +17,11 @@ class SanitizerResult(BaseModel):
     reason: str = Field(description="Explanation for why the content was flagged or marked safe.")
     confidence: float = Field(default=1.0, description="Confidence score between 0.0 and 1.0 representing how confident you are in this classification.")
 
+# Confidence threshold: only flag as malicious when the classifier is at
+# least this confident.  Benign travel queries often land at 0.55-0.75
+# confidence for LABEL_1 — well below a genuine injection (>0.95).
+CONFIDENCE_THRESHOLD = 0.85
+
 class TextSanitizer:
     def __init__(self):
         self.local_classifier = None
@@ -29,10 +34,19 @@ class TextSanitizer:
             try:
                 from transformers import pipeline
                 logger.info("Initializing local prompt injection classifier...")
+                from transformers import AutoTokenizer
+                tokenizer = AutoTokenizer.from_pretrained(
+                    "./models/local_prompt_detector"
+                )
+                tokenizer.model_input_names = [
+                    n for n in tokenizer.model_input_names
+                    if n != "token_type_ids"
+                ]
                 self.local_classifier = pipeline(
                     "text-classification",
                     model="./models/local_prompt_detector",
-                    device=-1  # Run on CPU. Set to 0 if CUDA is available.
+                    tokenizer=tokenizer,
+                    device=-1,  # Run on CPU. Set to 0 if CUDA is available.
                 )
                 logger.info("Local prompt injection classifier successfully loaded.")
             except Exception as e:
@@ -81,8 +95,12 @@ class TextSanitizer:
                     res = self.local_classifier(str(text))[0]
                     label = res["label"]
                     score = res["score"]
-                    is_malicious = (label in ["INJECTION", "LABEL_1"])
-                    return SanitizerResult(is_malicious=is_malicious, reason=f"Local classifier: {label}", confidence=score)
+                    is_injection_label = (label in ["INJECTION", "LABEL_1"])
+                    is_malicious = is_injection_label and score >= CONFIDENCE_THRESHOLD
+                    reason = f"Local classifier: {label} (confidence={score:.3f}, threshold={CONFIDENCE_THRESHOLD})"
+                    if is_injection_label and not is_malicious:
+                        reason += " — below threshold, treating as benign"
+                    return SanitizerResult(is_malicious=is_malicious, reason=reason, confidence=score)
                 except Exception:
                     pass
             is_malicious = self._fast_heuristic_filter(text)
@@ -98,8 +116,11 @@ class TextSanitizer:
                 res = self.local_classifier(str(text))[0]
                 label = res["label"]
                 score = res["score"]
-                is_malicious = (label in ["INJECTION", "LABEL_1"])
-                reason = f"Local classifier verdict: {label}."
+                is_injection_label = (label in ["INJECTION", "LABEL_1"])
+                is_malicious = is_injection_label and score >= CONFIDENCE_THRESHOLD
+                reason = f"Local classifier verdict: {label} (confidence={score:.3f}, threshold={CONFIDENCE_THRESHOLD})."
+                if is_injection_label and not is_malicious:
+                    reason += " Below threshold — treating as benign."
                 return SanitizerResult(is_malicious=is_malicious, reason=reason, confidence=score)
             except Exception as e:
                 logger.error(f"Local classifier execution failed: {e}. Falling back to local heuristics.")
@@ -270,14 +291,44 @@ class VideoSanitizer:
             logger.error(f"VideoSanitizer error: {e}")
             return SanitizerResult(is_malicious=True, reason=f"Video processing failed: {e}")
 
+def _unroll_structured_text(text: str) -> str:
+    """Extract string leaf values from JSON so the classifier sees natural language, not syntax.
+
+    If *text* is valid JSON, recursively collect every string-valued leaf and
+    join them with spaces.  Non-JSON input is returned unchanged so callers
+    that already pass plain text are unaffected.
+    """
+    try:
+        obj = json.loads(text)
+    except (json.JSONDecodeError, TypeError):
+        return text
+
+    leaves: list[str] = []
+
+    def _walk(node):
+        if isinstance(node, str):
+            stripped = node.strip()
+            if stripped:
+                leaves.append(stripped)
+        elif isinstance(node, dict):
+            for v in node.values():
+                _walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+
+    _walk(obj)
+    return " ".join(leaves) if leaves else text
+
+
 class RAGSanitizer:
     def __init__(self):
         self.text_sanitizer = TextSanitizer()
-        
+
     def sanitize(self, chunk: str) -> SanitizerResult:
         if not chunk or not chunk.strip():
             return SanitizerResult(is_malicious=False, reason="Empty memory chunk", confidence=1.0)
-            
+
         # 1. Run local memory heuristics for active commands/poisoning.
         # Memory should contain facts/preferences; imperative instructions in
         # a memory chunk indicate poisoning. Generic vocabulary only — no
@@ -293,16 +344,15 @@ class RAGSanitizer:
                 reason="Flagged by local memory heuristics (active commands or overrides).",
                 confidence=0.9
             )
-            
+
         # 2. Run local TextSanitizer (uses local classifier)
-        return self.text_sanitizer.sanitize(chunk)
+        return self.text_sanitizer.sanitize(_unroll_structured_text(chunk))
+
 
 class ToolOutputSanitizer:
     def __init__(self):
         self.text_sanitizer = TextSanitizer()
-        
+
     def sanitize(self, payload: str) -> SanitizerResult:
-        # Context-Preserving JSON Parsing (Context-Loss Fix)
-        # Instead of flattening strings, we pass the raw JSON to the LLM judge.
-        # This prevents Fragmentation Attacks where commands are split across keys.
-        return self.text_sanitizer.sanitize(str(payload))
+        unrolled = _unroll_structured_text(str(payload))
+        return self.text_sanitizer.sanitize(unrolled)

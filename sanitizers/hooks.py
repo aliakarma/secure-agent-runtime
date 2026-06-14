@@ -218,20 +218,25 @@ def secure_tool_wrapper(func):
         result = mcp_sandbox.execute(tool_name, parameters, func)
         
         logger.info(f"Hook 3 Triggered: Intercepting after tool execution ({tool_name}).")
-        # Check outputs
+        # Check outputs — use keyword-based heuristics, NOT the DistilBERT
+        # classifier. The classifier was fine-tuned on user-side prompts and
+        # mislabels tool response text (e.g. "Found flight FL456...") as
+        # INJECTION at 93%+ confidence. Tool outputs are system-generated;
+        # we only need to check for actual compromise indicators.
         if os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") != "1":
             from dashboard_events import push_dashboard_event
+            from sanitizers.output_validator import output_validator
             
-            res = tool_sanitizer.sanitize(str(result))
-            if res.is_malicious:
-                logger.warning(f"Security Alert at Hook 3 ({tool_name}_Post_Tool): {res.reason}")
+            validation = output_validator.validate(str(result))
+            if not validation.is_safe:
+                logger.warning(f"Security Alert at Hook 3 ({tool_name}_Post_Tool): {validation.reason}")
                 if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
                     trust_engine.register_injection(session_id)
                 
                 push_dashboard_event("SECURITY_ALERT", {
                     "phase": 3,
                     "agent": tool_name,
-                    "message": f"Suspicious tool output blocked: {res.reason}",
+                    "message": f"Suspicious tool output blocked: {validation.reason}",
                     "severity": "CRITICAL"
                 })
                 
@@ -265,7 +270,24 @@ def secure_routing_hook(supervisor_runnable):
                 from langchain_core.messages import HumanMessage as _HumanMessage
                 last_msg_obj = state["messages"][-1]
                 last_message = last_msg_obj.content
-                res = text_sanitizer.sanitize(last_message)
+                source_is_user = isinstance(last_msg_obj, _HumanMessage)
+
+                if source_is_user:
+                    # For user messages: strip provenance/boundary tags before
+                    # classification (same cleaning as Hook 1) so the classifier
+                    # sees plain text, not metadata tokens.
+                    clean_for_scan = last_message
+                    clean_for_scan = _re.sub(r'--- USER INPUT START ---\n', '', clean_for_scan)
+                    clean_for_scan = _re.sub(r'\n--- USER INPUT END ---', '', clean_for_scan)
+                    clean_for_scan = _re.sub(r'^\[PROVENANCE:[^\]]+\]\n\n', '', clean_for_scan, flags=_re.MULTILINE)
+                    res = text_sanitizer.sanitize(clean_for_scan)
+                else:
+                    # For AI/Tool messages: the DistilBERT classifier was fine-tuned
+                    # on user-side prompts and misclassifies agent output as OOD.
+                    # Use keyword-based persona/compromise check instead.
+                    from sanitizers.output_validator import output_validator
+                    persona_compromised = output_validator._output_persona_check(last_message)
+                    res = type('Result', (), {'is_malicious': persona_compromised, 'reason': 'Output persona check: compromised' if persona_compromised else 'Output persona check: safe'})()
 
                 # Update Trust Engine (skip if ablated).
                 # Only register an injection when the message is user-sourced.
@@ -273,7 +295,6 @@ def secure_routing_hook(supervisor_runnable):
                 # compromise detection and trigger a SECURITY_ALERT, but they must
                 # NOT decrement session H(x) — doing so causes trust to spiral to
                 # LOW inside a single benign multi-agent request.
-                source_is_user = isinstance(last_msg_obj, _HumanMessage)
                 if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
                     score, new_tier = trust_engine.process_payload(
                         session_id, last_message, "agent",
@@ -282,7 +303,15 @@ def secure_routing_hook(supervisor_runnable):
                     state["trust_score"] = score
                     state["trust_tier"] = new_tier
 
-                if res.is_malicious and not source_is_user:
+                if res.is_malicious and source_is_user:
+                    from dashboard_events import push_dashboard_event
+                    push_dashboard_event("SECURITY_ALERT", {
+                        "phase": 5,
+                        "agent": "Supervisor",
+                        "message": f"Prompt injection detected in user input: {res.reason}",
+                        "severity": "CRITICAL"
+                    })
+                elif res.is_malicious and not source_is_user:
                     from dashboard_events import push_dashboard_event
                     push_dashboard_event("SECURITY_ALERT", {
                         "phase": 5,

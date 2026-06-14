@@ -1,6 +1,7 @@
 import functools
 import contextvars
 import os
+import re as _re
 from logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -42,7 +43,7 @@ def secure_agent_node(agent_name, agent_runnable):
         
         if state and "messages" in state and len(state["messages"]) > 0:
             last_message = state["messages"][-1].content
-            
+
             # Phase A: GraphChain Pre-Processing Module
             # Constructs a structural map capturing relationships, trust paths, and modality interactions
             from trust.graphchain import graphchain
@@ -54,8 +55,20 @@ def secure_agent_node(agent_name, agent_runnable):
                 initial_trust=1.0 if tier == "HIGH" else 0.5
             )
             logger.info(f"GraphChain structural map created: {structural_map['node_id']}")
-            
-            res = text_sanitizer.sanitize(last_message)
+
+            # Strip pre_llm boundary markers and provenance tags before classification.
+            # Hook 5's pre_llm_sanitizer mutates HumanMessage.content with
+            # "--- USER INPUT START/END ---" delimiters for LLM context control, but
+            # those delimiters cause the injection classifier to return LABEL_1 with
+            # ~0.98 confidence on completely benign travel queries — a false positive
+            # that triggers register_injection and collapses H(x) to 0 within one
+            # request. We strip them here so the classifier always sees clean text.
+            clean_for_scan = last_message
+            clean_for_scan = _re.sub(r'--- USER INPUT START ---\n', '', clean_for_scan)
+            clean_for_scan = _re.sub(r'\n--- USER INPUT END ---', '', clean_for_scan)
+            clean_for_scan = _re.sub(r'^\[PROVENANCE:[^\]]+\]\n\n', '', clean_for_scan, flags=_re.MULTILINE)
+
+            res = text_sanitizer.sanitize(clean_for_scan)
             
             if res.is_malicious:
                 from dashboard_events import push_dashboard_event
@@ -297,11 +310,15 @@ def secure_memory_hook(session_id: str, memory_string: str) -> str:
     
     logger.info("Hook 4 Triggered: Intercepting data before saving to memory.")
     res = rag_sanitizer.sanitize(memory_string)
-    
-    score = 1.0
-    if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
-        retrieval_conf = res.confidence if not res.is_malicious else (1.0 - res.confidence)
-        score, new_tier = trust_engine.process_payload(session_id, memory_string, "rag", res.is_malicious, retrieval_confidence=retrieval_conf)
+
+    # Memory hook purpose: block malicious content from ChromaDB. Trust scoring is
+    # already handled by Hooks 1-5 during request execution. Calling
+    # trust_engine.process_payload here would register a 2nd injection against the
+    # session (the memory string includes the agent's accumulated response which the
+    # classifier may mislabel), collapsing H(x) to 0 and driving trust to ~0.13 even
+    # for benign requests. We read the current score for provenance tagging but do
+    # NOT register an injection for memory-sourced content.
+    score = trust_engine.calculate_trust(session_id, "rag", res.is_malicious)
         
     # Provenance tagging for memory storage
     from sanitizers.provenance import provenance_agent

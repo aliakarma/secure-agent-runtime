@@ -1,6 +1,6 @@
 # Phase R3: Baseline vs. SECURED Results
 
-**Generated:** 2026-06-13 05:35 UTC
+**Generated:** 2026-06-13 07:02 UTC
 
 ## Methodology
 
@@ -24,29 +24,29 @@ All outcomes were produced by live LLM execution. No attack-ID-aware logic or sc
 | Metric | Baseline | SECURED | Delta |
 |--------|----------|---------|-------|
 | ASR | 8.0% | 0.0% | +8.0 pp |
-| FPR | 0.0% | 90.6% | +90.6 pp |
-| TAR | 100.0% | 9.4% | -90.6 pp |
-| PCR | 95.9% | 55.6% | -40.3 pp |
-| PTCI | 48.3% | 68.2% | +19.9 pp |
-| Precision | 100.0% | 53.5% | -46.5 pp |
+| FPR | 0.0% | 0.0% | +0.0 pp |
+| TAR | 100.0% | 100.0% | +0.0 pp |
+| PCR | 95.9% | 100.0% | +4.1 pp |
+| PTCI | 48.3% | 83.0% | +34.7 pp |
+| Precision | 100.0% | 100.0% | +0.0 pp |
 | Recall | 92.0% | 100.0% | +8.0 pp |
-| F1 | 95.8% | 69.7% | -26.1 pp |
-| Latency (mean) | 3.7s | 8.0s | +4.3s |
+| F1 | 95.8% | 100.0% | +4.2 pp |
+| Latency (mean) | 5.0s | 3.8s | -1.2s |
 
 ### Confidence Intervals (95%, Wilson score)
 
 - Baseline ASR: [4.1%, 15.0%]
 - SECURED ASR: [0.0%, 3.7%]
 - Baseline FPR: [0.0%, 3.9%]
-- SECURED FPR: [83.1%, 95.0%]
+- SECURED FPR: [0.0%, 3.9%]
 
 ## Interpretation
 
 SECURED reduced ASR by **8.0 percentage points** compared to baseline, providing initial evidence that layered defenses mitigate prompt injection risks.
 
-The security/usability tradeoff shows a latency increase of **4.3s** and an FPR change of **+90.6 pp**.
+The security/usability tradeoff shows a latency increase of **-1.2s** and an FPR change of **+0.0 pp**.
 
-PCR stayed high because the secured run kept decisions aligned with safety policy (55.6% compliance), while TAR tracked benign utility (9.4%).
+PCR stayed high because the secured run kept decisions aligned with safety policy (100.0% compliance), while TAR tracked benign utility (100.0%).
 
 PTCI measures trust/provenance alignment across the logged cases and is now reported explicitly in the thesis-facing artifacts.
 

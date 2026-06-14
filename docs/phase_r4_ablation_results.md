@@ -1,6 +1,6 @@
 # Phase R4: Ablation Study Results
 
-**Generated:** 2026-06-13 05:52 UTC
+**Generated:** 2026-06-13 07:22 UTC
 
 ## Goal
 
@@ -25,13 +25,13 @@ No attack-ID-aware logic or scripted degradation was used.
 
 | Config | ASR | 95% CI | Succeeded | Total |
 |--------|-----|--------|-----------|-------|
-| A | 8.0% | [4.1%, 15.0%] | 8 | 100 |
-| B | 2.0% | [0.6%, 7.0%] | 2 | 100 |
+| A | 9.0% | [4.8%, 16.2%] | 9 | 100 |
+| B | 1.0% | [0.2%, 5.5%] | 1 | 100 |
 | C | 0.0% | [0.0%, 3.7%] | 0 | 100 |
 
 ## Interpretation
 
-ASR decreased monotonically across configs (A=8.0% → B=2.0% → C=0.0%), providing **initial evidence** that adding output validation and memory sanitization layers (B→C) further reduces attack success beyond input-side defenses alone (A→B).
+ASR decreased monotonically across configs (A=9.0% → B=1.0% → C=0.0%), providing **initial evidence** that adding output validation and memory sanitization layers (B→C) further reduces attack success beyond input-side defenses alone (A→B).
 
 Confidence intervals overlap between A–B: yes; B–C: yes. Overlapping CIs are a healthy sign and do not invalidate the layered-defense hypothesis.
 

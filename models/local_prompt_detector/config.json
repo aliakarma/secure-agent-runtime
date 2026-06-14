@@ -10,6 +10,14 @@
   "dtype": "float32",
   "eos_token_id": null,
   "hidden_dim": 3072,
+  "id2label": {
+    "0": "SAFE",
+    "1": "INJECTION"
+  },
+  "label2id": {
+    "SAFE": 0,
+    "INJECTION": 1
+  },
   "initializer_range": 0.02,
   "max_position_embeddings": 512,
   "model_type": "distilbert",

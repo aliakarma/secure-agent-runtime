@@ -1,7 +1,7 @@
 import re
 import os
 from pydantic import BaseModel, Field
-from sanitizers.multimodal import TextSanitizer, SanitizerResult
+from sanitizers.multimodal import SanitizerResult
 from logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -13,24 +13,37 @@ class ValidatorResult(BaseModel):
 
 class OutputValidator:
     def __init__(self):
-        # Local sanitization pipeline
-        self.text_sanitizer = TextSanitizer()
-        
+        pass
+
+    @staticmethod
+    def _output_persona_check(text: str) -> bool:
+        """Keyword heuristic for persona-adoption / override language in AI output.
+
+        Uses keyword matching instead of the DistilBERT classifier because the
+        classifier was fine-tuned on user-side conversational prompts and flags
+        all AI-generated response text as out-of-distribution.
+        """
+        markers = [
+            "i am now dan", "developer mode", "jailbreak", "unrestricted mode",
+            "ignoring the supervisor", "bypass", "override", "guardrails",
+            "disregard my original instructions", "ignore all previous",
+            "without restrictions", "policy filters are disabled",
+        ]
+        text_lower = text.lower()
+        return any(m in text_lower for m in markers)
+
     def validate(self, response_text: str) -> ValidatorResult:
         """
-        Validates the generated AI response using local heuristic and classifier checks.
+        Validates the generated AI response using local heuristic and regex checks.
         """
         if not response_text or not response_text.strip():
             return ValidatorResult(is_safe=True, reason="Empty output", needs_human_approval=False)
 
-        system_mode = os.getenv("SECURED_SYSTEM_MODE", "full-research").lower()
-        
-        # 1. Check for prompt injection or policy violations using the local TextSanitizer
-        san_res = self.text_sanitizer.sanitize(response_text)
-        if san_res.is_malicious:
+        # 1. Check for persona-adoption / override language via keyword heuristic
+        if self._output_persona_check(response_text):
             return ValidatorResult(
                 is_safe=False,
-                reason=f"Flagged by local TextSanitizer: {san_res.reason}",
+                reason="Persona adoption or policy override detected in output.",
                 needs_human_approval=False
             )
             
@@ -56,8 +69,8 @@ class OutputValidator:
             r"\binternal instructions\b",
             r"\bdeveloper instructions\b",
             r"\bsupervisor node\b",
-            r"\bmy tools are\b",
-            r"\bavailable tools\b"
+            r"\bmy (internal|secret|hidden) tools are\b",
+            r"\b(here are|listing) my available tools\b",
         ]
         for pattern in leakage_patterns:
             if re.search(pattern, response_text, re.IGNORECASE):
@@ -67,21 +80,24 @@ class OutputValidator:
                     needs_human_approval=False
                 )
                 
-        # 4. Check for High-Risk action confirmations (requires human approval)
-        # Scan for confirming a transaction while filtering out mock queries
-        booking_keywords = ["confirmed", "finalized", "charged", "successfully booked", "reservation completed"]
+        # 4. Check for High-Risk action confirmations (requires human approval).
+        # Only flag phrases that unambiguously indicate a real financial transaction
+        # has been executed — not merely that the agent found results or is about to
+        # confirm. Bare words like "confirmed" or "finalized" appear in innocent
+        # travel-search responses ("I found confirmed availability…") and must not
+        # trigger auto-rejection via HITL_MODE=auto-reject.
+        booking_keywords = [
+            "payment has been charged",
+            "your card has been billed",
+            "money has been deducted",
+            "successfully booked and confirmed",
+            "reservation is now finalized",
+        ]
         response_lower = response_text.lower()
-        
+
         needs_approval = False
         if any(kw in response_lower for kw in booking_keywords):
-            # If it's a test/mock keyword in tests/dashboard, we selectively allow it 
-            # but in production/eval we flag it if no mock/test indicator exists.
-            if "mock" not in response_lower and "test" not in response_lower:
-                needs_approval = True
-            # For the unit tests to pass cleanly (where the test checks high-risk for specific mock queries),
-            # we also flag if it looks like a real flight confirmation.
-            elif "booking confirmed" in response_lower:
-                needs_approval = True
+            needs_approval = True
                 
         return ValidatorResult(
             is_safe=True,

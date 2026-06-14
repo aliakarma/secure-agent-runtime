@@ -249,20 +249,34 @@ def secure_routing_hook(supervisor_runnable):
         # Check agent outputs only if output validator is enabled
         if os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") != "1" and os.getenv("DISABLE_ALL_SECURITY", "0") != "1":
             if state and "messages" in state and len(state["messages"]) > 0:
-                last_message = state["messages"][-1].content
+                from langchain_core.messages import HumanMessage as _HumanMessage
+                last_msg_obj = state["messages"][-1]
+                last_message = last_msg_obj.content
                 res = text_sanitizer.sanitize(last_message)
-                
-                # Update Trust Engine (skip if ablated)
+
+                # Update Trust Engine (skip if ablated).
+                # Only register an injection when the message is user-sourced.
+                # Agent-generated outputs (AIMessage, ToolMessage) are audited for
+                # compromise detection and trigger a SECURITY_ALERT, but they must
+                # NOT decrement session H(x) — doing so causes trust to spiral to
+                # LOW inside a single benign multi-agent request.
+                source_is_user = isinstance(last_msg_obj, _HumanMessage)
                 if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
-                    score, new_tier = trust_engine.process_payload(session_id, last_message, "agent", res.is_malicious)
+                    score, new_tier = trust_engine.process_payload(
+                        session_id, last_message, "agent",
+                        res.is_malicious and source_is_user
+                    )
                     state["trust_score"] = score
                     state["trust_tier"] = new_tier
-                
-                # If trust engine is active, let the Pre-LLM sanitizer handle masking
-                # Otherwise, if we don't have trust engine but output validation is active, block directly
-                if res.is_malicious:
-                    # If trust engine is ablated, do not block here to allow ablation demonstration
-                    pass
+
+                if res.is_malicious and not source_is_user:
+                    from dashboard_events import push_dashboard_event
+                    push_dashboard_event("SECURITY_ALERT", {
+                        "phase": 5,
+                        "agent": "Supervisor",
+                        "message": f"Possible agent compromise detected in output: {res.reason}",
+                        "severity": "WARNING"
+                    })
                 
         # Phase 7: Pre-LLM Context Sanitization (Final barrier before Supervisor LLM)
         if state and "messages" in state:

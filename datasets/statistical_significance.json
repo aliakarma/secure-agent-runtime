@@ -10,11 +10,11 @@
     },
     "latency_paired_t_test": {
         "sample_size": 100,
-        "mean_baseline_latency_ms": 3056.21,
-        "mean_secured_latency_ms": 3323.66,
-        "t_statistic": -1.3009,
-        "p_value": 0.19631453007144964,
-        "significant_at_alpha_0_05": false
+        "mean_baseline_latency_ms": 3063.96,
+        "mean_secured_latency_ms": 2386.83,
+        "t_statistic": 5.9603,
+        "p_value": 3.882807773737238e-08,
+        "significant_at_alpha_0_05": true
     },
     "bootstrap_confidence_intervals": {
         "baseline_asr": {
@@ -39,10 +39,10 @@
             ]
         },
         "secured_tar": {
-            "mean": 9.38,
+            "mean": 100.0,
             "ci_95": [
-                4.17,
-                15.62
+                100.0,
+                100.0
             ]
         }
     }

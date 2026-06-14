@@ -110,6 +110,6 @@
     "B": "Input-side defenses active (text sanitizer, trust engine, tool hooks, pre-LLM sanitizer). Output validator and memory sanitization disabled.",
     "C": "All security layers active (full-research mode)."
   },
-  "started_at": "2026-06-13T05:36:23.094242+00:00",
+  "started_at": "2026-06-13T07:06:47.021086+00:00",
   "methodology": "runtime-driven, 3-config ablation, deterministic judge"
 }

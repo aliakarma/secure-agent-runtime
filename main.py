@@ -142,6 +142,8 @@ def run_travel_graph_endpoint(user_input: str, session_id: str = "default") -> J
     security_blocked = any(
         "[SANITIZED]" in (msg.content if hasattr(msg, 'content') else '')
         or "[REJECTED]" in (msg.content if hasattr(msg, 'content') else '')
+        or "[UNSAFE SPAN REMOVED]" in (msg.content if hasattr(msg, 'content') else '')
+        or "[LOW-TRUST CONTENT MASKED]" in (msg.content if hasattr(msg, 'content') else '')
         for msg in result.get("messages", [])
     )
         

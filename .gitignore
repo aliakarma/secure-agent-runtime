@@ -40,18 +40,80 @@ logs/
 htmlcov/
 .coverage
 
+# ── Model weights and training checkpoints ───────────────────────────
+# Final model weight (retrain via scripts/train_local_classifier.py)
+models/local_prompt_detector/model.safetensors
+# Training checkpoints (intermediate, not needed for inference)
+models/local_prompt_detector/checkpoint-*/
+# Unused alternative model
+models/local_deberta_detector/
+
+# ── Datasets: user-uploaded session files (testing artifacts) ────────
+datasets/uploaded_dash_session_*
+datasets/uploaded_manual_session_*
+datasets/extract_*.png
+datasets/extract_*.jpg
+datasets/classifier_*.csv
+
+# ── Temporary / generated HTML ───────────────────────────────────────
 project_12week_timeline.html
 secure_agentic_ai_project_guide.html
 
-# ── Datasets ──────────────────────────────────────────────────────────
-datasets/classifier_*.csv
+# ── Review files (not part of submission) ────────────────────────────
 Claude_Review.md
-models/local_prompt_detector/checkpoint-55/model.safetensors
-models/local_prompt_detector/model.safetensors
-models/local_prompt_detector/checkpoint-110/optimizer.pt
-models/local_prompt_detector/checkpoint-165/model.safetensors
-models/local_prompt_detector/checkpoint-165/optimizer.pt
-models/local_prompt_detector/checkpoint-55/optimizer.pt
-models/local_prompt_detector/checkpoint-110/model.safetensors
-phase10/all_results.tar.gz
 Cursor_Review.md
+
+# ── Removed directories (old/duplicate/dev artifacts) ────────────────
+archived_results/
+camera_ready_results/
+artifact_snapshot/
+frozen_benchmarks/
+phase10/
+scratch/
+
+# ── Removed dev scripts ──────────────────────────────────────────────
+scripts/test_chroma.py
+scripts/download_datasets.py
+scripts/cleanup_datasets.py
+scripts/resume_experiments.ps1
+scripts/run_all_experiments.ps1
+scripts/get_metrics.py
+scripts/generate_markdown_tables.py
+scripts/profile_latency.py
+scripts/rebuild_benchmark.py
+scripts/evasion_attack_test.py
+scripts/generate_poisoned_image.py
+scripts/poison_rag.py
+scripts/evaluate_attacks.py
+scripts/evaluate_naked.py
+scripts/evaluate_secured.py
+scripts/analyze_r3_results.py
+scripts/run_benchmarks.py
+
+# ── Removed files ────────────────────────────────────────────────────
+agents/hello_graph.py
+datasets/test_seattle_to_miami.png
+
+# ── Old docs (superseded by docs/figures/ and docs/final_evaluation_report.md)
+docs/ablation_study_chart.png
+docs/confusion_matrix.png
+docs/latency_decomposition.png
+docs/.gitkeep
+docs/benchmark_provenance.md
+docs/consistency_audit_report.md
+docs/evaluation_reset_notice.md
+docs/experimental_results.md
+docs/forensic_audit_report.md
+docs/phase_r3_*.md
+docs/phase_r4_*.md
+docs/phase_r5_*.md
+docs/reproducibility_checklist.md
+docs/reviewer_defense_notes.md
+docs/revision_log.md
+
+# ── E2E test temp files ──────────────────────────────────────────────
+C:/tmp/
+
+# ── Claude Code ──────────────────────────────────────────────────────
+.claude/
+CLAUDE.md

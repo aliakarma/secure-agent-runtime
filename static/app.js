@@ -522,24 +522,255 @@ function updateLines() {
 /* ══════════════════════════════════════════════════════════
    QUICK PROMPT CHIPS
    ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   MULTIMODAL CONSOLE LOGIC
+   ══════════════════════════════════════════════════════════ */
+let currentModality = 'text';
+let selectedFile = null;
+let selectedPresetPath = null;
+
+// DOM references
+const modalityTabs = document.querySelectorAll('.modality-tab');
+const modalityPanels = document.querySelectorAll('.modality-panel');
+const uploadContainer = document.getElementById('upload-container');
+const uploadDropzone = document.getElementById('upload-dropzone');
+const uploadHint = document.getElementById('upload-hint');
+const fileInput = document.getElementById('file-input');
+const filePreview = document.getElementById('file-preview');
+const previewName = document.getElementById('preview-name');
+const previewSize = document.getElementById('preview-size');
+const removeFileBtn = document.getElementById('remove-file');
+const sidecarContainer = document.getElementById('sidecar-container');
+const sidecarInput = document.getElementById('sidecar-input');
+
+// Initialize modality switching
+modalityTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        modalityTabs.forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        
+        currentModality = tab.dataset.modality;
+        
+        // Show active panel, hide others
+        modalityPanels.forEach(p => p.classList.remove('active'));
+        document.getElementById(`panel-${currentModality}`)?.classList.add('active');
+        
+        // Toggle upload zone & sidecar previews
+        if (currentModality === 'text') {
+            uploadContainer?.classList.add('hidden');
+            sidecarContainer?.classList.add('hidden');
+            if (attackInput) {
+                attackInput.placeholder = "Enter a request or adversarial payload to run through the secured graph…";
+                attackInput.required = true;
+            }
+        } else {
+            uploadContainer?.classList.remove('hidden');
+            sidecarContainer?.classList.remove('hidden');
+            if (attackInput) {
+                attackInput.placeholder = `Command/Context for the ${currentModality} agent run...`;
+                attackInput.required = false;
+            }
+            
+            // Adjust hint texts
+            if (uploadHint) {
+                if (currentModality === 'image') uploadHint.textContent = "Supports PNG, JPG, JPEG";
+                else if (currentModality === 'audio') uploadHint.textContent = "Supports WAV, MP3";
+                else if (currentModality === 'video') uploadHint.textContent = "Supports MP4";
+            }
+        }
+        
+        clearSelectedFile();
+        if (attackInput) attackInput.value = '';
+        if (sidecarInput) sidecarInput.value = '';
+    });
+});
+
+// File Selection Controllers
+async function extractTextFromFile(file) {
+    if (!file) return;
+    
+    showToast(`Uploading and extracting text/transcription from ${file.name}...`, 'info', 2000);
+    
+    if (sidecarContainer) sidecarContainer.classList.remove('hidden');
+    if (sidecarInput) {
+        sidecarInput.value = "Extracting/transcribing payload, please wait...";
+        sidecarInput.disabled = true;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('modality', currentModality);
+        formData.append('file', file);
+        
+        const response = await fetch('/api/extract-text', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            if (sidecarInput) {
+                sidecarInput.value = data.text || '';
+                sidecarInput.disabled = false;
+            }
+            showToast('Text extracted successfully.', 'success');
+        } else {
+            if (sidecarInput) {
+                sidecarInput.value = "Extraction failed: " + (data.message || 'unknown error');
+                sidecarInput.disabled = false;
+            }
+            showToast('Failed to extract text from file.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        if (sidecarInput) {
+            sidecarInput.value = "Extraction failed: " + err.message;
+            sidecarInput.disabled = false;
+        }
+        showToast('Error uploading file for extraction.', 'error');
+    }
+}
+
+function handleFileSelection(file) {
+    if (!file) return;
+    selectedFile = file;
+    selectedPresetPath = null;
+    
+    if (previewName) previewName.textContent = file.name;
+    if (previewSize) previewSize.textContent = `${Math.round(file.size / 1024)} KB`;
+    
+    filePreview?.classList.remove('hidden');
+    uploadDropzone?.classList.add('hidden');
+    
+    if (attackInput && !attackInput.value) {
+        attackInput.value = `Process the uploaded ${currentModality} file.`;
+    }
+    
+    extractTextFromFile(file);
+}
+
+function clearSelectedFile() {
+    selectedFile = null;
+    selectedPresetPath = null;
+    if (fileInput) fileInput.value = '';
+    filePreview?.classList.add('hidden');
+    uploadDropzone?.classList.remove('hidden');
+    if (sidecarInput) {
+        sidecarInput.value = '';
+        sidecarInput.disabled = false;
+    }
+    sidecarContainer?.classList.add('hidden');
+}
+
+removeFileBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearSelectedFile();
+});
+
+uploadDropzone?.addEventListener('click', () => {
+    fileInput?.click();
+});
+
+fileInput?.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+        handleFileSelection(e.target.files[0]);
+    }
+});
+
+// Drag & drop triggers
+['dragenter', 'dragover'].forEach(eventName => {
+    uploadDropzone?.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadDropzone.classList.add('dragover');
+    }, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    uploadDropzone?.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadDropzone.classList.remove('dragover');
+    }, false);
+});
+
+uploadDropzone?.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files && files.length > 0) {
+        handleFileSelection(files[0]);
+    }
+});
+
+/* ══════════════════════════════════════════════════════════
+   QUICK PROMPT CHIPS (Text & Presets)
+   ══════════════════════════════════════════════════════════ */
 function attachQuickPromptButtons() {
-    document.querySelectorAll('.quick-chip').forEach((button) => {
+    // 1. Text modality prompt chips
+    document.querySelectorAll('#panel-text .quick-chip').forEach((button) => {
         button.addEventListener('click', () => {
             if (attackInput) attackInput.value = button.dataset.prompt || '';
             attackInput?.focus();
         });
     });
+
+    // 2. Multimodal presets chips
+    document.querySelectorAll('.preset-btn').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const preset = button.dataset.preset;
+            showToast(`Generating mock payload preset: ${preset}...`, 'info', 1800);
+            
+            try {
+                const response = await fetch(`/api/generate-preset?preset_type=${encodeURIComponent(preset)}`, {
+                    method: 'POST'
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    selectedPresetPath = data.file_path;
+                    selectedFile = null;
+                    
+                    if (previewName) previewName.textContent = data.file_path.split('/').pop();
+                    if (previewSize) previewSize.textContent = "Preset Payload";
+                    
+                    filePreview?.classList.remove('hidden');
+                    uploadDropzone?.classList.add('hidden');
+                    
+                    if (attackInput) attackInput.value = data.prompt || '';
+                    if (sidecarInput) sidecarInput.value = data.sidecar_text || '';
+                    
+                    showToast('Preset loaded successfully', 'success');
+                } else {
+                    showToast('Failed to load preset', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error loading preset from server', 'error');
+            }
+        });
+    });
 }
 
 /* ══════════════════════════════════════════════════════════
-   FORM SUBMISSION
-   The input is only cleared after a successful run, so a failed
-   request never destroys what the user typed.
+   FORM SUBMISSION (Multimodal Form Data support)
    ══════════════════════════════════════════════════════════ */
 attackForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
+    
     const input = attackInput?.value?.trim();
-    if (!input) return;
+    if (currentModality === 'text' && !input) return;
+    
+    if (currentModality !== 'text' && !selectedFile && !selectedPresetPath) {
+        showToast(`Please upload a file or load a preset for ${currentModality} mode.`, 'warning');
+        return;
+    }
 
     executeBtn?.classList.add('loading');
     if (executeBtn) executeBtn.disabled = true;
@@ -547,9 +778,33 @@ attackForm?.addEventListener('submit', async (event) => {
     const sessionId = `dash_session_${Date.now()}`;
 
     try {
-        const response = await fetch(`/run-travel-graph?user_input=${encodeURIComponent(input)}&session_id=${encodeURIComponent(sessionId)}`, {
-            method: 'POST'
-        });
+        let response;
+        if (currentModality === 'text') {
+            response = await fetch(`/run-travel-graph?user_input=${encodeURIComponent(input)}&session_id=${encodeURIComponent(sessionId)}`, {
+                method: 'POST'
+            });
+        } else {
+            const formData = new FormData();
+            formData.append('modality', currentModality);
+            formData.append('user_input', input || '');
+            formData.append('session_id', sessionId);
+            
+            if (selectedFile) {
+                formData.append('file', selectedFile);
+            } else if (selectedPresetPath) {
+                formData.append('file_path', selectedPresetPath);
+            }
+            
+            const sidecarText = sidecarInput?.value?.trim();
+            if (sidecarText) {
+                formData.append('sidecar_text', sidecarText);
+            }
+            
+            response = await fetch('/run-travel-multimodal', {
+                method: 'POST',
+                body: formData
+            });
+        }
 
         if (response.ok) {
             const result = await response.json();
@@ -560,6 +815,9 @@ attackForm?.addEventListener('submit', async (event) => {
                 updateTrustMeter(result.trust_score, result.trust_tier || 'HIGH');
             }
             if (attackInput) attackInput.value = '';
+            if (sidecarInput) sidecarInput.value = '';
+            clearSelectedFile();
+            
             showToast(
                 result.security_blocked ? 'Payload intercepted by the security layer' : 'Run completed',
                 result.security_blocked ? 'warning' : 'success'

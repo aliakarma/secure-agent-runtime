@@ -1575,3 +1575,274 @@ body::-webkit-scrollbar-thumb:hover,
         padding: 0.55rem;
     }
 }
+
+/* ══════════════════════════════════════════════════════════
+   MULTIMODAL CONSOLE EXTENSIONS
+   ══════════════════════════════════════════════════════════ */
+
+.test-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+}
+
+.test-card .card-header {
+    width: 100%;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: var(--space-4);
+    margin-bottom: var(--space-4);
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between;
+}
+
+/* Modality Tabs */
+.modality-tabs {
+    display: flex;
+    gap: var(--space-2);
+    background: rgba(2, 6, 23, 0.45);
+    border: 1px solid var(--border-color);
+    padding: 3px;
+    border-radius: var(--radius-md);
+}
+
+.modality-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.5rem 0.95rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.modality-tab svg {
+    width: 14px;
+    height: 14px;
+}
+
+.modality-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.modality-tab.active {
+    color: var(--accent-blue);
+    background: rgba(var(--accent-blue-rgb), 0.12);
+    font-weight: 600;
+}
+
+/* Panels */
+.modality-panel {
+    display: none;
+    width: 100%;
+}
+
+.modality-panel.active {
+    display: block;
+    animation: fadeIn var(--duration-base) ease-out;
+}
+
+/* Upload Container */
+.upload-area-container {
+    margin: var(--space-4) 0;
+    width: 100%;
+    animation: slideIn var(--duration-base) ease-out;
+}
+
+.upload-area-container.hidden {
+    display: none;
+}
+
+.upload-dropzone {
+    border: 2px dashed rgba(59, 130, 246, 0.25);
+    background: rgba(15, 23, 42, 0.2);
+    border-radius: var(--radius-md);
+    padding: 1.8rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.dragover {
+    border-color: var(--accent-blue);
+    background: rgba(var(--accent-blue-rgb), 0.06);
+}
+
+.upload-icon {
+    width: 32px;
+    height: 32px;
+    color: var(--accent-blue);
+    opacity: 0.8;
+}
+
+.upload-text {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.upload-text .browse-link {
+    color: var(--accent-blue);
+    font-weight: 500;
+    text-decoration: underline;
+}
+
+.upload-hint {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+}
+
+.hidden-file-input {
+    display: none;
+}
+
+/* File Preview Card */
+.file-preview-card {
+    background: rgba(16, 185, 129, 0.06);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: zoomIn var(--duration-fast) ease-out;
+}
+
+.file-preview-card.hidden {
+    display: none;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.preview-icon {
+    width: 22px;
+    height: 22px;
+    color: var(--accent-green);
+}
+
+.file-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.file-name {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-size {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+}
+
+.remove-file-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: var(--space-1);
+    border-radius: var(--radius-sm);
+    transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-file-btn:hover {
+    color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.remove-file-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Custom Sidecar Input Container */
+.custom-sidecar-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: var(--space-3);
+    animation: slideIn var(--duration-base) ease-out;
+}
+
+.custom-sidecar-container.hidden {
+    display: none;
+}
+
+.sidecar-label {
+    font-size: 0.72rem;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.sidecar-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid rgba(var(--accent-blue-rgb), 0.2) !important;
+    color: var(--text-primary);
+    padding: 0.6rem var(--space-4) !important;
+    font-size: 0.85rem !important;
+    font-family: var(--font-mono);
+}
+
+.sidecar-input:focus {
+    border-color: var(--accent-blue) !important;
+}
+
+/* Presets style adjust */
+.quick-chip.preset-btn {
+    border-color: rgba(var(--accent-blue-rgb), 0.25);
+    color: rgba(var(--accent-blue-rgb), 0.95);
+}
+
+.quick-chip.preset-btn:hover {
+    background: rgba(var(--accent-blue-rgb), 0.08);
+    border-color: var(--accent-blue);
+}
+
+.quick-chip.preset-btn.attack {
+    border-color: rgba(var(--accent-red-rgb), 0.25);
+    color: rgba(252, 165, 165, 0.9);
+}
+
+.quick-chip.preset-btn.attack:hover {
+    background: rgba(var(--accent-red-rgb), 0.08);
+    border-color: var(--accent-red);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+

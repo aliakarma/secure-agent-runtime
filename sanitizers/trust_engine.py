@@ -18,15 +18,27 @@ class TrustEngine:
         # Stateful tracking: session_id -> list of prompt injection events
         # In production, this would be a Redis store or database.
         self.history: Dict[str, int] = {}
-        
+        self._seen_hashes: Dict[str, set] = {}
+
         # Formula Weights
         self.alpha = 0.25  # Source reliability
         self.beta = 0.25   # Policy compliance
         self.gamma = 0.25  # Historical behavior
         self.delta = 0.25  # Retrieval confidence
 
-    def register_injection(self, session_id: str):
-        """Track a malicious event for a session to solve the Amnesia Vulnerability."""
+    def register_injection(self, session_id: str, content_hash: Optional[str] = None):
+        """Track a malicious event for a session to solve the Amnesia Vulnerability.
+
+        Deduplicates by content hash: the same message scanned by multiple hooks
+        (Supervisor + agent node) only counts once.
+        """
+        if content_hash:
+            if session_id not in self._seen_hashes:
+                self._seen_hashes[session_id] = set()
+            if content_hash in self._seen_hashes[session_id]:
+                logger.info(f"TrustEngine: Skipping duplicate injection for session {session_id} (same content)")
+                return
+            self._seen_hashes[session_id].add(content_hash)
         if session_id not in self.history:
             self.history[session_id] = 0
         self.history[session_id] += 1
@@ -69,7 +81,9 @@ class TrustEngine:
     def process_payload(self, session_id: str, payload: str, source: str, is_malicious: bool, retrieval_confidence: float = 1.0) -> tuple[float, str]:
         """Process a payload, update state, and return the new trust score and tier."""
         if is_malicious:
-            self.register_injection(session_id)
+            import hashlib
+            content_hash = hashlib.sha256(payload.encode("utf-8", errors="replace")).hexdigest()[:16]
+            self.register_injection(session_id, content_hash)
             
         score = self.calculate_trust(session_id, source, is_malicious, retrieval_confidence)
         tier = self.determine_tier(score)

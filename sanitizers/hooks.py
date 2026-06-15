@@ -67,6 +67,9 @@ def secure_agent_node(agent_name, agent_runnable):
             clean_for_scan = _re.sub(r'--- USER INPUT START ---\n', '', clean_for_scan)
             clean_for_scan = _re.sub(r'\n--- USER INPUT END ---', '', clean_for_scan)
             clean_for_scan = _re.sub(r'^\[PROVENANCE:[^\]]+\]\n\n', '', clean_for_scan, flags=_re.MULTILINE)
+            # Remove absolute or relative file paths to prevent OOD classifier false positives
+            clean_for_scan = _re.sub(r'\b[a-zA-Z]:[\\/][^:\*\?"<>\|]+?\.[a-zA-Z0-9]{3,4}\b', '[FILEPATH]', clean_for_scan)
+            clean_for_scan = _re.sub(r'\bdatasets[\\/][A-Za-z0-9_.\-\\/]+', '[FILEPATH]', clean_for_scan)
 
             res = text_sanitizer.sanitize(clean_for_scan)
             
@@ -81,7 +84,7 @@ def secure_agent_node(agent_name, agent_runnable):
             
             # Update Trust Engine (skip if ablated)
             if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
-                score, new_tier = trust_engine.process_payload(session_id, last_message, "user_or_agent", res.is_malicious)
+                score, new_tier = trust_engine.process_payload(session_id, clean_for_scan, "user_or_agent", res.is_malicious)
                 state["trust_score"] = score
                 state["trust_tier"] = new_tier
                 current_trust_tier.set(new_tier)
@@ -115,9 +118,15 @@ def secure_agent_node(agent_name, agent_runnable):
         
         # Phase 8: Output Validation and Recovery (skip if ablated)
         if os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") == "1":
-            return agent_runnable(state)
-        recovered_runnable = with_validation_and_recovery(agent_name, agent_runnable)
-        return recovered_runnable(state)
+            res_dict = agent_runnable(state)
+        else:
+            recovered_runnable = with_validation_and_recovery(agent_name, agent_runnable)
+            res_dict = recovered_runnable(state)
+            
+        if isinstance(res_dict, dict):
+            res_dict["trust_score"] = state.get("trust_score", 1.0)
+            res_dict["trust_tier"] = state.get("trust_tier", "HIGH")
+        return res_dict
     return wrapper
 
 def secure_tool_wrapper(func):
@@ -179,7 +188,7 @@ def secure_tool_wrapper(func):
                 })
                 if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
                     trust_engine.register_injection(session_id)
-                return "Error: Suspicious tool arguments detected and blocked."
+                return "[REJECTED] Error: Suspicious tool arguments detected and blocked."
                 
         for k, v in kwargs.items():
             if tool_name == "read_image_ocr" and k == "image_path":
@@ -202,7 +211,7 @@ def secure_tool_wrapper(func):
                 })
                 if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
                     trust_engine.register_injection(session_id)
-                return "Error: Suspicious tool arguments detected and blocked."
+                return "[REJECTED] Error: Suspicious tool arguments detected and blocked."
                 
         # Phase B: MCP Protocol Execution Sandbox
         import inspect
@@ -240,7 +249,7 @@ def secure_tool_wrapper(func):
                     "severity": "CRITICAL"
                 })
                 
-                return "Error: Suspicious tool output detected and blocked."
+                return "[REJECTED] Error: Suspicious tool output detected and blocked."
             
         # Provenance Tagging of Tool Output
         from sanitizers.provenance import provenance_agent
@@ -280,6 +289,9 @@ def secure_routing_hook(supervisor_runnable):
                     clean_for_scan = _re.sub(r'--- USER INPUT START ---\n', '', clean_for_scan)
                     clean_for_scan = _re.sub(r'\n--- USER INPUT END ---', '', clean_for_scan)
                     clean_for_scan = _re.sub(r'^\[PROVENANCE:[^\]]+\]\n\n', '', clean_for_scan, flags=_re.MULTILINE)
+                    # Remove absolute or relative file paths to prevent OOD classifier false positives
+                    clean_for_scan = _re.sub(r'\b[a-zA-Z]:[\\/][^:\*\?"<>\|]+?\.[a-zA-Z0-9]{3,4}\b', '[FILEPATH]', clean_for_scan)
+                    clean_for_scan = _re.sub(r'\bdatasets[\\/][A-Za-z0-9_.\-\\/]+', '[FILEPATH]', clean_for_scan)
                     res = text_sanitizer.sanitize(clean_for_scan)
                 else:
                     # For AI/Tool messages: the DistilBERT classifier was fine-tuned
@@ -296,8 +308,9 @@ def secure_routing_hook(supervisor_runnable):
                 # NOT decrement session H(x) — doing so causes trust to spiral to
                 # LOW inside a single benign multi-agent request.
                 if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
+                    dedup_payload = clean_for_scan if source_is_user else last_message
                     score, new_tier = trust_engine.process_payload(
-                        session_id, last_message, "agent",
+                        session_id, dedup_payload, "agent",
                         res.is_malicious and source_is_user
                     )
                     state["trust_score"] = score
@@ -326,9 +339,15 @@ def secure_routing_hook(supervisor_runnable):
                 
         # Phase 8: Output Validation and Recovery for Supervisor
         if os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") == "1" or os.getenv("DISABLE_ALL_SECURITY", "0") == "1":
-            return supervisor_runnable(state)
-        recovered_supervisor = with_validation_and_recovery("Supervisor", supervisor_runnable)
-        return recovered_supervisor(state)
+            res_dict = supervisor_runnable(state)
+        else:
+            recovered_supervisor = with_validation_and_recovery("Supervisor", supervisor_runnable)
+            res_dict = recovered_supervisor(state)
+            
+        if isinstance(res_dict, dict):
+            res_dict["trust_score"] = state.get("trust_score", 1.0)
+            res_dict["trust_tier"] = state.get("trust_tier", "HIGH")
+        return res_dict
     return wrapper
 
 def secure_memory_hook(session_id: str, memory_string: str) -> str:

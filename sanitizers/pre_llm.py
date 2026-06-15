@@ -15,14 +15,24 @@ class PreLLMSanitizer:
     def __init__(self):
         # Fast regex heuristics to meet the 50ms performance budget
         self.unsafe_patterns = [
-            re.compile(r"ignore\s+previous\s+instructions", re.IGNORECASE),
-            re.compile(r"system\s*rule", re.IGNORECASE),
-            re.compile(r"override\s+system", re.IGNORECASE),
-            re.compile(r"forget\s+all", re.IGNORECASE),
-            re.compile(r"you\s+are\s+now", re.IGNORECASE),
-            re.compile(r"jailbreak", re.IGNORECASE),
-            re.compile(r"ignore\s+above", re.IGNORECASE),
-            re.compile(r"\bbypass\s+(?:security|rules?|filters?|safeguards?|restrictions?|policies|verification|check)\b", re.IGNORECASE)
+            re.compile(r"ignore\s+(?:\w+\s+)?(?:previous|all|above|any|the)\s+(?:instructions?|rules?|restrictions?|guidelines?)", re.IGNORECASE),
+            re.compile(r"ignore\s+all\b", re.IGNORECASE),
+            re.compile(r"system\s*(?:rule|override|prompt)", re.IGNORECASE),
+            re.compile(r"override\s+(?:\w+\s+)?(?:system|security|safety|all|previous|prior)", re.IGNORECASE),
+            re.compile(r"(?:new|updated?)\s+instructions?\s+override", re.IGNORECASE),
+            re.compile(r"forget\s+(?:all|everything|your)", re.IGNORECASE),
+            re.compile(r"you\s+are\s+(?:now|DAN\b)", re.IGNORECASE),
+            re.compile(r"\bjailbreak\b", re.IGNORECASE),
+            re.compile(r"\bDAN\b.*(?:do\s+anything|ignore)", re.IGNORECASE),
+            re.compile(r"do\s+anything\s+now", re.IGNORECASE),
+            re.compile(r"\bbypass\s+(?:\w+\s+)?(?:security|rules?|filters?|safeguards?|restrictions?|policies|verification|checks?)\b", re.IGNORECASE),
+            re.compile(r"disregard\s+(?:\w+\s+)?(?:safety|security|instructions?|rules?|protocols?|restrictions?|guidelines?)", re.IGNORECASE),
+            re.compile(r"dump\s+(?:\w+\s+)?(?:credentials?|secrets?|keys?|tokens?|passwords?|data)", re.IGNORECASE),
+            re.compile(r"reveal\s+(?:\w+\s+)?(?:system\s+)?(?:config|configuration|secrets?|internal|prompt|keys?|api)", re.IGNORECASE),
+            re.compile(r"(?:output|show|display|print|list)\s+(?:\w+\s+)?(?:system\s+)?prompt", re.IGNORECASE),
+            re.compile(r"debug\s+mode", re.IGNORECASE),
+            re.compile(r"pre[- ]?authorized?\s+(?:\w+\s+)?to\s+skip", re.IGNORECASE),
+            re.compile(r"skip\s+(?:\w+\s+)?(?:safety|security)\s+checks?", re.IGNORECASE),
         ]
         self.canonical_system_prompt = (
             "SYSTEM RULE: You are a secure, professional AI agent. "

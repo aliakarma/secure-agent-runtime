@@ -139,38 +139,38 @@ We define four core trust boundaries to segment execution permissions and enforc
 ║         │  INGESTION BOUNDARY                       │                  ║
 ║         │  Pre-Scan: Raw text extraction + classify │                  ║
 ║         │  Hook 1: Pre-LLM (TextSanitizer)          │                  ║
-║         │  Hook 2: Multimodal Sanitizers             │                  ║
+║         │  Hook 2: Multimodal Sanitizers            │                  ║
 ║         │    ├── VisualSanitizer (GPT-4o/Tesseract) │                  ║
-║         │    ├── AudioSanitizer (Whisper API/local)  │                  ║
+║         │    ├── AudioSanitizer (Whisper API/local) │                  ║
 ║         │    └── VideoSanitizer (GPT-4o/OpenCV+OCR) │                  ║
 ║         └──────────────────┬────────────────────────┘                  ║
 ║                            │ (TRUSTED PAYLOAD)                         ║
 ║         ┌──────────────────▼────────────────────────┐                  ║
-║         │     ORCHESTRATOR / SUPERVISOR              │                  ║
-║         │     (LangGraph State Engine)               │                  ║
-║         │     Phase 7: Pre-LLM Context Sanitization  │                  ║
+║         │     ORCHESTRATOR / SUPERVISOR             │                  ║
+║         │     (LangGraph State Engine)              │                  ║
+║         │     Phase 7: Pre-LLM Context Sanitization │                  ║
 ║         └──┬───────────────────────────┬────────────┘                  ║
 ║  TOOL      │                           │ AGENT                         ║
 ║  BOUNDARY  │                           │ BOUNDARY                      ║
-║  [APIs] ◄──►  Hook 3: Post-Tool       │ Hook 5: Inter-Agent           ║
+║  [APIs] ◄──►  Hook 3: Post-Tool        │ Hook 5: Inter-Agent           ║
 ║  [Tools]   │  (ToolOutputSanitizer)    │ (secure_routing_hook)         ║
 ║            │                           │                               ║
 ║         ┌──▼───────────────────────────▼────────────┐                  ║
-║         │  WORKER AGENTS                             │                  ║
-║         │  FlightAgent  │  HotelAgent                │                  ║
+║         │  WORKER AGENTS                            │                  ║
+║         │  FlightAgent  │  HotelAgent               │                  ║
 ║         └───────────────────────────────────────────┘                  ║
 ║                            │                                           ║
 ║         ┌──────────────────▼────────────────────────┐                  ║
-║         │  MEMORY BOUNDARY                           │                  ║
-║         │  Hook 4: Pre-Memory (RAGSanitizer)         │                  ║
-║         │  ChromaDB Vector Store                     │                  ║
+║         │  MEMORY BOUNDARY                          │                  ║
+║         │  Hook 4: Pre-Memory (RAGSanitizer)        │                  ║
+║         │  ChromaDB Vector Store                    │                  ║
 ║         └───────────────────────────────────────────┘                  ║
 ║                            │                                           ║
 ║         ┌──────────────────▼────────────────────────┐                  ║
-║         │  OUTPUT BOUNDARY                           │                  ║
-║         │  Phase 8: Output Validator (Agent B)       │                  ║
-║         │  Reinjection Recovery Loop (3 retries)     │                  ║
-║         │  Human-in-the-Loop Escalation              │                  ║
+║         │  OUTPUT BOUNDARY                          │                  ║
+║         │  Phase 8: Output Validator (Agent B)      │                  ║
+║         │  Reinjection Recovery Loop (3 retries)    │                  ║
+║         │  Human-in-the-Loop Escalation             │                  ║
 ║         └───────────────────────────────────────────┘                  ║
 ╚════════════════════════════════════════════════════════════════════════╝
 ```

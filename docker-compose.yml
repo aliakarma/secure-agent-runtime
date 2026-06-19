@@ -17,6 +17,11 @@ services:
       - LOG_JSON=1
       - CHROMA_HOST=chromadb
       - CHROMA_PORT=8000
+      # ── Production hardening (uncomment + set a token to lock down) ──
+      # - APP_ENV=production          # requires API_TOKEN, disables sidecar/file_path
+      # - API_TOKEN=${API_TOKEN}      # Bearer token for all data endpoints
+      # - ALLOWED_ORIGINS=https://your.dashboard.example
+      # - STRICT_SECURITY=1           # fail closed on classifier/extractor errors
     depends_on:
       chromadb:
         condition: service_healthy

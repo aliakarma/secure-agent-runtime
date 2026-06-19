@@ -95,7 +95,7 @@
             <section class="toolbar glass-panel" aria-label="Session controls">
                 <div class="active-session">
                     <span class="label">Session</span>
-                    <span class="value" id="current-session">eval_secured_attack_0</span>
+                    <span class="value" id="current-session">idle</span>
                 </div>
                 <div class="toolbar-actions">
                     <button id="copy-session" class="toolbar-button" type="button">
@@ -246,6 +246,7 @@
                         <button class="modality-tab" role="tab" aria-selected="false" data-modality="image"><i data-lucide="image" class="tab-icon"></i> Image</button>
                         <button class="modality-tab" role="tab" aria-selected="false" data-modality="audio"><i data-lucide="volume-2" class="tab-icon"></i> Voice/Audio</button>
                         <button class="modality-tab" role="tab" aria-selected="false" data-modality="video"><i data-lucide="video" class="tab-icon"></i> Video</button>
+                        <button class="modality-tab" role="tab" aria-selected="false" data-modality="pdf"><i data-lucide="file-text" class="tab-icon"></i> PDF</button>
                     </div>
                 </div>
 
@@ -284,6 +285,14 @@
                     </div>
                 </div>
 
+                <!-- PDF Modality Container -->
+                <div class="modality-panel" id="panel-pdf">
+                    <div class="quick-actions" role="group" aria-label="Example payloads">
+                        <button class="quick-chip preset-btn" type="button" data-preset="benign_pdf">Benign Itinerary PDF</button>
+                        <button class="quick-chip preset-btn attack" type="button" data-preset="pdf_injection">PDF Text Injection</button>
+                    </div>
+                </div>
+
                 <!-- Drag and Drop upload area (hidden for Text mode) -->
                 <div class="upload-area-container hidden" id="upload-container">
                     <div class="upload-dropzone" id="upload-dropzone">
@@ -311,8 +320,8 @@
                            aria-label="Payload to execute" autocomplete="off" required>
                     <!-- Sidecar / custom text preview (hidden by default) -->
                     <div class="custom-sidecar-container hidden" id="sidecar-container">
-                        <span class="sidecar-label">Simulated OCR / Transcription Payload:</span>
-                        <input type="text" id="sidecar-input" placeholder="Text that will be extracted via OCR or transcribed from audio..." class="sidecar-input">
+                        <span class="sidecar-label">Extracted Text Payload (OCR / Transcription / Document):</span>
+                        <input type="text" id="sidecar-input" placeholder="Text extracted via OCR, audio transcription, or PDF parsing..." class="sidecar-input">
                     </div>
                     <button type="submit" class="btn-primary" id="execute-btn">
                         <span class="btn-spinner" aria-hidden="true"></span>

@@ -22,7 +22,7 @@ The system implements defence-in-depth through 8 coordinated security phases bui
 | 7 | Pre-LLM Context Sanitization | `pre_llm.py` | 17-pattern regex filter, 50ms budget |
 | 8 | Output Validation & Recovery | Output Validator | Agent B audits + 3-retry recovery loop |
 
-**Multimodal Sanitizers:** Text (DistilBERT), Image (GPT-4o-mini Vision / Tesseract / EXIF), Audio (Whisper API / local Whisper), Video (GPT-4o-mini / OpenCV+OCR), RAG, Tool Output.
+**Multimodal Sanitizers:** Text (DistilBERT), Image (GPT-4o-mini Vision / Tesseract / EXIF), Audio (Whisper API / local Whisper), Video (GPT-4o-mini / OpenCV+OCR), PDF (PyMuPDF text layer + GPT-4o-mini/Tesseract page OCR + metadata/annotation/JavaScript inspection), RAG, Tool Output.
 
 **Trust Engine:** `T(x) = 0.25*S(x) + 0.25*P(x) + 0.25*H(x) + 0.25*R(x)` with content-hash deduplication to prevent trust cascade from multi-hook scanning.
 
@@ -86,10 +86,12 @@ This saves model weights to `./models/local_prompt_detector/`.
 
 ## Running Tests
 
-### Unit Tests (136 tests, offline)
+### Test Suite (140 tests)
 ```bash
 pytest
 ```
+Offline unit tests run without network; the multimodal/graph integration tests
+exercise the live agent graph and use `OPENAI_API_KEY` when present.
 
 ### End-to-End Multimodal Stress Test (18 tests, requires live server)
 ```bash
@@ -128,6 +130,14 @@ Or run individual phases:
 
 ### Key Results (Phase R3, n=100 attacks, 96 benign, seed=42)
 
+> **Scope & honesty note.** The table below is a *single-seed pilot* on a small
+> benchmark. The near-perfect secured numbers reflect that the pilot attack set
+> is comfortably inside the detector's distribution — they should **not** be read
+> as a robustness guarantee. Camera-ready claims must come from the strengthened
+> protocol below (≥500 attacks across ≥10 families, ≥10 seeds, with confidence
+> intervals and an adaptive adversary), which is expected to surface a non-zero
+> residual ASR. See **Threats to Validity** and `docs/` for the methodology.
+
 | Metric | Baseline | Secured | Delta |
 |--------|----------|---------|-------|
 | Attack Success Rate | 8.0% | **0.0%** | -8.0 pp |
@@ -136,7 +146,31 @@ Or run individual phases:
 | Recall | 92.0% | **100.0%** | +8.0 pp |
 | F1-Score | 95.8% | **100.0%** | +4.2 pp |
 
-McNemar's test: chi2 = 6.125, p = 0.0078 (statistically significant at alpha = 0.05).
+McNemar's test: chi2 = 6.125, p = 0.0078 (n=8 discordant pairs — underpowered;
+report bootstrap CIs over ≥10 seeds for the final result).
+
+### Strengthened evaluation protocol (run before camera-ready)
+
+```bash
+# Deterministic, offline-reproducible mode (no live LLM nondeterminism)
+export SECURED_SYSTEM_MODE=secure STRICT_SECURITY=1
+python scripts/build_benchmark.py        # ≥500 attacks / ≥10 families / ≥300 benign
+python scripts/run_all_experiments.py --seeds 42,100,123,200,300,400,500,600,700,800
+python scripts/statistical_tests.py      # mean ± bootstrap CI, effect sizes
+```
+
+### Threats to Validity
+
+- **Benchmark scale & coverage.** The pilot is small and single-seed; results
+  generalise only as far as the strengthened protocol above is executed.
+- **Adaptive adversary.** A static benchmark under-estimates risk; an attacker
+  with knowledge of the defense (paraphrase, encoding, multilingual, multi-turn)
+  must be included before any robustness claim.
+- **Determinism.** The live multi-agent graph calls an external LLM; published
+  numbers should come from the deterministic `secure` mode.
+- **Detector distribution.** The DistilBERT classifier is the high-recall gate;
+  inputs far outside its training distribution degrade gracefully to the
+  deterministic regex/keyword layer (which has lower recall on paraphrase).
 
 ---
 
@@ -145,7 +179,7 @@ McNemar's test: chi2 = 6.125, p = 0.0078 (statistically significant at alpha = 0
 | Method | Route | Description |
 |--------|-------|-------------|
 | `POST` | `/run-travel-graph` | Execute a text-only travel agent session |
-| `POST` | `/run-travel-multimodal` | Execute with file upload (image/audio/video) |
+| `POST` | `/run-travel-multimodal` | Execute with file upload (image/audio/video/pdf) |
 | `GET` | `/api/provenance?session_id=X` | Retrieve provenance lineage DAG |
 | `GET` | `/api/events?since_id=N` | Real-time telemetry event stream |
 
@@ -194,12 +228,36 @@ secure-agent-runtime/
 
 ---
 
+## Security & Deployment
+
+All deployment-sensitive behaviour is centralized in `config.py` and driven by
+environment variables (see `.env.example`):
+
+| Concern | Control | Development default | Production (`APP_ENV=production`) |
+|---------|---------|---------------------|-----------------------------------|
+| API authentication | `API_TOKEN` | open (loud warning) | **required** (Bearer token; startup fails if unset) |
+| CORS | `ALLOWED_ORIGINS` | same-origin only | explicit allow-list |
+| Upload size | `MAX_UPLOAD_BYTES` | 25 MiB, streamed | enforced |
+| Upload type | suffix allow-list | enforced (415 on mismatch) | enforced |
+| Server-path reads | `ALLOW_FILE_PATH` | on, **sandbox-contained** to `uploads/`+`datasets/` | off |
+| Caller-supplied "extracted" text | `ALLOW_SIDECAR` | on (simulator) | off (real OCR/transcription only) |
+| Fail-closed sanitizers | `STRICT_SECURITY` | off | recommended on |
+
+Hardening highlights: token auth with constant-time comparison, CORS allow-list,
+streamed body-size limits, path-traversal/LFI containment, a sandboxed `uploads/`
+dir (separate from the research corpus), per-session telemetry scoping, and a
+`.dockerignore` that keeps secrets/models/results out of built images.
+
 ## Known Limitations
 
-- **In-Memory Trust State:** Session trust scores are lost on server restart. Externalize to Redis for production.
-- **Single-Worker:** Multi-worker Uvicorn deployments require shared state backend.
-- **Mock Tools:** Tool endpoints return deterministic outputs; real API integration untested.
-- **Multimodal API Dependency:** Image/audio/video extraction relies on OpenAI APIs with local fallbacks.
+- **In-Memory State:** Trust, provenance, and telemetry stores are now bounded
+  (LRU eviction, thread-safe) but still in-process — externalize to Redis for
+  multi-worker / horizontally-scaled deployments. State is lost on restart.
+- **Mock Tools:** Tool endpoints return deterministic outputs; real API
+  integration is out of scope. Indirect-injection simulation is opt-in via
+  `SIMULATE_TOOL_POISONING` and is decoupled from benchmark tokens.
+- **Multimodal Dependency:** Image/PDF/audio/video extraction prefers OpenAI APIs
+  with local fallbacks (Tesseract / PyMuPDF / local Whisper / OpenCV).
 
 ---
 

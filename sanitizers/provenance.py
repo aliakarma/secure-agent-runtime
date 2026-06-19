@@ -1,7 +1,11 @@
+import threading
 import uuid
 import time
-from typing import List, Dict, Any, Optional
+from collections import OrderedDict, deque
+from typing import List, Dict, Any, Optional, Deque
 from pydantic import BaseModel, Field
+
+from config import settings
 
 class ProvenanceRecord(BaseModel):
     record_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -17,18 +21,36 @@ class ProvenanceRecord(BaseModel):
     trust_lineage: List[str] = Field(default_factory=list)
 
 class ProvenanceLedger:
-    def __init__(self):
-        # Stateful tracking: session_id -> list of ProvenanceRecord
-        self.records: Dict[str, List[ProvenanceRecord]] = {}
+    """Bounded, thread-safe lineage store.
+
+    Records are kept per session in a fixed-size ring buffer and the number of
+    tracked sessions is LRU-capped, so the ledger cannot grow without bound on
+    a long-running server.
+    """
+
+    def __init__(self, max_per_session: Optional[int] = None, max_sessions: Optional[int] = None):
+        self._lock = threading.RLock()
+        self._max_per_session = max_per_session or settings.max_provenance_per_session
+        self._max_sessions = max_sessions or settings.max_tracked_sessions
+        # session_id -> ring buffer of ProvenanceRecord
+        self.records: "OrderedDict[str, Deque[ProvenanceRecord]]" = OrderedDict()
 
     def add_record(self, record: ProvenanceRecord):
         session_id = record.session_id
-        if session_id not in self.records:
-            self.records[session_id] = []
-        self.records[session_id].append(record)
+        with self._lock:
+            buf = self.records.get(session_id)
+            if buf is None:
+                buf = deque(maxlen=self._max_per_session)
+                self.records[session_id] = buf
+            buf.append(record)
+            self.records.move_to_end(session_id)
+            while len(self.records) > self._max_sessions:
+                self.records.popitem(last=False)
 
     def get_records(self, session_id: str) -> List[ProvenanceRecord]:
-        return self.records.get(session_id, [])
+        with self._lock:
+            buf = self.records.get(session_id)
+            return list(buf) if buf is not None else []
 
     def get_lineage(self, session_id: str) -> List[Dict[str, Any]]:
         session_records = self.get_records(session_id)

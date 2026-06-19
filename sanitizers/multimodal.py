@@ -58,6 +58,27 @@ class TextSanitizer:
                     ) from e
                 logger.warning(f"Failed to load local prompt injection classifier: {e}. Falling back to local heuristics.")
 
+    @staticmethod
+    def _strip_multimodal_markers(text: str) -> str:
+        """Remove structural extraction markers so the classifier sees clean
+        natural language, not out-of-distribution tokens.
+
+        This replaces the old "skip the classifier on any multimodal marker"
+        behaviour: the markers are noise to strip, never a reason to bypass
+        detection. Injected *content* still reaches the classifier.
+        """
+        import re as _re
+        out = text
+        # Bracketed labels: "[Extracted from uploaded image via OCR]",
+        # "[Transcribed from uploaded audio]", "[HIDDEN METADATA]", etc.
+        out = _re.sub(r'\[(?:extracted from|transcribed from|hidden metadata)[^\]]*\]',
+                      ' ', out, flags=_re.IGNORECASE)
+        # Short trailing modality tags appended by the multimodal sanitizers.
+        for tag in ("[image ocr]", "[audio transcript]", "[video frames]",
+                    "[pdf document]", "[filepath]"):
+            out = out.replace(tag, " ").replace(tag.upper(), " ")
+        return _re.sub(r'\s{2,}', ' ', out).strip()
+
     def _fast_heuristic_filter(self, text: str) -> bool:
         """Latency fast-path check. Returns True if suspicious keywords found.
 
@@ -82,29 +103,18 @@ class TextSanitizer:
         cleaned_text = _re.sub(r'\b[a-zA-Z]:[\\/][^:\*\?"<>\|]+?\.[a-zA-Z0-9]{3,4}\b', '[FILEPATH]', cleaned_text)
         cleaned_text = _re.sub(r'\bdatasets[\\/][A-Za-z0-9_.\-\\/]+', '[FILEPATH]', cleaned_text)
 
-        # Bypass the local classifier for prompts that reference multimodal
-        # files (e.g. "Read image datasets/foo.png using OCR" or enriched
-        # prompts that include "[Extracted from uploaded image via OCR]").
-        # The classifier was fine-tuned on plain-text prompts and produces
-        # OOD false positives on structural markers and path tokens.
+        # Multimodal prompts carry structural markers (e.g.
+        # "[Extracted from uploaded image via OCR]", "[pdf document]",
+        # "[FILEPATH]") that the plain-text-trained classifier treats as
+        # out-of-distribution and can false-positive on.
         #
-        # Security is NOT weakened: the multimodal endpoint pre-scans the
-        # raw extracted text through this same classifier *without* any
-        # indicator keywords, so injections are caught before they reach
-        # the graph.  The heuristic filter below is a fast-path safety net
-        # that catches obvious injection keywords even inside the bypass.
-        multimodal_indicators = [
-            "image", "audio", "video", "ocr",
-            ".png", ".jpg", ".jpeg", ".wav", ".mp3", ".mp4",
-            "[filepath]", "[extracted from", "[transcribed from",
-        ]
-        is_multimodal_request = any(ind in cleaned_text.lower() for ind in multimodal_indicators)
-        if is_multimodal_request and not self._fast_heuristic_filter(cleaned_text):
-            return SanitizerResult(
-                is_malicious=False,
-                reason="Bypassed classifier: multimodal request. Extracted content is pre-scanned at ingestion.",
-                confidence=1.0
-            )
+        # Previously the code *skipped the classifier entirely* whenever such
+        # a marker was present — a trivial evasion: appending "[image ocr]"
+        # to any injection bypassed detection. We now STRIP the markers and
+        # still run the full classifier on the residual natural-language text,
+        # so injected content is always classified while the OOD tokens that
+        # caused false positives are removed.
+        cleaned_text = self._strip_multimodal_markers(cleaned_text)
 
         system_mode = os.getenv("SECURED_SYSTEM_MODE", "full-research").lower()
 
@@ -489,6 +499,177 @@ class VideoSanitizer:
         except Exception as e:
             logger.error(f"VideoSanitizer error: {e}")
             return SanitizerResult(is_malicious=True, reason=f"Video processing failed: {e}")
+
+class PdfSanitizer:
+    """
+    Document Sanitizer (Adoc) for PDF uploads.
+
+    Mirrors the image OCR pathway: text is *extracted first*, and that
+    extracted text is then pre-scanned for injection before it ever reaches
+    the agent prompt — exactly like VisualSanitizer for images.
+
+    Extraction order:
+      1. Sidecar ``<path>.txt`` — parity with the other modalities so the
+         dashboard preset / pre-extraction flow behaves identically.
+      2. Embedded text layer via PyMuPDF — digital-born PDFs.
+      3. Rendered-page OCR fallback for scanned / image-only PDFs
+         (OpenAI GPT-4o-mini vision first, local pytesseract second).
+      4. Structural metadata: document info, annotation text, and embedded
+         JavaScript / OpenAction — classic PDF prompt-injection vectors that
+         never appear in the visible text layer.
+    """
+
+    MAX_OCR_PAGES = 10  # cap rendered-page OCR to bound latency / token cost
+
+    def __init__(self):
+        self.text_sanitizer = TextSanitizer()
+
+    def extract_text(self, pdf_path: str) -> str:
+        if not os.path.exists(pdf_path):
+            return ""
+
+        # 1) Sidecar parity with image/audio/video modalities.
+        sidecar_path = str(pdf_path) + ".txt"
+        if os.path.exists(sidecar_path):
+            with open(sidecar_path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+
+        try:
+            import fitz  # PyMuPDF
+        except Exception as e:
+            logger.error(f"PyMuPDF unavailable for PDF extraction: {e}")
+            raise ImportError("PyMuPDF (pymupdf) is required for PDF extraction") from e
+
+        try:
+            doc = fitz.open(pdf_path)
+        except Exception as e:
+            logger.error(f"PdfSanitizer: failed to open PDF {pdf_path}: {e}")
+            raise
+
+        text_parts: list[str] = []
+        metadata_parts: list[str] = []
+        try:
+            # 2) Embedded text layer.
+            page_texts = [page.get_text("text") for page in doc]
+            embedded = "\n".join(t for t in page_texts if t and t.strip()).strip()
+            if embedded:
+                text_parts.append(embedded)
+
+            # 3a) Document metadata (title/author/subject/keywords).
+            try:
+                meta = doc.metadata or {}
+                for key in ("title", "author", "subject", "keywords"):
+                    val = meta.get(key)
+                    if isinstance(val, str) and val.strip():
+                        metadata_parts.append(f"{key}: {val.strip()}")
+            except Exception:
+                pass
+
+            # 3b) Annotation text (comments / form fields hide instructions here).
+            try:
+                for page in doc:
+                    for annot in (page.annots() or []):
+                        content = (annot.info or {}).get("content")
+                        if content and content.strip():
+                            metadata_parts.append(f"annotation: {content.strip()}")
+            except Exception:
+                pass
+
+            # 3c) Embedded JavaScript / OpenAction — a real PDF injection vector.
+            try:
+                for xref in range(1, doc.xref_length()):
+                    try:
+                        obj = doc.xref_object(xref, compressed=False)
+                    except Exception:
+                        continue
+                    if obj and ("/JavaScript" in obj or "/JS" in obj or "/OpenAction" in obj):
+                        metadata_parts.append("embedded-script: PDF declares JavaScript/OpenAction")
+                        break
+            except Exception:
+                pass
+
+            # 4) OCR fallback when there is little/no extractable text layer
+            #    (scanned documents, image-only PDFs).
+            if len(embedded) < 20:
+                ocr_text = self._ocr_rendered_pages(doc)
+                if ocr_text.strip():
+                    text_parts.append(ocr_text.strip())
+        finally:
+            doc.close()
+
+        full = "\n".join(p for p in text_parts if p.strip()).strip()
+        if metadata_parts:
+            full += "\n[HIDDEN METADATA]: " + " | ".join(metadata_parts)
+        return full.strip()
+
+    def _ocr_rendered_pages(self, doc) -> str:
+        """Render up to MAX_OCR_PAGES pages to PNG and OCR them."""
+        page_count = min(len(doc), self.MAX_OCR_PAGES)
+        images = []
+        for i in range(page_count):
+            try:
+                pix = doc[i].get_pixmap(dpi=150)
+                images.append(pix.tobytes("png"))
+            except Exception:
+                continue
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key and images:
+            try:
+                import base64
+                from openai import OpenAI
+                client = OpenAI(api_key=api_key)
+                content_list = [{
+                    "type": "text",
+                    "text": "These are rendered pages from a PDF document. Extract all text, messages, or commands present. Return only the exact text content found. If no text is found, return nothing. Do not explain, just return the text."
+                }]
+                for img_bytes in images:
+                    enc = base64.b64encode(img_bytes).decode("utf-8")
+                    content_list.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{enc}"}
+                    })
+                logger.info("PdfSanitizer: OCR rendered pages via OpenAI GPT-4o-mini")
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": content_list}],
+                    max_tokens=1500
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                logger.error(f"OpenAI PDF OCR failed: {e}. Falling back to local pytesseract.")
+
+        from io import BytesIO
+        texts = []
+        for img_bytes in images:
+            try:
+                text = pytesseract.image_to_string(Image.open(BytesIO(img_bytes)))
+                if text.strip():
+                    texts.append(text.strip())
+            except Exception:
+                pass
+        return "\n".join(texts).strip()
+
+    def sanitize(self, pdf_path: str) -> SanitizerResult:
+        if not os.path.exists(pdf_path):
+            return SanitizerResult(is_malicious=False, reason="PDF not found, treating as safe/ignorable.")
+        try:
+            text = self.extract_text(pdf_path)
+            if not text.strip():
+                return SanitizerResult(is_malicious=False, reason="No text or metadata found in PDF.")
+            # Append a modality indicator so Hook 2's re-scan uses the multimodal
+            # bypass (the raw text was already pre-scanned at ingestion, identical
+            # to the image/audio/video pathway).
+            return self.text_sanitizer.sanitize(text + " [pdf document]")
+        except ImportError:
+            if os.getenv("STRICT_SECURITY", "0") == "1":
+                return SanitizerResult(is_malicious=True, reason="STRICT_SECURITY: PyMuPDF unavailable, failing closed on PDF input.")
+            logger.warning("PyMuPDF unavailable, skipping PDF sanitization.")
+            return SanitizerResult(is_malicious=False, reason="PyMuPDF unavailable, skipping PDF sanitization.")
+        except Exception as e:
+            logger.error(f"PdfSanitizer error: {e}")
+            return SanitizerResult(is_malicious=True, reason=f"PDF processing failed: {e}")
+
 
 def _unroll_structured_text(text: str) -> str:
     """Extract string leaf values from JSON so the classifier sees natural language, not syntax.

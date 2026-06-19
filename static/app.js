@@ -59,6 +59,42 @@ function refreshIcons() {
 }
 
 /* ══════════════════════════════════════════════════════════
+   AUTH-AWARE FETCH WRAPPER
+   Works unauthenticated in development and attaches a bearer
+   token when one has been configured (production deployments).
+   Set the token from the browser console:
+       setApiToken('your-token')   // persists to localStorage
+   ══════════════════════════════════════════════════════════ */
+const _nativeFetch = window.fetch.bind(window);
+const API_TOKEN_KEY = 'sar_api_token';
+
+function getApiToken() {
+    try { return localStorage.getItem(API_TOKEN_KEY) || ''; } catch { return ''; }
+}
+
+window.setApiToken = function (token) {
+    try {
+        if (token) localStorage.setItem(API_TOKEN_KEY, token);
+        else localStorage.removeItem(API_TOKEN_KEY);
+        showToast(token ? 'API token saved' : 'API token cleared', 'success');
+    } catch { /* localStorage unavailable */ }
+};
+
+let _authWarned = false;
+
+async function apiFetch(url, opts = {}) {
+    const token = getApiToken();
+    const headers = new Headers(opts.headers || {});
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    const response = await _nativeFetch(url, { ...opts, headers });
+    if (response.status === 401 && !_authWarned) {
+        _authWarned = true;
+        showToast('Authentication required — run setApiToken("<token>") in the console.', 'error', 6000);
+    }
+    return response;
+}
+
+/* ══════════════════════════════════════════════════════════
    TOAST NOTIFICATION SYSTEM
    ══════════════════════════════════════════════════════════ */
 const TOAST_ICONS = {
@@ -397,7 +433,7 @@ function renderProvenance(records) {
 
 async function loadProvenance(sessionId = currentSession?.textContent?.trim() || 'default') {
     try {
-        const response = await fetch(`/api/provenance?session_id=${encodeURIComponent(sessionId)}`);
+        const response = await apiFetch(`/api/provenance?session_id=${encodeURIComponent(sessionId)}`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         renderProvenance(data.provenance_lineage || []);
@@ -462,7 +498,7 @@ async function pollEvents() {
     }
 
     try {
-        const response = await fetch(`/api/events?since_id=${lastEventId}`);
+        const response = await apiFetch(`/api/events?since_id=${lastEventId}`);
         if (response.ok) {
             const payload = await response.json();
             for (const event of payload.events || []) {
@@ -575,12 +611,20 @@ modalityTabs.forEach(tab => {
                 attackInput.required = false;
             }
             
-            // Adjust hint texts
+            // Adjust hint texts + native picker filter
+            const acceptByModality = {
+                image: '.png,.jpg,.jpeg',
+                audio: '.wav,.mp3',
+                video: '.mp4',
+                pdf: '.pdf,application/pdf',
+            };
             if (uploadHint) {
                 if (currentModality === 'image') uploadHint.textContent = "Supports PNG, JPG, JPEG";
                 else if (currentModality === 'audio') uploadHint.textContent = "Supports WAV, MP3";
                 else if (currentModality === 'video') uploadHint.textContent = "Supports MP4";
+                else if (currentModality === 'pdf') uploadHint.textContent = "Supports PDF";
             }
+            if (fileInput) fileInput.accept = acceptByModality[currentModality] || '';
         }
         
         clearSelectedFile();
@@ -606,7 +650,7 @@ async function extractTextFromFile(file) {
         formData.append('modality', currentModality);
         formData.append('file', file);
         
-        const response = await fetch('/api/extract-text', {
+        const response = await apiFetch('/api/extract-text', {
             method: 'POST',
             body: formData
         });
@@ -615,9 +659,22 @@ async function extractTextFromFile(file) {
         const data = await response.json();
         
         if (data.status === 'success') {
-            if (sidecarInput) {
-                sidecarInput.value = data.text || '';
-                sidecarInput.disabled = false;
+            const isPdf = file && file.name && file.name.toLowerCase().endsWith('.pdf');
+            if (isPdf || currentModality === 'pdf') {
+                const textVal = data.text || '';
+                // Switch active tab to text programmatically
+                const textTab = document.querySelector('.modality-tab[data-modality="text"]');
+                if (textTab) {
+                    textTab.click();
+                }
+                if (attackInput) {
+                    attackInput.value = textVal;
+                }
+            } else {
+                if (sidecarInput) {
+                    sidecarInput.value = data.text || '';
+                    sidecarInput.disabled = false;
+                }
             }
             showToast('Text extracted successfully.', 'success');
         } else {
@@ -727,26 +784,58 @@ function attachQuickPromptButtons() {
             showToast(`Generating mock payload preset: ${preset}...`, 'info', 1800);
             
             try {
-                const response = await fetch(`/api/generate-preset?preset_type=${encodeURIComponent(preset)}`, {
+                const response = await apiFetch(`/api/generate-preset?preset_type=${encodeURIComponent(preset)}`, {
                     method: 'POST'
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 
                 if (data.status === 'success') {
-                    selectedPresetPath = data.file_path;
-                    selectedFile = null;
-                    
-                    if (previewName) previewName.textContent = data.file_path.split('/').pop();
-                    if (previewSize) previewSize.textContent = "Preset Payload";
-                    
-                    filePreview?.classList.remove('hidden');
-                    uploadDropzone?.classList.add('hidden');
-                    
-                    if (attackInput) attackInput.value = data.prompt || '';
-                    if (sidecarInput) sidecarInput.value = data.sidecar_text || '';
-                    
-                    showToast('Preset loaded successfully', 'success');
+                    if (preset === 'benign_pdf' || preset === 'pdf_injection') {
+                        // For PDF presets, fetch/extract text, then insert it into attackInput and switch to text tab
+                        showToast("Extracting text from generated PDF...", "info", 2000);
+                        try {
+                            const extractFormData = new FormData();
+                            extractFormData.append('modality', 'pdf');
+                            extractFormData.append('file_path', data.file_path);
+                            const extractResp = await apiFetch('/api/extract-text', {
+                                method: 'POST',
+                                body: extractFormData
+                            });
+                            if (!extractResp.ok) throw new Error(`HTTP ${extractResp.status}`);
+                            const extractData = await extractResp.json();
+                            if (extractData.status === 'success') {
+                                const textVal = extractData.text || '';
+                                const textTab = document.querySelector('.modality-tab[data-modality="text"]');
+                                if (textTab) {
+                                    textTab.click();
+                                }
+                                if (attackInput) {
+                                    attackInput.value = textVal;
+                                }
+                                showToast('PDF preset text extracted and loaded.', 'success');
+                            } else {
+                                throw new Error(extractData.message || 'unknown extraction error');
+                            }
+                        } catch (extractErr) {
+                            console.error(extractErr);
+                            showToast(`Failed to extract text from PDF preset: ${extractErr.message}`, 'error');
+                        }
+                    } else {
+                        selectedPresetPath = data.file_path;
+                        selectedFile = null;
+                        
+                        if (previewName) previewName.textContent = data.file_path.split('/').pop();
+                        if (previewSize) previewSize.textContent = "Preset Payload";
+                        
+                        filePreview?.classList.remove('hidden');
+                        uploadDropzone?.classList.add('hidden');
+                        
+                        if (attackInput) attackInput.value = data.prompt || '';
+                        if (sidecarInput) sidecarInput.value = data.sidecar_text || '';
+                        
+                        showToast('Preset loaded successfully', 'success');
+                    }
                 } else {
                     showToast('Failed to load preset', 'error');
                 }
@@ -780,7 +869,7 @@ attackForm?.addEventListener('submit', async (event) => {
     try {
         let response;
         if (currentModality === 'text') {
-            response = await fetch(`/run-travel-graph?user_input=${encodeURIComponent(input)}&session_id=${encodeURIComponent(sessionId)}`, {
+            response = await apiFetch(`/run-travel-graph?user_input=${encodeURIComponent(input)}&session_id=${encodeURIComponent(sessionId)}`, {
                 method: 'POST'
             });
         } else {
@@ -800,7 +889,7 @@ attackForm?.addEventListener('submit', async (event) => {
                 formData.append('sidecar_text', sidecarText);
             }
             
-            response = await fetch('/run-travel-multimodal', {
+            response = await apiFetch('/run-travel-multimodal', {
                 method: 'POST',
                 body: formData
             });

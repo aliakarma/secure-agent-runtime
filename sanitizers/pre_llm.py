@@ -77,16 +77,17 @@ class PreLLMSanitizer:
                 
             elif isinstance(msg, HumanMessage):
                 content = str(msg.content)
-                
-                # 2. Trust-aware context masking
+
+                # 2. Trust-aware context masking.
+                # LOW fully masks; MEDIUM and HIGH both strip unsafe spans.
+                # Span removal at HIGH closes the previous gap where a
+                # classifier miss at HIGH trust reached the LLM untouched —
+                # the regex layer is now an unconditional final barrier.
                 if trust_tier == "LOW":
                     content = "[LOW-TRUST CONTENT MASKED]"
-                elif trust_tier == "MEDIUM":
-                    # 3. Unsafe span removal
+                else:  # MEDIUM or HIGH
                     content = self._remove_unsafe_spans(content)
-                else: # HIGH trust
-                    pass
-                    
+
                 # 4. Final instruction boundary check
                 if "--- USER INPUT START ---" not in content:
                     content = f"--- USER INPUT START ---\n{content}\n--- USER INPUT END ---"
@@ -99,11 +100,9 @@ class PreLLMSanitizer:
                 content = str(msg.content)
                 if isinstance(msg, ToolMessage) and trust_tier == "LOW":
                     content = "[LOW-TRUST CONTENT MASKED]"
-                elif trust_tier == "MEDIUM":
+                else:  # MEDIUM or HIGH — always strip unsafe spans
                     content = self._remove_unsafe_spans(content)
-                else: # HIGH trust
-                    pass
-                
+
                 msg.content = content
                 sanitized_messages.append(msg)
                 

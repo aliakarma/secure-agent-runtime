@@ -6,7 +6,7 @@ from logging_config import get_logger
 
 logger = get_logger(__name__)
 
-from sanitizers.multimodal import TextSanitizer, VisualSanitizer, ToolOutputSanitizer, RAGSanitizer, AudioSanitizer, VideoSanitizer
+from sanitizers.multimodal import TextSanitizer, VisualSanitizer, ToolOutputSanitizer, RAGSanitizer, AudioSanitizer, VideoSanitizer, PdfSanitizer, SanitizerResult
 from sanitizers.trust_engine import trust_engine
 from sanitizers.pre_llm import pre_llm_sanitizer
 from sanitizers.recovery_loop import with_validation_and_recovery
@@ -17,6 +17,7 @@ tool_sanitizer = ToolOutputSanitizer()
 rag_sanitizer = RAGSanitizer()
 audio_sanitizer = AudioSanitizer()
 video_sanitizer = VideoSanitizer()
+pdf_sanitizer = PdfSanitizer()
 
 # ── Ablation Feature Flags ───────────────────────────────────────────
 # We check these environment variables dynamically inside the wrapper functions 
@@ -71,8 +72,22 @@ def secure_agent_node(agent_name, agent_runnable):
             clean_for_scan = _re.sub(r'\b[a-zA-Z]:[\\/][^:\*\?"<>\|]+?\.[a-zA-Z0-9]{3,4}\b', '[FILEPATH]', clean_for_scan)
             clean_for_scan = _re.sub(r'\bdatasets[\\/][A-Za-z0-9_.\-\\/]+', '[FILEPATH]', clean_for_scan)
 
-            res = text_sanitizer.sanitize(clean_for_scan)
-            
+            # When the raw inputs were already classified at the ingestion
+            # boundary (multimodal endpoint), avoid re-running the OOD-prone
+            # DistilBERT classifier on the assembled enriched prompt — it
+            # false-positives on concatenated structured text. Deterministic
+            # keyword detection still runs; the trust state established at
+            # ingestion already reflects any real injection.
+            if state.get("input_pre_scanned"):
+                is_mal = text_sanitizer._fast_heuristic_filter(clean_for_scan)
+                res = SanitizerResult(
+                    is_malicious=is_mal,
+                    reason="Deterministic re-scan (raw inputs pre-scanned at ingestion).",
+                    confidence=0.9 if is_mal else 1.0,
+                )
+            else:
+                res = text_sanitizer.sanitize(clean_for_scan)
+
             if res.is_malicious:
                 from dashboard_events import push_dashboard_event
                 push_dashboard_event("SECURITY_ALERT", {
@@ -152,7 +167,7 @@ def secure_tool_wrapper(func):
                 "severity": "CRITICAL"
             })
             return "Error: Action blocked by security policy (LOW trust)."
-        elif tier == "MEDIUM" and tool_name not in ["search_flights", "read_image_ocr", "process_audio_memo", "analyze_video_feed"]:
+        elif tier == "MEDIUM" and tool_name not in ["search_flights", "read_image_ocr", "process_audio_memo", "analyze_video_feed", "read_pdf_document"]:
             logger.warning(f"Hook 2 (Policy Enforcement): Blocked {tool_name} due to MEDIUM trust tier. Only read-only actions allowed.")
             from dashboard_events import push_dashboard_event
             push_dashboard_event("SECURITY_ALERT", {
@@ -174,6 +189,8 @@ def secure_tool_wrapper(func):
                 res = audio_sanitizer.sanitize(arg)
             elif tool_name == "analyze_video_feed" and isinstance(arg, str) and arg.endswith(".mp4"):
                 res = video_sanitizer.sanitize(arg)
+            elif tool_name == "read_pdf_document" and isinstance(arg, str) and arg.lower().endswith(".pdf"):
+                res = pdf_sanitizer.sanitize(arg)
             else:
                 res = text_sanitizer.sanitize(str(arg))
             
@@ -197,6 +214,8 @@ def secure_tool_wrapper(func):
                 res = audio_sanitizer.sanitize(str(v))
             elif tool_name == "analyze_video_feed" and k == "video_path":
                 res = video_sanitizer.sanitize(str(v))
+            elif tool_name == "read_pdf_document" and k == "pdf_path":
+                res = pdf_sanitizer.sanitize(str(v))
             else:
                 res = text_sanitizer.sanitize(str(v))
                 
@@ -292,7 +311,17 @@ def secure_routing_hook(supervisor_runnable):
                     # Remove absolute or relative file paths to prevent OOD classifier false positives
                     clean_for_scan = _re.sub(r'\b[a-zA-Z]:[\\/][^:\*\?"<>\|]+?\.[a-zA-Z0-9]{3,4}\b', '[FILEPATH]', clean_for_scan)
                     clean_for_scan = _re.sub(r'\bdatasets[\\/][A-Za-z0-9_.\-\\/]+', '[FILEPATH]', clean_for_scan)
-                    res = text_sanitizer.sanitize(clean_for_scan)
+                    # See Hook 1: skip the OOD-prone classifier re-scan when the
+                    # raw inputs were already classified at ingestion.
+                    if state.get("input_pre_scanned"):
+                        is_mal = text_sanitizer._fast_heuristic_filter(clean_for_scan)
+                        res = SanitizerResult(
+                            is_malicious=is_mal,
+                            reason="Deterministic re-scan (raw inputs pre-scanned at ingestion).",
+                            confidence=0.9 if is_mal else 1.0,
+                        )
+                    else:
+                        res = text_sanitizer.sanitize(clean_for_scan)
                 else:
                     # For AI/Tool messages: the DistilBERT classifier was fine-tuned
                     # on user-side prompts and misclassifies agent output as OOD.

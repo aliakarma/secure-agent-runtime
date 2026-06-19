@@ -27,3 +27,10 @@ class AgentState(TypedDict):
     
     # Session ID for state tracking
     session_id: str
+
+    # True when the raw inputs were already classified at the ingestion
+    # boundary (multimodal endpoint). Set by the server, never derived from
+    # user content, so the assembled enriched prompt can safely skip the
+    # OOD-prone DistilBERT re-scan and rely on deterministic checks + the
+    # trust state established at ingestion.
+    input_pre_scanned: bool

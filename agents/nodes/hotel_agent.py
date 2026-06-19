@@ -5,7 +5,7 @@ Hotel Agent Node.
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langgraph.prebuilt import create_react_agent
-from agents.tools import reserve_hotel, read_image_ocr, process_audio_memo, analyze_video_feed
+from agents.tools import reserve_hotel, read_image_ocr, process_audio_memo, analyze_video_feed, read_pdf_document
 from agents.state import AgentState
 from logging_config import get_logger
 
@@ -16,8 +16,9 @@ HOTEL_AGENT_PROMPT = """You are a specialized Hotel Agent.
 Your job is to assist users with searching for and booking hotels.
 Use the `reserve_hotel` tool when needed.
 You can also use `read_image_ocr` to read details from user uploaded images,
-`process_audio_memo` to transcribe and process user voice memos, and
-`analyze_video_feed` to inspect video feeds if asked.
+`process_audio_memo` to transcribe and process user voice memos,
+`analyze_video_feed` to inspect video feeds, and `read_pdf_document` to read
+booking details from user uploaded PDF documents if asked.
 Do not assist with flights or general queries outside of hotels.
 Always end your final response by answering the user's hotel question clearly.
 """
@@ -36,7 +37,7 @@ def get_hotel_react_agent():
         ])
         _hotel_react_agent = create_react_agent(
             model=llm,
-            tools=[reserve_hotel, read_image_ocr, process_audio_memo, analyze_video_feed],
+            tools=[reserve_hotel, read_image_ocr, process_audio_memo, analyze_video_feed, read_pdf_document],
             prompt=HOTEL_AGENT_PROMPT
         )
     return _hotel_react_agent

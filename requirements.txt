@@ -20,6 +20,7 @@ pillow>=11.0.0
 opencv-python>=4.10.0
 pytesseract>=0.3.13
 openai-whisper>=20240930
+pymupdf>=1.24.0          # PDF text-layer extraction + page rendering for OCR
 
 # ── Observability & Logging ──────────────────────────────────────────
 structlog>=24.4.0

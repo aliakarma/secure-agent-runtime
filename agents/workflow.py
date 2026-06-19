@@ -18,8 +18,20 @@ from logging_config import get_logger
 
 logger = get_logger(__name__)
 
+# Compiled-graph cache. Graph *structure* depends only on whether all
+# security is disabled (baseline vs secured nodes); the finer-grained
+# ablation flags are read at runtime inside the wrappers, so two compiled
+# graphs are sufficient. Compiling once avoids rebuilding the StateGraph on
+# every request.
+_compiled_graphs: dict = {}
+
 def build_travel_graph() -> StateGraph:
-    """Build and compile the multi-agent travel graph."""
+    """Build and compile the multi-agent travel graph (cached per config)."""
+    cache_key = os.getenv("DISABLE_ALL_SECURITY", "0")
+    cached = _compiled_graphs.get(cache_key)
+    if cached is not None:
+        return cached
+
     # Define the graph using our AgentState
     graph = StateGraph(AgentState)
     
@@ -54,14 +66,21 @@ def build_travel_graph() -> StateGraph:
     graph.add_edge("FlightAgent", "Supervisor")
     graph.add_edge("HotelAgent", "Supervisor")
     
-    # Compile the graph
+    # Compile the graph once and cache it for this configuration.
     app = graph.compile()
+    _compiled_graphs[cache_key] = app
     logger.info("travel_graph_compiled")
     return app
 
-def run_travel_graph(user_input: str, session_id: str = "default_session"):
+def run_travel_graph(user_input: str, session_id: str = "default_session", input_pre_scanned: bool = False):
     """
     Executes the travel graph with a given user input.
+
+    ``input_pre_scanned`` is set by the multimodal endpoint after it has
+    already classified the raw user text and raw extracted content at the
+    ingestion boundary. When True, the per-node hooks skip the OOD-prone
+    DistilBERT re-scan of the assembled enriched prompt and rely on the
+    deterministic regex layer plus the trust state established at ingestion.
     """
     from langchain_core.messages import HumanMessage, SystemMessage
     from agents.memory.chroma_memory import ChromaMemoryManager
@@ -82,7 +101,8 @@ def run_travel_graph(user_input: str, session_id: str = "default_session"):
         "trust_score": 1.0,
         "trust_tier": "HIGH",
         "session_id": session_id,
-        "route_to": ""
+        "route_to": "",
+        "input_pre_scanned": input_pre_scanned
     }
     
     # 3. Compile and execute graph

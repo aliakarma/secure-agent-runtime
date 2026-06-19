@@ -1,0 +1,41 @@
+# ── Secrets — never bake into an image ───────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Version control / CI ─────────────────────────────────────────────
+.git
+.github
+.gitignore
+
+# ── Python caches & build artifacts ──────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+venv/
+.venv/
+env/
+
+# ── Large research artifacts (not needed at runtime) ─────────────────
+archived_results/
+camera_ready_results/
+artifact_snapshot/
+phase10/
+reports/
+scratch/
+docs/figures/
+*.tar.gz
+
+# Runtime-generated user uploads
+uploads/
+
+# ── Editor / OS ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

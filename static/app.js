@@ -76,7 +76,7 @@ window.setApiToken = function (token) {
     try {
         if (token) localStorage.setItem(API_TOKEN_KEY, token);
         else localStorage.removeItem(API_TOKEN_KEY);
-        showToast(token ? 'API token saved' : 'API token cleared', 'success');
+        showToast(token ? t('toast.tokenSaved') : t('toast.tokenCleared'), 'success');
     } catch { /* localStorage unavailable */ }
 };
 
@@ -89,10 +89,398 @@ async function apiFetch(url, opts = {}) {
     const response = await _nativeFetch(url, { ...opts, headers });
     if (response.status === 401 && !_authWarned) {
         _authWarned = true;
-        showToast('Authentication required — run setApiToken("<token>") in the console.', 'error', 6000);
+        showToast(t('toast.authRequired'), 'error', 6000);
     }
     return response;
 }
+
+/* ══════════════════════════════════════════════════════════
+   INTERNATIONALISATION (EN / AR) + THEME
+   Professional Modern Standard Arabic with full RTL support.
+   ══════════════════════════════════════════════════════════ */
+const I18N = {
+    en: {
+        'brand.kicker': 'Secure AI Core',
+        'brand.title': 'Defense Console',
+        'theme.light': 'Light',
+        'theme.dark': 'Dark',
+        'trust.heading': 'System Trust State',
+        'trust.tierPrefix': 'TIER:',
+        'status.live': 'Live',
+        'status.idle': 'Idle',
+        'status.connecting': 'Connecting…',
+        'status.backendConnected': 'Backend connected',
+        'status.degraded': 'Event stream degraded (HTTP {status})',
+        'status.unreachable': 'Backend unreachable — retrying',
+        'status.feedPaused': 'Feed paused by user',
+        'mini.events': 'Events',
+        'mini.blocks': 'Blocks',
+        'mini.activeNode': 'Active Node',
+        'mini.lastUpdate': 'Last Update',
+        'hero.eyebrow': 'Real-time policy enforcement',
+        'hero.title': 'Secure Agent Runtime',
+        'hero.desc': 'Monitor trust drift, inspect live graph execution, review intercepted payloads, and audit the provenance trail of every multi-agent run.',
+        'badge.idle': 'IDLE',
+        'badge.executing': 'EXECUTING',
+        'badge.completed': 'COMPLETED',
+        'badge.autoPolling': 'Auto-polling',
+        'badge.paused': 'Paused',
+        'badge.avg': '— avg',
+        'badge.avgRuns': '{avg}ms avg ({count} run{plural})',
+        'badge.latencyTitle': 'Rolling average over completed runs',
+        'toolbar.session': 'Session',
+        'btn.copy': 'Copy',
+        'btn.copied': 'Copied!',
+        'btn.refreshProvenance': 'Refresh provenance',
+        'btn.pauseFeed': 'Pause feed',
+        'btn.resumeFeed': 'Resume feed',
+        'btn.clearConsole': 'Clear console',
+        'btn.execute': 'Execute',
+        'metric.trust': 'Trust Score',
+        'metric.trustHint': 'Adaptive confidence across the current run',
+        'metric.lastRun': 'Last Run Time',
+        'metric.lastRunHint': 'Most recent completed graph runtime',
+        'metric.alert': 'Alert Volume',
+        'metric.alertHint': 'Blocked and suspicious events this session',
+        'metric.provenance': 'Provenance Entries',
+        'metric.provenanceHint': 'Lineage records for the active session',
+        'card.execution': 'Execution',
+        'card.graphFlow': 'Runtime Graph Flow',
+        'node.supervisor': 'Supervisor',
+        'node.flight': 'FlightAgent',
+        'node.hotel': 'HotelAgent',
+        'log.graphTrace': 'Graph Trace',
+        'log.awaiting': 'Awaiting input…',
+        'log.liveInsights': 'Live Insights',
+        'insight.connection': 'Connection',
+        'insight.filter': 'Filter',
+        'insight.node': 'Node',
+        'card.defense': 'Defense',
+        'card.interceptionFeed': 'Live Interception Feed',
+        'filter.searchPlaceholder': 'Filter alerts',
+        'filter.all': 'All',
+        'filter.critical': 'Critical',
+        'filter.warning': 'Warning',
+        'filter.info': 'Info',
+        'filter.allSeverities': 'All severities',
+        'filter.criticalOnly': 'Critical only',
+        'filter.warningOnly': 'Warning only',
+        'filter.infoOnly': 'Info only',
+        'feed.noThreats': 'No active threats detected.',
+        'card.evidence': 'Evidence',
+        'card.provenanceTrail': 'Provenance Trail',
+        'prov.empty': 'Run a request to inspect provenance lineage.',
+        'prov.sanitizers': 'Sanitizers: {list}',
+        'prov.none': 'none',
+        'prov.unknownSource': 'unknown source',
+        'tier.unknown': 'UNKNOWN',
+        'card.commandLab': 'Command lab',
+        'card.payloadSimulator': 'Payload Simulator',
+        'tab.text': 'Text',
+        'tab.image': 'Image',
+        'tab.audio': 'Voice/Audio',
+        'tab.video': 'Video',
+        'tab.pdf': 'PDF',
+        'chip.directInjection': 'Direct Injection',
+        'chip.jailbreak': 'Jailbreak',
+        'chip.benignFlight': 'Benign flight',
+        'chip.indirectPoisoning': 'Indirect Poisoning',
+        'chip.benignImage': 'Benign Image',
+        'chip.ocrInjection': 'OCR Injection',
+        'chip.exifInjection': 'EXIF Metadata Injection',
+        'chip.benignAudio': 'Benign Voice Memo',
+        'chip.voiceInjection': 'Voice Injection',
+        'chip.benignVideo': 'Benign Video Feed',
+        'chip.temporalInjection': 'Temporal Injection',
+        'chip.benignPdf': 'Benign Itinerary PDF',
+        'chip.pdfInjection': 'PDF Text Injection',
+        'upload.dropPrefix': 'Drag & drop file here or',
+        'upload.browse': 'browse',
+        'upload.hintImage': 'Supports PNG, JPG, JPEG',
+        'upload.hintAudio': 'Supports WAV, MP3',
+        'upload.hintVideo': 'Supports MP4',
+        'upload.hintPdf': 'Supports PDF',
+        'sidecar.label': 'Extracted Text Payload (OCR / Transcription / Document):',
+        'sidecar.placeholder': 'Text extracted via OCR, audio transcription, or PDF parsing...',
+        'input.placeholder': 'Enter a request or adversarial payload to run through the secured graph…',
+        'input.placeholderModality': 'Command / context for the {modality} agent run…',
+        'input.ariaLabel': 'Payload to execute',
+        'alert.phase': 'PHASE {phase} INTERCEPT ({agent})',
+        'trace.input': 'Input: "{input}"',
+        'trace.finished': 'Graph execution finished.',
+        'trace.trustUpdated': 'Trust updated to {score} ({tier})',
+        'trace.nodeActivated': 'Node activated: {node}',
+        'trace.securityBlock': 'SECURITY BLOCK: Phase {phase}',
+        'toast.uploadingExtract': 'Uploading and extracting text from {name}...',
+        'toast.extractSuccess': 'Text extracted successfully.',
+        'toast.extractFailed': 'Failed to extract text from file.',
+        'toast.extractError': 'Error uploading file for extraction.',
+        'toast.presetGen': 'Generating payload preset: {preset}...',
+        'toast.presetLoaded': 'Preset loaded successfully',
+        'toast.presetFailed': 'Failed to load preset',
+        'toast.presetError': 'Error loading preset from server',
+        'toast.uploadNeeded': 'Please upload a file or load a preset for {modality} mode.',
+        'toast.intercepted': 'Payload intercepted by the security layer',
+        'toast.runCompleted': 'Run completed',
+        'toast.serverError': 'Server error: HTTP {status}',
+        'toast.backendUnreachable': 'Backend unreachable — is the server running?',
+        'toast.authRequired': 'Authentication required — run setApiToken("<token>") in the console.',
+        'toast.tokenSaved': 'API token saved',
+        'toast.tokenCleared': 'API token cleared',
+        'toast.consoleCleared': 'Console cleared',
+        'toast.copyFailed': 'Failed to copy — clipboard access denied',
+        'a11y.sidebar': 'System status',
+        'a11y.display': 'Display settings',
+        'a11y.theme': 'Theme',
+        'a11y.language': 'Language',
+        'a11y.trustScore': 'System trust score',
+        'a11y.overview': 'Overview',
+        'a11y.sessionControls': 'Session controls',
+        'a11y.keyMetrics': 'Key metrics',
+        'a11y.severityFilter': 'Severity filter',
+        'a11y.securityAlerts': 'Security alerts',
+        'a11y.provenanceRecords': 'Provenance records',
+        'a11y.modalities': 'Input modalities',
+        'a11y.examplePayloads': 'Example payloads',
+        'file.remove': 'Remove file',
+    },
+    ar: {
+        'brand.kicker': 'نواة الذكاء الاصطناعي الآمن',
+        'brand.title': 'لوحة الدفاع',
+        'theme.light': 'فاتح',
+        'theme.dark': 'داكن',
+        'trust.heading': 'حالة ثقة النظام',
+        'trust.tierPrefix': 'المستوى:',
+        'status.live': 'مباشر',
+        'status.idle': 'خامل',
+        'status.connecting': 'جارٍ الاتصال…',
+        'status.backendConnected': 'تم الاتصال بالخادم',
+        'status.degraded': 'تدهور بثّ الأحداث (HTTP {status})',
+        'status.unreachable': 'تعذّر الوصول إلى الخادم — تتم إعادة المحاولة',
+        'status.feedPaused': 'أوقف المستخدم البثّ مؤقتًا',
+        'mini.events': 'الأحداث',
+        'mini.blocks': 'الحجب',
+        'mini.activeNode': 'العقدة النشطة',
+        'mini.lastUpdate': 'آخر تحديث',
+        'hero.eyebrow': 'إنفاذ السياسات في الوقت الفعلي',
+        'hero.title': 'بيئة تشغيل الوكلاء الآمنة',
+        'hero.desc': 'راقب انحراف الثقة، وافحص تنفيذ الرسم البياني المباشر، وراجع الحمولات المُعترَضة، ودقّق سجلّ المصدرية لكلّ تشغيل متعدّد الوكلاء.',
+        'badge.idle': 'خامل',
+        'badge.executing': 'قيد التنفيذ',
+        'badge.completed': 'اكتمل',
+        'badge.autoPolling': 'استطلاع تلقائي',
+        'badge.paused': 'متوقّف مؤقتًا',
+        'badge.avg': '— متوسّط',
+        'badge.avgRuns': 'متوسّط {avg} م.ث ({count} تشغيل)',
+        'badge.latencyTitle': 'المتوسّط المتحرّك عبر عمليات التشغيل المكتملة',
+        'toolbar.session': 'الجلسة',
+        'btn.copy': 'نسخ',
+        'btn.copied': 'تم النسخ!',
+        'btn.refreshProvenance': 'تحديث المصدرية',
+        'btn.pauseFeed': 'إيقاف البثّ مؤقتًا',
+        'btn.resumeFeed': 'استئناف البثّ',
+        'btn.clearConsole': 'مسح السجل',
+        'btn.execute': 'تنفيذ',
+        'metric.trust': 'درجة الثقة',
+        'metric.trustHint': 'ثقة تكيّفية عبر التشغيل الحالي',
+        'metric.lastRun': 'زمن آخر تشغيل',
+        'metric.lastRunHint': 'أحدث زمن تنفيذ مكتمل للرسم البياني',
+        'metric.alert': 'حجم التنبيهات',
+        'metric.alertHint': 'الأحداث المحجوبة والمشبوهة في هذه الجلسة',
+        'metric.provenance': 'سجلات المصدرية',
+        'metric.provenanceHint': 'سجلات التسلسل للجلسة النشطة',
+        'card.execution': 'التنفيذ',
+        'card.graphFlow': 'تدفّق الرسم البياني للتشغيل',
+        'node.supervisor': 'المنسّق',
+        'node.flight': 'وكيل الطيران',
+        'node.hotel': 'وكيل الفنادق',
+        'log.graphTrace': 'تتبّع الرسم البياني',
+        'log.awaiting': 'في انتظار الإدخال…',
+        'log.liveInsights': 'رؤى مباشرة',
+        'insight.connection': 'الاتصال',
+        'insight.filter': 'التصفية',
+        'insight.node': 'العقدة',
+        'card.defense': 'الدفاع',
+        'card.interceptionFeed': 'بثّ الاعتراض المباشر',
+        'filter.searchPlaceholder': 'تصفية التنبيهات',
+        'filter.all': 'الكل',
+        'filter.critical': 'حرِج',
+        'filter.warning': 'تحذير',
+        'filter.info': 'معلومات',
+        'filter.allSeverities': 'كل المستويات',
+        'filter.criticalOnly': 'الحرِجة فقط',
+        'filter.warningOnly': 'التحذيرات فقط',
+        'filter.infoOnly': 'المعلومات فقط',
+        'feed.noThreats': 'لا توجد تهديدات نشطة.',
+        'card.evidence': 'الأدلة',
+        'card.provenanceTrail': 'مسار المصدرية',
+        'prov.empty': 'شغّل طلبًا لفحص تسلسل المصدرية.',
+        'prov.sanitizers': 'المنقّيات: {list}',
+        'prov.none': 'لا شيء',
+        'prov.unknownSource': 'مصدر غير معروف',
+        'tier.unknown': 'غير معروف',
+        'card.commandLab': 'مختبر الأوامر',
+        'card.payloadSimulator': 'محاكي الحمولات',
+        'tab.text': 'نص',
+        'tab.image': 'صورة',
+        'tab.audio': 'صوت',
+        'tab.video': 'فيديو',
+        'tab.pdf': 'PDF',
+        'chip.directInjection': 'حقن مباشر',
+        'chip.jailbreak': 'كسر القيود',
+        'chip.benignFlight': 'رحلة آمنة',
+        'chip.indirectPoisoning': 'تسميم غير مباشر',
+        'chip.benignImage': 'صورة آمنة',
+        'chip.ocrInjection': 'حقن عبر التعرّف الضوئي',
+        'chip.exifInjection': 'حقن عبر بيانات EXIF',
+        'chip.benignAudio': 'مذكّرة صوتية آمنة',
+        'chip.voiceInjection': 'حقن صوتي',
+        'chip.benignVideo': 'بثّ فيديو آمن',
+        'chip.temporalInjection': 'حقن زمني',
+        'chip.benignPdf': 'ملفّ PDF لبرنامج رحلة آمن',
+        'chip.pdfInjection': 'حقن نصّي عبر PDF',
+        'upload.dropPrefix': 'اسحب الملفّ وأفلِته هنا أو',
+        'upload.browse': 'تصفّح',
+        'upload.hintImage': 'يدعم PNG وJPG وJPEG',
+        'upload.hintAudio': 'يدعم WAV وMP3',
+        'upload.hintVideo': 'يدعم MP4',
+        'upload.hintPdf': 'يدعم PDF',
+        'sidecar.label': 'حمولة النصّ المُستخرَج (تعرّف ضوئي / تفريغ صوتي / مستند):',
+        'sidecar.placeholder': 'نصّ مُستخرَج عبر التعرّف الضوئي أو التفريغ الصوتي أو تحليل PDF…',
+        'input.placeholder': 'أدخل طلبًا أو حمولة عدائية لتشغيلها عبر الرسم البياني المؤمَّن…',
+        'input.placeholderModality': 'أمر / سياق لتشغيل وكيل {modality}…',
+        'input.ariaLabel': 'الحمولة المراد تنفيذها',
+        'alert.phase': 'اعتراض المرحلة {phase} ({agent})',
+        'trace.input': 'الإدخال: «{input}»',
+        'trace.finished': 'اكتمل تنفيذ الرسم البياني.',
+        'trace.trustUpdated': 'حُدِّثت الثقة إلى {score} ({tier})',
+        'trace.nodeActivated': 'تنشيط العقدة: {node}',
+        'trace.securityBlock': 'حجب أمني: المرحلة {phase}',
+        'toast.uploadingExtract': 'جارٍ رفع الملفّ واستخراج النصّ من {name}…',
+        'toast.extractSuccess': 'تمّ استخراج النصّ بنجاح.',
+        'toast.extractFailed': 'فشل استخراج النصّ من الملفّ.',
+        'toast.extractError': 'خطأ أثناء رفع الملفّ للاستخراج.',
+        'toast.presetGen': 'جارٍ توليد حمولة تجريبية: {preset}…',
+        'toast.presetLoaded': 'تمّ تحميل النموذج بنجاح',
+        'toast.presetFailed': 'فشل تحميل النموذج',
+        'toast.presetError': 'خطأ في تحميل النموذج من الخادم',
+        'toast.uploadNeeded': 'يرجى رفع ملفّ أو تحميل نموذج لوضع {modality}.',
+        'toast.intercepted': 'اعترضت طبقة الأمان الحمولة',
+        'toast.runCompleted': 'اكتمل التشغيل',
+        'toast.serverError': 'خطأ في الخادم: HTTP {status}',
+        'toast.backendUnreachable': 'تعذّر الوصول إلى الخادم — هل الخادم يعمل؟',
+        'toast.authRequired': 'المصادقة مطلوبة — شغّل ‎setApiToken("<token>")‎ في وحدة التحكّم.',
+        'toast.tokenSaved': 'تمّ حفظ رمز الـ API',
+        'toast.tokenCleared': 'تمّ مسح رمز الـ API',
+        'toast.consoleCleared': 'تمّ مسح السجل',
+        'toast.copyFailed': 'تعذّر النسخ — رُفض الوصول إلى الحافظة',
+        'a11y.sidebar': 'حالة النظام',
+        'a11y.display': 'إعدادات العرض',
+        'a11y.theme': 'السمة',
+        'a11y.language': 'اللغة',
+        'a11y.trustScore': 'درجة ثقة النظام',
+        'a11y.overview': 'نظرة عامة',
+        'a11y.sessionControls': 'عناصر التحكّم بالجلسة',
+        'a11y.keyMetrics': 'المقاييس الرئيسية',
+        'a11y.severityFilter': 'تصفية حسب الخطورة',
+        'a11y.securityAlerts': 'التنبيهات الأمنية',
+        'a11y.provenanceRecords': 'سجلات المصدرية',
+        'a11y.modalities': 'أنماط الإدخال',
+        'a11y.examplePayloads': 'حمولات نموذجية',
+        'file.remove': 'إزالة الملفّ',
+    },
+};
+
+// Supplementary runtime strings (kept here to keep the main table compact).
+Object.assign(I18N.en, {
+    'sidecar.extracting': 'Extracting / transcribing payload, please wait…',
+    'sidecar.extractFailed': 'Extraction failed: {msg}',
+    'toast.pdfExtracting': 'Extracting text from generated PDF…',
+    'toast.pdfExtractLoaded': 'PDF preset text extracted and loaded.',
+    'toast.pdfExtractFailed': 'Failed to extract text from PDF preset: {msg}',
+    'preview.presetPayload': 'Preset Payload',
+});
+Object.assign(I18N.ar, {
+    'sidecar.extracting': 'جارٍ استخراج/تفريغ الحمولة، يُرجى الانتظار…',
+    'sidecar.extractFailed': 'فشل الاستخراج: {msg}',
+    'toast.pdfExtracting': 'جارٍ استخراج النصّ من ملفّ PDF المُولَّد…',
+    'toast.pdfExtractLoaded': 'تمّ استخراج نصّ نموذج PDF وتحميله.',
+    'toast.pdfExtractFailed': 'فشل استخراج النصّ من نموذج PDF: {msg}',
+    'preview.presetPayload': 'حمولة نموذجية',
+});
+
+let currentLang = (document.documentElement.getAttribute('lang') === 'ar') ? 'ar' : 'en';
+let currentTheme = (document.documentElement.getAttribute('data-theme') === 'light') ? 'light' : 'dark';
+
+function t(key, vars) {
+    const table = I18N[currentLang] || I18N.en;
+    let str = (key in table) ? table[key] : (I18N.en[key] !== undefined ? I18N.en[key] : key);
+    if (vars) {
+        for (const k in vars) str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), String(vars[k]));
+    }
+    return str;
+}
+
+function applyTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.getAttribute('data-i18n')); });
+    document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
+    document.querySelectorAll('[data-i18n-aria]').forEach((el) => { el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria'))); });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.setAttribute('title', t(el.getAttribute('data-i18n-title'))); });
+}
+
+const THEME_COLORS = { dark: '#0a0f1e', light: '#eef2f8' };
+
+function applyTheme(theme, persist = true) {
+    currentTheme = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    const meta = document.getElementById('meta-theme-color');
+    if (meta) meta.setAttribute('content', THEME_COLORS[currentTheme]);
+    document.querySelectorAll('#theme-toggle button').forEach((b) => {
+        const on = b.dataset.themeValue === currentTheme;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', String(on));
+    });
+    if (persist) { try { localStorage.setItem('sar_theme', currentTheme); } catch (e) { /* noop */ } }
+}
+
+function applyLanguage(lang, persist = true) {
+    currentLang = lang === 'ar' ? 'ar' : 'en';
+    const el = document.documentElement;
+    el.setAttribute('lang', currentLang);
+    el.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
+    document.querySelectorAll('#lang-toggle button').forEach((b) => {
+        const on = b.dataset.langValue === currentLang;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', String(on));
+    });
+    applyTranslations();
+    refreshDynamicLabels();
+    refreshIcons();
+    if (persist) { try { localStorage.setItem('sar_lang', currentLang); } catch (e) { /* noop */ } }
+}
+
+// Re-apply runtime-driven labels after a language switch so live state
+// (connection, graph status, trust tier, filters, modality) stays translated.
+function refreshDynamicLabels() {
+    if (lastConn) setConnectionState(lastConn.state, lastConn.key, lastConn.vars, true);
+    if (lastGraphState) setGraphState(lastGraphState);
+    updateTrustMeter(lastScore, lastTier);
+    if (filterStateEl) filterStateEl.textContent = t(FILTER_LABEL_KEYS[activeAlertFilter] || FILTER_LABEL_KEYS.all);
+    if (typeof applyModalityStrings === 'function') applyModalityStrings();
+    // Pause button + polling badges
+    if (pauseToggle) {
+        setToolbarButtonContent(pauseToggle, isPaused ? 'play' : 'pause', isPaused ? t('btn.resumeFeed') : t('btn.pauseFeed'));
+    }
+    if (autoPollingBadge) autoPollingBadge.textContent = isPaused ? t('badge.paused') : t('badge.autoPolling');
+    if (trustLiveBadge) trustLiveBadge.textContent = isPaused ? t('badge.paused') : t('status.live');
+    recordLatencyLabel();
+}
+
+// Holders for runtime state so labels can be re-rendered on language change.
+let lastConn = null;
+let lastGraphState = null;
+let lastScore = 1.0;
+let lastTier = 'HIGH';
 
 /* ══════════════════════════════════════════════════════════
    TOAST NOTIFICATION SYSTEM
@@ -142,9 +530,11 @@ function showToast(message, type = 'info', duration = 3500) {
    ══════════════════════════════════════════════════════════ */
 let connectionState = null;
 
-function setConnectionState(state, label) {
-    if (state === connectionState && connectionStateEl?.textContent === label) return;
+function setConnectionState(state, key, vars, force = false) {
+    const label = t(key, vars);
+    if (!force && state === connectionState && connectionStateEl?.textContent === label) return;
     connectionState = state;
+    lastConn = { state, key, vars };
 
     if (connectionStateEl) connectionStateEl.textContent = label;
     if (statusIndicator) statusIndicator.dataset.state = state;
@@ -167,20 +557,33 @@ function recordLatency(ms) {
     if (latencySamples.length > 50) latencySamples.shift();
 
     if (processingTimeEl) processingTimeEl.textContent = `${value}ms`;
+    recordLatencyLabel();
+}
 
-    if (latencyVal) {
-        const avg = Math.round(latencySamples.reduce((a, b) => a + b, 0) / latencySamples.length);
-        latencyVal.textContent = `${avg}ms avg (${latencySamples.length} run${latencySamples.length === 1 ? '' : 's'})`;
-    }
+function recordLatencyLabel() {
+    if (!latencyVal || latencySamples.length === 0) return;
+    const avg = Math.round(latencySamples.reduce((a, b) => a + b, 0) / latencySamples.length);
+    latencyVal.textContent = t('badge.avgRuns', {
+        avg,
+        count: latencySamples.length,
+        plural: (currentLang === 'en' && latencySamples.length !== 1) ? 's' : '',
+    });
 }
 
 /* ══════════════════════════════════════════════════════════
    TRUST METER
    ══════════════════════════════════════════════════════════ */
+const TIER_WORDS = {
+    en: { HIGH: 'HIGH', MEDIUM: 'MEDIUM', LOW: 'LOW', UNKNOWN: 'UNKNOWN' },
+    ar: { HIGH: 'عالٍ', MEDIUM: 'متوسّط', LOW: 'منخفض', UNKNOWN: 'غير معروف' },
+};
+
 function updateTrustMeter(score, tier) {
     const safeScore = Number.isFinite(score) ? Math.min(1, Math.max(0, score)) : 0;
     const formattedScore = safeScore.toFixed(2);
     const safeTier = String(tier || 'HIGH').toUpperCase();
+    lastScore = safeScore;
+    lastTier = safeTier;
 
     if (sidebarTrustScore) sidebarTrustScore.textContent = formattedScore;
     if (metricTrustScore) metricTrustScore.textContent = formattedScore;
@@ -197,7 +600,8 @@ function updateTrustMeter(score, tier) {
     }
 
     if (trustTierBadge) {
-        trustTierBadge.textContent = `TIER: ${safeTier}`;
+        const tierWord = (TIER_WORDS[currentLang] || TIER_WORDS.en)[safeTier] || safeTier;
+        trustTierBadge.textContent = `${t('trust.tierPrefix')} ${tierWord}`;
         trustTierBadge.dataset.tier = ['HIGH', 'MEDIUM'].includes(safeTier) ? safeTier.toLowerCase() : 'low';
     }
 }
@@ -205,8 +609,11 @@ function updateTrustMeter(score, tier) {
 /* ══════════════════════════════════════════════════════════
    GRAPH STATUS
    ══════════════════════════════════════════════════════════ */
+const GRAPH_STATE_KEYS = { idle: 'badge.idle', executing: 'badge.executing', completed: 'badge.completed' };
+
 function setGraphState(state) {
-    const label = state.toUpperCase();
+    lastGraphState = state;
+    const label = t(GRAPH_STATE_KEYS[state] || 'badge.idle');
     if (graphStatus) {
         graphStatus.textContent = label;
         graphStatus.dataset.state = state;
@@ -257,7 +664,7 @@ function renderAlertItem(phase, agent, message, severity) {
 
     const phaseLabel = document.createElement('span');
     phaseLabel.className = 'alert-phase';
-    phaseLabel.textContent = `PHASE ${phase} INTERCEPT (${agent})`;
+    phaseLabel.textContent = t('alert.phase', { phase, agent });
 
     const time = document.createElement('span');
     time.className = 'alert-time';
@@ -314,7 +721,7 @@ function showFeedEmptyState() {
     icon.setAttribute('data-lucide', 'check-circle-2');
     icon.setAttribute('aria-hidden', 'true');
     const text = document.createElement('p');
-    text.textContent = 'No active threats detected.';
+    text.textContent = t('feed.noThreats');
 
     emptyState.appendChild(icon);
     emptyState.appendChild(text);
@@ -387,7 +794,7 @@ function renderProvenance(records) {
         icon.setAttribute('data-lucide', 'sparkles');
         icon.setAttribute('aria-hidden', 'true');
         const text = document.createElement('p');
-        text.textContent = 'Run a request to inspect provenance lineage.';
+        text.textContent = t('prov.empty');
 
         emptyState.appendChild(icon);
         emptyState.appendChild(text);
@@ -405,7 +812,7 @@ function renderProvenance(records) {
         header.className = 'provenance-entry-header';
 
         const source = document.createElement('strong');
-        source.textContent = record.source || 'unknown source';
+        source.textContent = record.source || t('prov.unknownSource');
 
         const tier = document.createElement('span');
         tier.className = `provenance-tier ${(record.trust_tier || '').toLowerCase()}`;
@@ -420,7 +827,7 @@ function renderProvenance(records) {
 
         const sanitizers = document.createElement('div');
         sanitizers.className = 'provenance-sanitizers';
-        sanitizers.textContent = `Sanitizers: ${(record.sanitizers || []).join(', ') || 'none'}`;
+        sanitizers.textContent = t('prov.sanitizers', { list: (record.sanitizers || []).join(', ') || t('prov.none') });
 
         item.appendChild(header);
         item.appendChild(meta);
@@ -454,31 +861,33 @@ function processEvent(event) {
             setGraphState('executing');
             if (currentSession) currentSession.textContent = data.session_id || currentSession.textContent;
             if (graphTraceContainer) graphTraceContainer.innerHTML = '';
-            addTrace(`Input: "${data.input || ''}"`);
+            addTrace(t('trace.input', { input: data.input || '' }));
             loadProvenance(currentSession?.textContent?.trim());
             break;
 
         case 'GRAPH_END':
             setGraphState('completed');
-            addTrace('Graph execution finished.');
+            addTrace(t('trace.finished'));
             loadProvenance(currentSession?.textContent?.trim());
             setTimeout(clearNodeActivation, 1000);
             break;
 
-        case 'TRUST_UPDATE':
+        case 'TRUST_UPDATE': {
             updateTrustMeter(data.score, data.tier);
-            addTrace(`Trust updated to ${Number(data.score || 0).toFixed(2)} (${data.tier || 'UNKNOWN'})`);
+            const tierWord = (TIER_WORDS[currentLang] || TIER_WORDS.en)[String(data.tier || 'UNKNOWN').toUpperCase()] || data.tier;
+            addTrace(t('trace.trustUpdated', { score: Number(data.score || 0).toFixed(2), tier: tierWord }));
             break;
+        }
 
         case 'NODE_ACTIVE':
             setNodeActive(data.node);
-            addTrace(`Node activated: ${data.node}`);
+            addTrace(t('trace.nodeActivated', { node: data.node }));
             break;
 
         case 'SECURITY_ALERT':
             blockedEvents += 1;
             addSecurityAlert(data.phase, data.agent, data.message, data.severity);
-            addTrace(`SECURITY BLOCK: Phase ${data.phase}`);
+            addTrace(t('trace.securityBlock', { phase: data.phase }));
             break;
 
         default:
@@ -506,14 +915,14 @@ async function pollEvents() {
                 lastEventId = Math.max(lastEventId, event.id);
             }
             pollDelay = POLL_INTERVAL;
-            setConnectionState('live', 'Backend connected');
+            setConnectionState('live', 'status.backendConnected');
         } else {
             pollDelay = Math.min(pollDelay * 2, POLL_BACKOFF_MAX);
-            setConnectionState('degraded', `Event stream degraded (HTTP ${response.status})`);
+            setConnectionState('degraded', 'status.degraded', { status: response.status });
         }
     } catch (error) {
         pollDelay = Math.min(pollDelay * 2, POLL_BACKOFF_MAX);
-        setConnectionState('error', 'Backend unreachable — retrying');
+        setConnectionState('error', 'status.unreachable');
     }
 
     setTimeout(pollEvents, pollDelay);
@@ -582,66 +991,71 @@ const sidecarInput = document.getElementById('sidecar-input');
 // Initialize modality switching
 modalityTabs.forEach(tab => {
     tab.addEventListener('click', () => {
-        modalityTabs.forEach(t => {
-            t.classList.remove('active');
-            t.setAttribute('aria-selected', 'false');
+        modalityTabs.forEach(tb => {
+            tb.classList.remove('active');
+            tb.setAttribute('aria-selected', 'false');
         });
         tab.classList.add('active');
         tab.setAttribute('aria-selected', 'true');
-        
+
         currentModality = tab.dataset.modality;
-        
+
         // Show active panel, hide others
         modalityPanels.forEach(p => p.classList.remove('active'));
         document.getElementById(`panel-${currentModality}`)?.classList.add('active');
-        
-        // Toggle upload zone & sidecar previews
-        if (currentModality === 'text') {
-            uploadContainer?.classList.add('hidden');
-            sidecarContainer?.classList.add('hidden');
-            if (attackInput) {
-                attackInput.placeholder = "Enter a request or adversarial payload to run through the secured graph…";
-                attackInput.required = true;
-            }
-        } else {
-            uploadContainer?.classList.remove('hidden');
-            sidecarContainer?.classList.remove('hidden');
-            if (attackInput) {
-                attackInput.placeholder = `Command/Context for the ${currentModality} agent run...`;
-                attackInput.required = false;
-            }
-            
-            // Adjust hint texts + native picker filter
-            const acceptByModality = {
-                image: '.png,.jpg,.jpeg',
-                audio: '.wav,.mp3',
-                video: '.mp4',
-                pdf: '.pdf,application/pdf',
-            };
-            if (uploadHint) {
-                if (currentModality === 'image') uploadHint.textContent = "Supports PNG, JPG, JPEG";
-                else if (currentModality === 'audio') uploadHint.textContent = "Supports WAV, MP3";
-                else if (currentModality === 'video') uploadHint.textContent = "Supports MP4";
-                else if (currentModality === 'pdf') uploadHint.textContent = "Supports PDF";
-            }
-            if (fileInput) fileInput.accept = acceptByModality[currentModality] || '';
-        }
-        
+
+        applyModalityStrings();
+
         clearSelectedFile();
         if (attackInput) attackInput.value = '';
         if (sidecarInput) sidecarInput.value = '';
     });
 });
 
+// Modality-dependent strings + native picker filter, factored out so a
+// language switch can re-apply them for the active modality.
+const ACCEPT_BY_MODALITY = {
+    image: '.png,.jpg,.jpeg',
+    audio: '.wav,.mp3',
+    video: '.mp4',
+    pdf: '.pdf,application/pdf',
+};
+const HINT_KEY_BY_MODALITY = {
+    image: 'upload.hintImage',
+    audio: 'upload.hintAudio',
+    video: 'upload.hintVideo',
+    pdf: 'upload.hintPdf',
+};
+
+function applyModalityStrings() {
+    if (currentModality === 'text') {
+        uploadContainer?.classList.add('hidden');
+        sidecarContainer?.classList.add('hidden');
+        if (attackInput) {
+            attackInput.placeholder = t('input.placeholder');
+            attackInput.required = true;
+        }
+        return;
+    }
+    uploadContainer?.classList.remove('hidden');
+    sidecarContainer?.classList.remove('hidden');
+    if (attackInput) {
+        attackInput.placeholder = t('input.placeholderModality', { modality: t('tab.' + currentModality) });
+        attackInput.required = false;
+    }
+    if (uploadHint) uploadHint.textContent = t(HINT_KEY_BY_MODALITY[currentModality] || 'upload.hintImage');
+    if (fileInput) fileInput.accept = ACCEPT_BY_MODALITY[currentModality] || '';
+}
+
 // File Selection Controllers
 async function extractTextFromFile(file) {
     if (!file) return;
     
-    showToast(`Uploading and extracting text/transcription from ${file.name}...`, 'info', 2000);
-    
+    showToast(t('toast.uploadingExtract', { name: file.name }), 'info', 2000);
+
     if (sidecarContainer) sidecarContainer.classList.remove('hidden');
     if (sidecarInput) {
-        sidecarInput.value = "Extracting/transcribing payload, please wait...";
+        sidecarInput.value = t('sidecar.extracting');
         sidecarInput.disabled = true;
     }
     
@@ -676,21 +1090,21 @@ async function extractTextFromFile(file) {
                     sidecarInput.disabled = false;
                 }
             }
-            showToast('Text extracted successfully.', 'success');
+            showToast(t('toast.extractSuccess'), 'success');
         } else {
             if (sidecarInput) {
-                sidecarInput.value = "Extraction failed: " + (data.message || 'unknown error');
+                sidecarInput.value = t('sidecar.extractFailed', { msg: data.message || 'unknown error' });
                 sidecarInput.disabled = false;
             }
-            showToast('Failed to extract text from file.', 'error');
+            showToast(t('toast.extractFailed'), 'error');
         }
     } catch (err) {
         console.error(err);
         if (sidecarInput) {
-            sidecarInput.value = "Extraction failed: " + err.message;
+            sidecarInput.value = t('sidecar.extractFailed', { msg: err.message });
             sidecarInput.disabled = false;
         }
-        showToast('Error uploading file for extraction.', 'error');
+        showToast(t('toast.extractError'), 'error');
     }
 }
 
@@ -781,7 +1195,7 @@ function attachQuickPromptButtons() {
     document.querySelectorAll('.preset-btn').forEach((button) => {
         button.addEventListener('click', async () => {
             const preset = button.dataset.preset;
-            showToast(`Generating mock payload preset: ${preset}...`, 'info', 1800);
+            showToast(t('toast.presetGen', { preset }), 'info', 1800);
             
             try {
                 const response = await apiFetch(`/api/generate-preset?preset_type=${encodeURIComponent(preset)}`, {
@@ -793,7 +1207,7 @@ function attachQuickPromptButtons() {
                 if (data.status === 'success') {
                     if (preset === 'benign_pdf' || preset === 'pdf_injection') {
                         // For PDF presets, fetch/extract text, then insert it into attackInput and switch to text tab
-                        showToast("Extracting text from generated PDF...", "info", 2000);
+                        showToast(t('toast.pdfExtracting'), "info", 2000);
                         try {
                             const extractFormData = new FormData();
                             extractFormData.append('modality', 'pdf');
@@ -813,35 +1227,35 @@ function attachQuickPromptButtons() {
                                 if (attackInput) {
                                     attackInput.value = textVal;
                                 }
-                                showToast('PDF preset text extracted and loaded.', 'success');
+                                showToast(t('toast.pdfExtractLoaded'), 'success');
                             } else {
                                 throw new Error(extractData.message || 'unknown extraction error');
                             }
                         } catch (extractErr) {
                             console.error(extractErr);
-                            showToast(`Failed to extract text from PDF preset: ${extractErr.message}`, 'error');
+                            showToast(t('toast.pdfExtractFailed', { msg: extractErr.message }), 'error');
                         }
                     } else {
                         selectedPresetPath = data.file_path;
                         selectedFile = null;
                         
                         if (previewName) previewName.textContent = data.file_path.split('/').pop();
-                        if (previewSize) previewSize.textContent = "Preset Payload";
-                        
+                        if (previewSize) previewSize.textContent = t('preview.presetPayload');
+
                         filePreview?.classList.remove('hidden');
                         uploadDropzone?.classList.add('hidden');
-                        
+
                         if (attackInput) attackInput.value = data.prompt || '';
                         if (sidecarInput) sidecarInput.value = data.sidecar_text || '';
-                        
-                        showToast('Preset loaded successfully', 'success');
+
+                        showToast(t('toast.presetLoaded'), 'success');
                     }
                 } else {
-                    showToast('Failed to load preset', 'error');
+                    showToast(t('toast.presetFailed'), 'error');
                 }
             } catch (err) {
                 console.error(err);
-                showToast('Error loading preset from server', 'error');
+                showToast(t('toast.presetError'), 'error');
             }
         });
     });
@@ -857,7 +1271,7 @@ attackForm?.addEventListener('submit', async (event) => {
     if (currentModality === 'text' && !input) return;
     
     if (currentModality !== 'text' && !selectedFile && !selectedPresetPath) {
-        showToast(`Please upload a file or load a preset for ${currentModality} mode.`, 'warning');
+        showToast(t('toast.uploadNeeded', { modality: t('tab.' + currentModality) }), 'warning');
         return;
     }
 
@@ -908,15 +1322,15 @@ attackForm?.addEventListener('submit', async (event) => {
             clearSelectedFile();
             
             showToast(
-                result.security_blocked ? 'Payload intercepted by the security layer' : 'Run completed',
+                result.security_blocked ? t('toast.intercepted') : t('toast.runCompleted'),
                 result.security_blocked ? 'warning' : 'success'
             );
         } else {
-            showToast(`Server error: HTTP ${response.status}`, 'error');
+            showToast(t('toast.serverError', { status: response.status }), 'error');
         }
     } catch (error) {
         console.error('Failed to run graph', error);
-        showToast('Backend unreachable — is the server running?', 'error');
+        showToast(t('toast.backendUnreachable'), 'error');
     } finally {
         executeBtn?.classList.remove('loading');
         if (executeBtn) executeBtn.disabled = false;
@@ -926,11 +1340,11 @@ attackForm?.addEventListener('submit', async (event) => {
 /* ══════════════════════════════════════════════════════════
    FILTER & SEARCH
    ══════════════════════════════════════════════════════════ */
-const FILTER_LABELS = {
-    all: 'All severities',
-    critical: 'Critical only',
-    warning: 'Warning only',
-    info: 'Info only',
+const FILTER_LABEL_KEYS = {
+    all: 'filter.allSeverities',
+    critical: 'filter.criticalOnly',
+    warning: 'filter.warningOnly',
+    info: 'filter.infoOnly',
 };
 
 filterInput?.addEventListener('input', (event) => {
@@ -947,7 +1361,7 @@ document.querySelectorAll('.filter-pill').forEach((pill) => {
         pill.classList.add('active');
         pill.setAttribute('aria-pressed', 'true');
         activeAlertFilter = pill.dataset.filter || 'all';
-        if (filterStateEl) filterStateEl.textContent = FILTER_LABELS[activeAlertFilter] || FILTER_LABELS.all;
+        if (filterStateEl) filterStateEl.textContent = t(FILTER_LABEL_KEYS[activeAlertFilter] || FILTER_LABEL_KEYS.all);
         applyAlertFilters();
     });
 });
@@ -971,22 +1385,22 @@ function setToolbarButtonContent(button, iconName, label) {
 pauseToggle?.addEventListener('click', () => {
     isPaused = !isPaused;
     pauseToggle.setAttribute('aria-pressed', String(isPaused));
-    setToolbarButtonContent(pauseToggle, isPaused ? 'play' : 'pause', isPaused ? 'Resume feed' : 'Pause feed');
+    setToolbarButtonContent(pauseToggle, isPaused ? 'play' : 'pause', isPaused ? t('btn.resumeFeed') : t('btn.pauseFeed'));
 
     if (autoPollingBadge) {
-        autoPollingBadge.textContent = isPaused ? 'Paused' : 'Auto-polling';
+        autoPollingBadge.textContent = isPaused ? t('badge.paused') : t('badge.autoPolling');
         autoPollingBadge.classList.toggle('paused', isPaused);
     }
     if (trustLiveBadge) {
-        trustLiveBadge.textContent = isPaused ? 'Paused' : 'Live';
+        trustLiveBadge.textContent = isPaused ? t('badge.paused') : t('status.live');
         trustLiveBadge.classList.toggle('paused', isPaused);
     }
 
     if (isPaused) {
-        setConnectionState('paused', 'Feed paused by user');
+        setConnectionState('paused', 'status.feedPaused');
     } else {
         pollDelay = POLL_INTERVAL;
-        setConnectionState('live', 'Backend connected');
+        setConnectionState('live', 'status.backendConnected');
     }
 });
 
@@ -996,7 +1410,7 @@ clearFeedButton?.addEventListener('click', () => {
     showFeedEmptyState();
     alertPulse?.classList.remove('armed');
     updateFilterPillCounts();
-    showToast('Console cleared', 'info');
+    showToast(t('toast.consoleCleared'), 'info');
 });
 
 refreshProvenanceButton?.addEventListener('click', () => {
@@ -1007,11 +1421,11 @@ refreshProvenanceButton?.addEventListener('click', () => {
 copySessionButton?.addEventListener('click', async () => {
     try {
         await navigator.clipboard.writeText(currentSession?.textContent?.trim() || '');
-        setToolbarButtonContent(copySessionButton, 'check', 'Copied!');
-        setTimeout(() => setToolbarButtonContent(copySessionButton, 'copy', 'Copy'), 1200);
+        setToolbarButtonContent(copySessionButton, 'check', t('btn.copied'));
+        setTimeout(() => setToolbarButtonContent(copySessionButton, 'copy', t('btn.copy')), 1200);
     } catch (error) {
         console.error('Copy failed', error);
-        showToast('Failed to copy — clipboard access denied', 'warning');
+        showToast(t('toast.copyFailed'), 'warning');
     }
 });
 
@@ -1025,11 +1439,26 @@ if (nodeSystem && window.ResizeObserver) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   THEME & LANGUAGE TOGGLE WIRING
+   ══════════════════════════════════════════════════════════ */
+document.getElementById('theme-toggle')?.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', () => applyTheme(btn.dataset.themeValue));
+});
+document.getElementById('lang-toggle')?.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', () => applyLanguage(btn.dataset.langValue));
+});
+
+/* ══════════════════════════════════════════════════════════
    INITIALIZATION
    ══════════════════════════════════════════════════════════ */
+// Sync toggle UI + translate the DOM to the persisted theme/language
+// (the <html> attributes were already set pre-paint by the head script).
+applyTheme(currentTheme, false);
+applyLanguage(currentLang, false);
+
 refreshIcons();
 attachQuickPromptButtons();
-setConnectionState('degraded', 'Connecting…');
+setConnectionState('degraded', 'status.connecting');
 updateCounters();
 loadProvenance(currentSession?.textContent?.trim() || 'default');
 pollEvents();

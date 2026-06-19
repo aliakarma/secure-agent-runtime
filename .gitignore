@@ -35,10 +35,15 @@ chroma_data/
 *.log
 logs/
 
-# ── pytest ───────────────────────────────────────────────────────────
+# ── pytest / mypy / ruff caches ──────────────────────────────────────
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 htmlcov/
 .coverage
+
+# ── Runtime user-upload sandbox ──────────────────────────────────────
+uploads/
 
 # ── Model weights and training checkpoints ───────────────────────────
 # Final model weight (retrain via scripts/train_local_classifier.py)

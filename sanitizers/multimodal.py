@@ -23,40 +23,51 @@ class SanitizerResult(BaseModel):
 CONFIDENCE_THRESHOLD = 0.85
 
 class TextSanitizer:
+    # Shared across instances so swapping in a heavy model (Prompt Guard 2,
+    # ensemble) loads it once, not per-sanitizer.
+    _shared_classifier = None
+    _shared_name = "none"
+    _shared_error = None
+    _shared_loaded = False
+
     def __init__(self):
         self.local_classifier = None
+        self.detector_name = "none"
         self.init_error = None
         self.llm = None
         self.prompt = None
-        
-        # 1. Attempt to load the local fine-tuned classifier
+
+        # 1. Load the configured detector backend (distilbert | promptguard2 |
+        #    deberta-pi | ensemble) via the pluggable detector registry. Loads
+        #    once and is shared. Fail-soft unless STRICT_SECURITY=1.
         if os.getenv("SECURED_SYSTEM_MODE", "full-research").lower() != "fast":
-            try:
-                from transformers import pipeline
-                logger.info("Initializing local prompt injection classifier...")
-                from transformers import AutoTokenizer
-                tokenizer = AutoTokenizer.from_pretrained(
-                    "./models/local_prompt_detector"
+            if not TextSanitizer._shared_loaded:
+                from config import settings
+                from sanitizers.detectors import build_detector
+                logger.info(f"Initializing detector backend: {settings.detector_backend} ...")
+                detector, name, error = build_detector(
+                    settings.detector_backend,
+                    promptguard_model=settings.promptguard_model,
+                    deberta_pi_model=settings.deberta_pi_model,
                 )
-                tokenizer.model_input_names = [
-                    n for n in tokenizer.model_input_names
-                    if n != "token_type_ids"
-                ]
-                self.local_classifier = pipeline(
-                    "text-classification",
-                    model="./models/local_prompt_detector",
-                    tokenizer=tokenizer,
-                    device=-1,  # Run on CPU. Set to 0 if CUDA is available.
+                TextSanitizer._shared_classifier = detector
+                TextSanitizer._shared_name = name
+                TextSanitizer._shared_error = error
+                TextSanitizer._shared_loaded = True
+                if detector is not None:
+                    logger.info(f"Detector active: {name}")
+                else:
+                    logger.warning(f"No detector loaded ({error}); using keyword heuristics.")
+
+            self.local_classifier = TextSanitizer._shared_classifier
+            self.detector_name = TextSanitizer._shared_name
+            self.init_error = TextSanitizer._shared_error
+            if self.local_classifier is None and os.getenv("STRICT_SECURITY", "0") == "1":
+                raise RuntimeError(
+                    "STRICT_SECURITY=1: a prompt-injection detector is required "
+                    f"but none loaded: {self.init_error}. "
+                    "Train DistilBERT via scripts/train_local_classifier.py or set DETECTOR_BACKEND."
                 )
-                logger.info("Local prompt injection classifier successfully loaded.")
-            except Exception as e:
-                self.init_error = str(e)
-                if os.getenv("STRICT_SECURITY", "0") == "1":
-                    raise RuntimeError(
-                        "STRICT_SECURITY=1: local prompt injection classifier is required "
-                        f"but failed to load: {e}. Train it via scripts/train_local_classifier.py."
-                    ) from e
-                logger.warning(f"Failed to load local prompt injection classifier: {e}. Falling back to local heuristics.")
 
     @staticmethod
     def _strip_multimodal_markers(text: str) -> str:
@@ -194,19 +205,8 @@ class VisualSanitizer:
                 with open(sidecar_path, "r", encoding="utf-8") as f:
                     ocr_text = f.read().strip()
                 # Also check exif for hidden metadata even when sidecar is present
-                metadata_text = []
-                try:
-                    img = Image.open(image_path)
-                    if hasattr(img, '_getexif') and img._getexif() is not None:
-                        from PIL import ExifTags
-                        exif_data = img._getexif()
-                        for tag, value in exif_data.items():
-                            if tag in ExifTags.TAGS:
-                                tag_name = ExifTags.TAGS[tag]
-                                if isinstance(value, str):
-                                    metadata_text.append(f"{tag_name}: {value}")
-                except Exception:
-                    pass
+                from sanitizers.forensics import extract_metadata_text
+                metadata_text = extract_metadata_text(image_path)
                 if metadata_text:
                     ocr_text += "\n[HIDDEN METADATA]: " + " | ".join(metadata_text)
                 return ocr_text.strip()
@@ -222,19 +222,8 @@ class VisualSanitizer:
                 client = OpenAI(api_key=api_key)
                 
                 # Check EXIF metadata
-                metadata_text = []
-                try:
-                    img = Image.open(image_path)
-                    if hasattr(img, '_getexif') and img._getexif() is not None:
-                        from PIL import ExifTags
-                        exif_data = img._getexif()
-                        for tag, value in exif_data.items():
-                            if tag in ExifTags.TAGS:
-                                tag_name = ExifTags.TAGS[tag]
-                                if isinstance(value, str):
-                                    metadata_text.append(f"{tag_name}: {value}")
-                except Exception:
-                    pass
+                from sanitizers.forensics import extract_metadata_text
+                metadata_text = extract_metadata_text(image_path)
                 
                 ext = os.path.splitext(image_path)[1].lower()
                 mime_type = "image/png"
@@ -279,15 +268,8 @@ class VisualSanitizer:
 
         try:
             img = Image.open(image_path)
-            metadata_text = []
-            if hasattr(img, '_getexif') and img._getexif() is not None:
-                from PIL import ExifTags
-                exif_data = img._getexif()
-                for tag, value in exif_data.items():
-                    if tag in ExifTags.TAGS:
-                        tag_name = ExifTags.TAGS[tag]
-                        if isinstance(value, str):
-                            metadata_text.append(f"{tag_name}: {value}")
+            from sanitizers.forensics import extract_metadata_text
+            metadata_text = extract_metadata_text(image_path)
             try:
                 text = pytesseract.image_to_string(img)
             except Exception:
@@ -306,14 +288,15 @@ class VisualSanitizer:
 
         stegano_flag = False
         try:
-            file_size = os.path.getsize(image_path)
-            if file_size > 5 * 1024 * 1024:
-                stegano_flag = True
+            from config import settings as _settings
+            if _settings.enable_steganalysis:
+                from sanitizers.forensics import chi_square_lsb
+                stego = chi_square_lsb(image_path)
+                stegano_flag = bool(stego.get("suspected"))
+                if stegano_flag:
+                    logger.warning(f"VisualSanitizer: LSB steganography suspected ({stego.get('reason')}).")
         except Exception:
             pass
-
-        if stegano_flag:
-            logger.warning("VisualSanitizer: Possible steganographic payload detected.")
 
         try:
             full_context = self.extract_text(image_path)

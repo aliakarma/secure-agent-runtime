@@ -86,6 +86,37 @@ class Settings:
         # ── Security strictness ───────────────────────────────────────
         self.strict_security: bool = _flag("STRICT_SECURITY", False)
 
+        # ── Detection backend ─────────────────────────────────────────
+        # Which prompt-injection detector the TextSanitizer uses:
+        #   distilbert  — local fine-tuned DistilBERT (default, ships in repo)
+        #   promptguard2 — Meta Llama Prompt Guard 2 (HF: meta-llama/Llama-Prompt-Guard-2-86M)
+        #   deberta-pi  — ProtectAI deberta-v3-base-prompt-injection-v2
+        #   ensemble    — max-pool over the available detectors above
+        # Falls back gracefully to distilbert/keyword if the requested model
+        # is not downloaded (unless STRICT_SECURITY=1).
+        self.detector_backend: str = os.getenv("DETECTOR_BACKEND", "distilbert").strip().lower()
+        self.promptguard_model: str = os.getenv(
+            "PROMPTGUARD_MODEL", "meta-llama/Llama-Prompt-Guard-2-86M"
+        ).strip()
+        self.deberta_pi_model: str = os.getenv(
+            "DEBERTA_PI_MODEL", "protectai/deberta-v3-base-prompt-injection-v2"
+        ).strip()
+        self.detector_threshold: float = float(os.getenv("DETECTOR_THRESHOLD", "0.85"))
+
+        # ── Trust Engine weights (T = αS + βP + γH + δR) ───────────────
+        # Config-driven so the weighting can be tuned / ablated empirically
+        # instead of being hard-coded. Normalised to sum to 1.0 at use sites.
+        self.trust_alpha: float = float(os.getenv("TRUST_ALPHA", "0.25"))  # source reliability
+        self.trust_beta: float = float(os.getenv("TRUST_BETA", "0.25"))    # policy compliance
+        self.trust_gamma: float = float(os.getenv("TRUST_GAMMA", "0.25"))  # historical behaviour
+        self.trust_delta: float = float(os.getenv("TRUST_DELTA", "0.25"))  # retrieval confidence
+        self.trust_high_threshold: float = float(os.getenv("TRUST_HIGH_THRESHOLD", "0.8"))
+        self.trust_medium_threshold: float = float(os.getenv("TRUST_MEDIUM_THRESHOLD", "0.4"))
+
+        # ── Multimodal forensics ──────────────────────────────────────
+        # Enable real LSB steganalysis (chi-square) on uploaded images.
+        self.enable_steganalysis: bool = _flag("ENABLE_STEGANALYSIS", True)
+
     def require_token_enforced(self) -> bool:
         """True when a token must be presented to call protected endpoints."""
         return bool(self.api_token)

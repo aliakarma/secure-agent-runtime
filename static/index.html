@@ -59,6 +59,14 @@
                     <button type="button" data-lang-value="en" aria-pressed="true">EN</button>
                     <button type="button" data-lang-value="ar" aria-pressed="false">العربية</button>
                 </div>
+                <div class="seg-toggle view-switch" id="view-toggle" role="group" aria-label="View">
+                    <button type="button" data-view-value="live" aria-pressed="true">
+                        <i data-lucide="activity" class="seg-icon" aria-hidden="true"></i><span data-i18n="view.live">Live</span>
+                    </button>
+                    <button type="button" data-view-value="research" aria-pressed="false">
+                        <i data-lucide="flask-conical" class="seg-icon" aria-hidden="true"></i><span data-i18n="view.research">Research</span>
+                    </button>
+                </div>
             </div>
 
             <div class="trust-meter-container">
@@ -362,9 +370,39 @@
                     </button>
                 </form>
             </div>
+
+            <!-- ════════════ RESEARCH CONSOLE (hidden until toggled) ════════════ -->
+            <section class="research-view" id="research-view" aria-label="Research console">
+                <div class="research-hero glass-panel">
+                    <div>
+                        <div class="eyebrow" data-i18n="rv.eyebrow">Publication-grade evaluation</div>
+                        <h1 data-i18n="rv.title">Research Console</h1>
+                        <p data-i18n="rv.desc">Threat model, detector benchmarks, adaptive adversary, defense baselines, provenance DAG, and reproducibility — the evidence behind every claim.</p>
+                    </div>
+                    <button id="rv-refresh" class="toolbar-button primary" type="button">
+                        <i data-lucide="refresh-cw" aria-hidden="true"></i><span data-i18n="rv.refresh">Refresh data</span>
+                    </button>
+                </div>
+
+                <div class="research-grid">
+                    <article class="card glass-panel rv-span-2" id="rv-contributions"></article>
+                    <article class="card glass-panel" id="rv-threat"></article>
+                    <article class="card glass-panel" id="rv-detector"></article>
+                    <article class="card glass-panel" id="rv-detector-curves"></article>
+                    <article class="card glass-panel" id="rv-adaptive"></article>
+                    <article class="card glass-panel" id="rv-baselines"></article>
+                    <article class="card glass-panel" id="rv-propagation"></article>
+                    <article class="card glass-panel" id="rv-trust"></article>
+                    <article class="card glass-panel" id="rv-experiments"></article>
+                    <article class="card glass-panel rv-span-2" id="rv-provdag"></article>
+                    <article class="card glass-panel" id="rv-forensics"></article>
+                    <article class="card glass-panel rv-span-2" id="rv-repro"></article>
+                </div>
+            </section>
         </main>
     </div>
 
     <script src="app.js" defer></script>
+    <script src="research.js" defer></script>
 </body>
 </html>

@@ -226,6 +226,131 @@ def get_provenance(session_id: str = "default"):
     return JSONResponse({"session_id": session_id, "provenance_lineage": records})
 
 
+# ── Research / evaluation console endpoints ──────────────────────────
+def _load_artifact(name: str) -> Optional[dict]:
+    """Safely load a JSON artifact from datasets/ (None if absent/invalid)."""
+    import json as _json
+    path = os.path.join("datasets", name)
+    if not _is_within_allowed(path) or not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return _json.load(f)
+    except Exception:
+        return None
+
+
+@app.get("/api/provenance-dag", tags=["provenance"], dependencies=[Depends(require_auth)])
+def get_provenance_dag(session_id: str = "default"):
+    """Provenance as an explicit node/edge DAG for visualisation."""
+    from sanitizers.provenance import provenance_ledger
+    return JSONResponse(provenance_ledger.get_dag(session_id))
+
+
+@app.get("/api/graphchain", tags=["provenance"], dependencies=[Depends(require_auth)])
+def get_graphchain(session_id: str = "default"):
+    """GraphChain structural maps (modality fusion + trust path) for a session."""
+    from trust.graphchain import graphchain
+    return JSONResponse({"session_id": session_id, "maps": graphchain.get_map(session_id)})
+
+
+@app.get("/api/threat-model", tags=["research"], dependencies=[Depends(require_auth)])
+def get_threat_model():
+    """Formal threat model + falsifiable contributions (D1/D2)."""
+    from research_meta import THREAT_MODEL, CONTRIBUTIONS
+    return JSONResponse({"threat_model": THREAT_MODEL, "contributions": CONTRIBUTIONS})
+
+
+@app.get("/api/trust-model", tags=["research"], dependencies=[Depends(require_auth)])
+def get_trust_model():
+    """Config-driven trust-engine weights + formula (D3)."""
+    from sanitizers.trust_engine import trust_engine
+    return JSONResponse(trust_engine.describe())
+
+
+@app.get("/api/detector", tags=["research"], dependencies=[Depends(require_auth)])
+def get_detector():
+    """Active detector backend + its real PR/ROC/calibration metrics (B5)."""
+    from sanitizers.multimodal import TextSanitizer
+    from config import settings
+    ts = TextSanitizer()
+    metrics = _load_artifact("research_metrics.json")
+    return JSONResponse({
+        "active_backend": ts.detector_name,
+        "configured_backend": settings.detector_backend,
+        "threshold": settings.detector_threshold,
+        "init_error": ts.init_error,
+        "metrics": metrics,
+        "metrics_available": metrics is not None,
+        "build_command": "python scripts/build_research_metrics.py",
+    })
+
+
+@app.get("/api/research/baselines", tags=["research"], dependencies=[Depends(require_auth)])
+def get_baselines():
+    """Defense baseline catalogue + offline detector-proxy comparison (B2)."""
+    from research_meta import BASELINE_CATALOG
+    return JSONResponse({
+        "catalog": BASELINE_CATALOG,
+        "comparison": _load_artifact("defense_baseline_comparison.json"),
+        "build_command": "python scripts/run_baseline_defenses.py",
+    })
+
+
+@app.get("/api/research/adaptive", tags=["research"], dependencies=[Depends(require_auth)])
+def get_adaptive():
+    """Per-technique adaptive-attack recall (B3)."""
+    metrics = _load_artifact("research_metrics.json") or {}
+    return JSONResponse({
+        "adaptive_recall": metrics.get("adaptive_recall", {}),
+        "generate_command": "python scripts/generate_adaptive_attacks.py",
+        "build_command": "python scripts/build_research_metrics.py",
+    })
+
+
+@app.get("/api/research/experiments", tags=["research"], dependencies=[Depends(require_auth)])
+def get_experiments():
+    """Aggregate of the real experiment artifacts for the results dashboard."""
+    return JSONResponse({
+        "baseline_vs_secured": _load_artifact("r3_comparison_summary.json"),
+        "ablation": _load_artifact("r4_ablation_summary.json"),
+        "hook_isolation": _load_artifact("r4_hook_isolation_summary.json"),
+        "cross_agent_propagation": _load_artifact("cross_agent_propagation_summary.json"),
+        "trust_consistency": _load_artifact("trust_consistency_summary.json"),
+        "task_accuracy": _load_artifact("task_accuracy_summary.json"),
+        "statistical_significance": _load_artifact("statistical_significance.json"),
+        "multimodal_smoke": _load_artifact("r5_multimodal_smoke_summary.json"),
+    })
+
+
+@app.get("/api/research/forensics", tags=["research"], dependencies=[Depends(require_auth)])
+async def post_forensics(file_path: Optional[str] = None):
+    """Run metadata + LSB steganalysis on a sandboxed image path (B6)."""
+    from sanitizers.forensics import analyse_image
+    resolved = _resolve_safe_path(file_path) if file_path else None
+    if resolved is None:
+        return JSONResponse({"status": "error", "message": "Provide a sandboxed file_path."}, status_code=400)
+    return JSONResponse({"status": "success", "report": analyse_image(resolved)})
+
+
+@app.get("/api/reproducibility", tags=["research"], dependencies=[Depends(require_auth)])
+def get_reproducibility():
+    """Reproducibility manifest + benchmark catalogue + AgentDojo status."""
+    from research_meta import reproducibility_manifest, BENCHMARK_CATALOG
+    try:
+        import sys as _sys
+        _sys.path.insert(0, os.path.join(os.path.dirname(__file__), "scripts"))
+        from agentdojo_adapter import status as _ad_status
+        ad = _ad_status()
+    except Exception as e:
+        ad = {"agentdojo": False, "error": str(e)}
+    return JSONResponse({
+        "manifest": reproducibility_manifest(),
+        "benchmarks": BENCHMARK_CATALOG,
+        "agentdojo": ad,
+    })
+
+
 @app.get("/dashboard", tags=["demo"])
 def dashboard() -> RedirectResponse:
     """Redirect to the interactive dashboard shell under /static/."""
@@ -379,31 +504,45 @@ async def run_travel_multimodal_endpoint(
             logger.error(f"Pre-extraction failed for {modality}: {e}")
 
     # ── Step 2: Pre-scan raw inputs for injection (ingestion boundary) ──
-    # This is the high-recall detection gate for multimodal input. The RAW
-    # user text and RAW extracted content are each classified separately
-    # (clean, no structural markers → no OOD false positives). Because this
-    # runs here, the per-node hooks can safely skip re-classifying the noisy
-    # assembled prompt (see input_pre_scanned below).
+    # The RAW user text and RAW extracted content are each classified
+    # separately (clean, no structural markers → no OOD false positives). This
+    # establishes trust state at ingestion AND emits an auditable alert with the
+    # detector + confidence.
     #
-    # Register an injection only on a HIGH-confidence flag (>= 0.95).
-    # Moderate-confidence flags (0.85-0.95) are often false positives on
-    # short, command-like benign sentences; the deterministic keyword filter
-    # still catches obvious injections regardless of threshold.
-    PRESCAN_HIGH_CONFIDENCE = 0.95
+    # NOTE on blocking posture: the boundary intentionally does NOT hard-reject
+    # on this classifier alone. The fine-tuned DistilBERT has 100% recall and
+    # 0% FPR on plain benign, but ~65% FPR on "hard negatives" (legitimate
+    # corrective phrasing like "ignore my earlier seat request"), and injections
+    # vs. hard-negatives are not separable by confidence. A decisive boundary
+    # block therefore belongs behind a higher-precision detector (e.g. Llama
+    # Prompt Guard 2 / DeBERTa-v3-PI). Until then we register + degrade trust
+    # and let the in-graph trust/masking layers act — graceful, not brittle.
+    # The real fix vs. the previous code: the in-graph hooks no longer downgrade
+    # to a 9-keyword filter for multimodal input (see sanitizers/hooks.py), so a
+    # paraphrased keyword-free injection is now classified in-graph too.
+    from sanitizers.multimodal import CONFIDENCE_THRESHOLD
+    import hashlib as _hashlib
+
+    PRESCAN_REGISTER_CONFIDENCE = 0.95  # conservative: only nudge trust on strong flags
 
     def _prescan(label: str, content: str) -> None:
         if not content or not content.strip():
             return
         verdict = text_sanitizer.sanitize(content)
-        if verdict.is_malicious and verdict.confidence >= PRESCAN_HIGH_CONFIDENCE:
-            trust_engine.register_injection(session_id)
-            logger.warning(f"Ingestion pre-scan: HIGH confidence injection in {label}: {verdict.reason}")
+        if verdict.is_malicious and verdict.confidence >= PRESCAN_REGISTER_CONFIDENCE:
+            # Dedup-safe hash so the same content flagged again in-graph is not
+            # double-counted (which would over-collapse trust to LOW).
+            content_hash = _hashlib.sha256(content.encode("utf-8", "replace")).hexdigest()[:16]
+            trust_engine.register_injection(session_id, content_hash)
+            logger.warning(f"Ingestion pre-scan: injection in {label}: {verdict.reason}")
             push_dashboard_event("SECURITY_ALERT", {
                 "session_id": session_id,
                 "phase": "pre-scan",
                 "agent": label,
                 "message": f"Injection detected in {label}: {verdict.reason}",
-                "severity": "WARNING",
+                "severity": "CRITICAL",
+                "detector": "DistilBERT",
+                "confidence": round(float(verdict.confidence), 3),
             })
         elif verdict.is_malicious:
             logger.info(f"Ingestion pre-scan: moderate confidence ({verdict.confidence:.3f}) in {label}, not registering")
@@ -462,13 +601,19 @@ async def run_travel_multimodal_endpoint(
     )
         
     push_dashboard_event("GRAPH_END", {"session_id": session_id, "status": "completed"})
-    
+
     return JSONResponse({
         "status": "completed",
         "messages": messages,
         "memory_used": result.get("memory", []),
         "security_blocked": security_blocked,
         "trust_score": result.get("trust_score", 1.0),
+        "detector": {
+            "name": "DistilBERT+keyword",
+            "stage": "ingestion-boundary + in-graph",
+            "modality": modality,
+            "threshold": CONFIDENCE_THRESHOLD,
+        },
         "processing_time_ms": round(elapsed_ms, 2)
     })
 

@@ -72,29 +72,33 @@ def secure_agent_node(agent_name, agent_runnable):
             clean_for_scan = _re.sub(r'\b[a-zA-Z]:[\\/][^:\*\?"<>\|]+?\.[a-zA-Z0-9]{3,4}\b', '[FILEPATH]', clean_for_scan)
             clean_for_scan = _re.sub(r'\bdatasets[\\/][A-Za-z0-9_.\-\\/]+', '[FILEPATH]', clean_for_scan)
 
-            # When the raw inputs were already classified at the ingestion
-            # boundary (multimodal endpoint), avoid re-running the OOD-prone
-            # DistilBERT classifier on the assembled enriched prompt — it
-            # false-positives on concatenated structured text. Deterministic
-            # keyword detection still runs; the trust state established at
-            # ingestion already reflects any real injection.
-            if state.get("input_pre_scanned"):
-                is_mal = text_sanitizer._fast_heuristic_filter(clean_for_scan)
+            # The classifier is the high-recall detection gate and must run on
+            # EVERY path. A previous revision downgraded to a 9-keyword filter
+            # whenever raw inputs were "pre-scanned at ingestion" — a trivial
+            # bypass: any paraphrased, keyword-free multimodal injection sailed
+            # through the in-graph layer. Structural markers, provenance tags
+            # and file paths are already stripped above (and again inside
+            # TextSanitizer.sanitize), so the classifier sees clean natural
+            # language here too. The deterministic keyword filter is OR'd in as
+            # a defense-in-depth net for the rare classifier miss.
+            res = text_sanitizer.sanitize(clean_for_scan)
+            if not res.is_malicious and text_sanitizer._fast_heuristic_filter(clean_for_scan):
                 res = SanitizerResult(
-                    is_malicious=is_mal,
-                    reason="Deterministic re-scan (raw inputs pre-scanned at ingestion).",
-                    confidence=0.9 if is_mal else 1.0,
+                    is_malicious=True,
+                    reason="Deterministic keyword match (classifier below threshold).",
+                    confidence=0.9,
                 )
-            else:
-                res = text_sanitizer.sanitize(clean_for_scan)
 
             if res.is_malicious:
                 from dashboard_events import push_dashboard_event
                 push_dashboard_event("SECURITY_ALERT", {
+                    "session_id": session_id,
                     "phase": 1,
                     "agent": agent_name,
                     "message": f"Prompt injection detected in input: {res.reason}",
-                    "severity": "CRITICAL"
+                    "severity": "CRITICAL",
+                    "detector": "DistilBERT+keyword",
+                    "confidence": round(float(getattr(res, "confidence", 0.0) or 0.0), 3),
                 })
             
             # Update Trust Engine (skip if ablated)
@@ -161,6 +165,7 @@ def secure_tool_wrapper(func):
             logger.warning(f"Hook 2 (Policy Enforcement): Blocked {tool_name} due to LOW trust tier.")
             from dashboard_events import push_dashboard_event
             push_dashboard_event("SECURITY_ALERT", {
+                "session_id": session_id,
                 "phase": 2,
                 "agent": tool_name,
                 "message": f"Blocked tool execution due to LOW trust tier ({tier}).",
@@ -171,6 +176,7 @@ def secure_tool_wrapper(func):
             logger.warning(f"Hook 2 (Policy Enforcement): Blocked {tool_name} due to MEDIUM trust tier. Only read-only actions allowed.")
             from dashboard_events import push_dashboard_event
             push_dashboard_event("SECURITY_ALERT", {
+                "session_id": session_id,
                 "phase": 2,
                 "agent": tool_name,
                 "message": f"Blocked write tool execution due to MEDIUM trust tier ({tier}). Only read-only actions allowed.",
@@ -198,6 +204,7 @@ def secure_tool_wrapper(func):
                 logger.warning(f"Security Alert at Hook 2 ({tool_name}_Pre_Tool): {res.reason}")
                 from dashboard_events import push_dashboard_event
                 push_dashboard_event("SECURITY_ALERT", {
+                    "session_id": session_id,
                     "phase": 2,
                     "agent": tool_name,
                     "message": f"Suspicious tool arguments detected and blocked: {res.reason}",
@@ -223,6 +230,7 @@ def secure_tool_wrapper(func):
                 logger.warning(f"Security Alert at Hook 2 ({tool_name}_Pre_Tool): {res.reason}")
                 from dashboard_events import push_dashboard_event
                 push_dashboard_event("SECURITY_ALERT", {
+                    "session_id": session_id,
                     "phase": 2,
                     "agent": tool_name,
                     "message": f"Suspicious tool arguments detected and blocked: {res.reason}",
@@ -262,6 +270,7 @@ def secure_tool_wrapper(func):
                     trust_engine.register_injection(session_id)
                 
                 push_dashboard_event("SECURITY_ALERT", {
+                    "session_id": session_id,
                     "phase": 3,
                     "agent": tool_name,
                     "message": f"Suspicious tool output blocked: {validation.reason}",
@@ -311,17 +320,16 @@ def secure_routing_hook(supervisor_runnable):
                     # Remove absolute or relative file paths to prevent OOD classifier false positives
                     clean_for_scan = _re.sub(r'\b[a-zA-Z]:[\\/][^:\*\?"<>\|]+?\.[a-zA-Z0-9]{3,4}\b', '[FILEPATH]', clean_for_scan)
                     clean_for_scan = _re.sub(r'\bdatasets[\\/][A-Za-z0-9_.\-\\/]+', '[FILEPATH]', clean_for_scan)
-                    # See Hook 1: skip the OOD-prone classifier re-scan when the
-                    # raw inputs were already classified at ingestion.
-                    if state.get("input_pre_scanned"):
-                        is_mal = text_sanitizer._fast_heuristic_filter(clean_for_scan)
+                    # See Hook 1: the classifier runs on every path. Markers are
+                    # stripped above and inside sanitize(), so no OOD downgrade
+                    # to a keyword-only filter — that was a multimodal bypass.
+                    res = text_sanitizer.sanitize(clean_for_scan)
+                    if not res.is_malicious and text_sanitizer._fast_heuristic_filter(clean_for_scan):
                         res = SanitizerResult(
-                            is_malicious=is_mal,
-                            reason="Deterministic re-scan (raw inputs pre-scanned at ingestion).",
-                            confidence=0.9 if is_mal else 1.0,
+                            is_malicious=True,
+                            reason="Deterministic keyword match (classifier below threshold).",
+                            confidence=0.9,
                         )
-                    else:
-                        res = text_sanitizer.sanitize(clean_for_scan)
                 else:
                     # For AI/Tool messages: the DistilBERT classifier was fine-tuned
                     # on user-side prompts and misclassifies agent output as OOD.
@@ -348,14 +356,18 @@ def secure_routing_hook(supervisor_runnable):
                 if res.is_malicious and source_is_user:
                     from dashboard_events import push_dashboard_event
                     push_dashboard_event("SECURITY_ALERT", {
+                        "session_id": session_id,
                         "phase": 5,
                         "agent": "Supervisor",
                         "message": f"Prompt injection detected in user input: {res.reason}",
-                        "severity": "CRITICAL"
+                        "severity": "CRITICAL",
+                        "detector": "DistilBERT+keyword",
+                        "confidence": round(float(getattr(res, "confidence", 0.0) or 0.0), 3),
                     })
                 elif res.is_malicious and not source_is_user:
                     from dashboard_events import push_dashboard_event
                     push_dashboard_event("SECURITY_ALERT", {
+                        "session_id": session_id,
                         "phase": 5,
                         "agent": "Supervisor",
                         "message": f"Possible agent compromise detected in output: {res.reason}",

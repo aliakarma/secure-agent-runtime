@@ -34,11 +34,40 @@ class TrustEngine:
         self._seen_hashes: "OrderedDict[str, set]" = OrderedDict()
         self._max_sessions = max_sessions or settings.max_tracked_sessions
 
-        # Formula Weights
-        self.alpha = 0.25  # Source reliability
-        self.beta = 0.25   # Policy compliance
-        self.gamma = 0.25  # Historical behavior
-        self.delta = 0.25  # Retrieval confidence
+        # Formula weights (config-driven so they can be tuned / ablated).
+        # Normalised to sum to 1.0 so the score stays in [0, 1] regardless of
+        # the raw values an operator supplies.
+        raw = [settings.trust_alpha, settings.trust_beta, settings.trust_gamma, settings.trust_delta]
+        total = sum(raw) or 1.0
+        self.alpha = raw[0] / total  # Source reliability   S(x)
+        self.beta = raw[1] / total   # Policy compliance     P(x)
+        self.gamma = raw[2] / total  # Historical behavior   H(x)
+        self.delta = raw[3] / total  # Retrieval confidence  R(x)
+        self.high_threshold = settings.trust_high_threshold
+        self.medium_threshold = settings.trust_medium_threshold
+
+    def describe(self) -> dict:
+        """Expose the trust model for the dashboard / reproducibility."""
+        return {
+            "formula": "T(x) = αS(x) + βP(x) + γH(x) + δR(x)",
+            "weights": {
+                "alpha_source": round(self.alpha, 4),
+                "beta_policy": round(self.beta, 4),
+                "gamma_history": round(self.gamma, 4),
+                "delta_retrieval": round(self.delta, 4),
+            },
+            "tiers": {
+                "HIGH": f">= {self.high_threshold}",
+                "MEDIUM": f">= {self.medium_threshold}",
+                "LOW": f"< {self.medium_threshold}",
+            },
+            "components": {
+                "S(x)": "source reliability (system=1.0, user/agent=0.5)",
+                "P(x)": "policy compliance (malicious=0, else 1)",
+                "H(x)": "historical behaviour (1.0 - 0.5 per session injection)",
+                "R(x)": "retrieval confidence (RAG sources only)",
+            },
+        }
 
     def _touch(self, session_id: str) -> None:
         """Mark a session most-recently-used and evict the oldest if over cap.
@@ -98,9 +127,9 @@ class TrustEngine:
         return round(trust_score, 2)
 
     def determine_tier(self, trust_score: float) -> str:
-        if trust_score >= 0.8:
+        if trust_score >= self.high_threshold:
             return "HIGH"
-        elif trust_score >= 0.4:
+        elif trust_score >= self.medium_threshold:
             return "MEDIUM"
         else:
             return "LOW"

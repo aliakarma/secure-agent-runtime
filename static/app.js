@@ -104,6 +104,12 @@ const I18N = {
         'brand.title': 'Defense Console',
         'theme.light': 'Light',
         'theme.dark': 'Dark',
+        'view.live': 'Live',
+        'view.research': 'Research',
+        'rv.eyebrow': 'Publication-grade evaluation',
+        'rv.title': 'Research Console',
+        'rv.desc': 'Threat model, detector benchmarks, adaptive adversary, defense baselines, provenance DAG, and reproducibility — the evidence behind every claim.',
+        'rv.refresh': 'Refresh data',
         'trust.heading': 'System Trust State',
         'trust.tierPrefix': 'TIER:',
         'status.live': 'Live',
@@ -249,6 +255,12 @@ const I18N = {
         'brand.title': 'لوحة الدفاع',
         'theme.light': 'فاتح',
         'theme.dark': 'داكن',
+        'view.live': 'مباشر',
+        'view.research': 'البحث',
+        'rv.eyebrow': 'تقييم بمستوى النشر العلمي',
+        'rv.title': 'وحدة البحث',
+        'rv.desc': 'نموذج التهديد، ومقاييس الكاشف، والخصم التكيّفي، والدفاعات المرجعية، ورسم المنشأ، وقابلية إعادة الإنتاج — الدليل وراء كل ادعاء.',
+        'rv.refresh': 'تحديث البيانات',
         'trust.heading': 'حالة ثقة النظام',
         'trust.tierPrefix': 'المستوى:',
         'status.live': 'مباشر',
@@ -651,13 +663,13 @@ function severityClass(severity) {
     return 'critical';
 }
 
-function renderAlertItem(phase, agent, message, severity) {
+function renderAlertItem(phase, agent, message, severity, detector, confidence) {
     const sev = severityClass(severity);
     const alertItem = document.createElement('div');
     // 'critical' uses the base red styling; warning/info get modifier classes
     alertItem.className = `alert-item${sev !== 'critical' ? ` ${sev}` : ''}`;
     alertItem.dataset.severity = sev;
-    alertItem.dataset.search = `${phase} ${agent} ${message} ${severity}`.toLowerCase();
+    alertItem.dataset.search = `${phase} ${agent} ${message} ${severity} ${detector || ''}`.toLowerCase();
 
     const header = document.createElement('div');
     header.className = 'alert-item-header';
@@ -678,6 +690,18 @@ function renderAlertItem(phase, agent, message, severity) {
     header.appendChild(time);
     alertItem.appendChild(header);
     alertItem.appendChild(body);
+
+    // Detector provenance: which model flagged this, and how confidently.
+    // Makes the detection layer auditable instead of opaque.
+    if (detector) {
+        const meta = document.createElement('div');
+        meta.className = 'alert-detector';
+        const hasConf = typeof confidence === 'number' && !Number.isNaN(confidence);
+        meta.textContent = hasConf
+            ? `${detector} · ${(confidence * 100).toFixed(1)}%`
+            : String(detector);
+        alertItem.appendChild(meta);
+    }
     return alertItem;
 }
 
@@ -729,11 +753,11 @@ function showFeedEmptyState() {
     refreshIcons();
 }
 
-function addSecurityAlert(phase, agent, message, severity) {
+function addSecurityAlert(phase, agent, message, severity, detector, confidence) {
     if (!securityFeed) return;
     securityFeed.querySelector('.empty-state')?.remove();
 
-    const alertItem = renderAlertItem(phase, agent, message, severity);
+    const alertItem = renderAlertItem(phase, agent, message, severity, detector, confidence);
     securityFeed.prepend(alertItem);
 
     while (securityFeed.querySelectorAll('.alert-item').length > MAX_ALERT_ITEMS) {
@@ -886,7 +910,7 @@ function processEvent(event) {
 
         case 'SECURITY_ALERT':
             blockedEvents += 1;
-            addSecurityAlert(data.phase, data.agent, data.message, data.severity);
+            addSecurityAlert(data.phase, data.agent, data.message, data.severity, data.detector, data.confidence);
             addTrace(t('trace.securityBlock', { phase: data.phase }));
             break;
 

@@ -1,0 +1,32 @@
+{
+  "detector": "distilbert",
+  "threshold": 0.85,
+  "metric": "offline detector-proxy (not end-to-end ASR)",
+  "note": "End-to-end ASR vs. utility: run scripts/run_baseline_vs_secured.py or AgentDojo.",
+  "rows": [
+    {
+      "defense": "no_defense",
+      "attack_detection_rate": 1.0,
+      "benign_fpr": 0.1354,
+      "hard_negative_fpr": 0.65
+    },
+    {
+      "defense": "spotlight_delimit",
+      "attack_detection_rate": 1.0,
+      "benign_fpr": 1.0,
+      "hard_negative_fpr": 1.0
+    },
+    {
+      "defense": "spotlight_datamark",
+      "attack_detection_rate": 1.0,
+      "benign_fpr": 1.0,
+      "hard_negative_fpr": 1.0
+    },
+    {
+      "defense": "spotlight_encode",
+      "attack_detection_rate": 1.0,
+      "benign_fpr": 1.0,
+      "hard_negative_fpr": 1.0
+    }
+  ]
+}

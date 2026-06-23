@@ -24,6 +24,24 @@ def load_csv(path: Path) -> list:
             rows.append(row)
     return rows
 
+def cohen_h(p1: float, p2: float) -> float:
+    """Cohen's h effect size for the difference between two proportions."""
+    import math
+    phi1 = 2 * math.asin(math.sqrt(max(0.0, min(1.0, p1))))
+    phi2 = 2 * math.asin(math.sqrt(max(0.0, min(1.0, p2))))
+    return round(abs(phi1 - phi2), 4)
+
+
+def effect_magnitude(h: float) -> str:
+    if h < 0.2:
+        return "negligible"
+    if h < 0.5:
+        return "small"
+    if h < 0.8:
+        return "medium"
+    return "large"
+
+
 def bootstrap_ci(data: list, n_iterations: int = 10000) -> tuple:
     if not data:
         return 0.0, 0.0
@@ -170,9 +188,24 @@ def run_tests():
                 "mean": round(float(np.mean(sec_benign_outcomes)) * 100, 2) if sec_benign_outcomes else 0.0,
                 "ci_95": sec_tar_ci
             }
-        }
+        },
+        "effect_sizes": stats_report_effect
     }
     
+    # 4. Effect sizes (proportion differences are what reviewers ask for).
+    base_asr_p = float(np.mean(base_asr_list)) if base_asr_list else 0.0
+    sec_asr_p = float(np.mean(sec_asr_list)) if sec_asr_list else 0.0
+    asr_h = cohen_h(base_asr_p, sec_asr_p)
+    # Odds ratio from the discordant McNemar cells (b/c), Haldane-corrected.
+    odds_ratio = round(((b + 0.5) / (c + 0.5)), 4)
+    stats_report_effect = {
+        "asr_reduction_pp": round((base_asr_p - sec_asr_p) * 100, 2),
+        "cohen_h": asr_h,
+        "cohen_h_magnitude": effect_magnitude(asr_h),
+        "mcnemar_odds_ratio": odds_ratio,
+    }
+    print(f"Effect size — Cohen's h={asr_h} ({effect_magnitude(asr_h)}), OR={odds_ratio}")
+
     stats_json_path = DATASETS_DIR / "statistical_significance.json"
     with open(stats_json_path, "w", encoding="utf-8") as f:
         json.dump(stats_report, f, indent=4)

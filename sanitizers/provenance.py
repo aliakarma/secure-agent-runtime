@@ -64,9 +64,36 @@ class ProvenanceLedger:
                 "trust_score": r.trust_score,
                 "trust_tier": r.trust_tier,
                 "sanitizers": r.sanitizers_applied,
-                "parent_records": r.trust_lineage
+                "parent_records": r.trust_lineage,
             })
         return lineage
+
+    def get_dag(self, session_id: str) -> Dict[str, Any]:
+        """Return the provenance as an explicit node/edge DAG.
+
+        Each record's ``trust_lineage`` holds its *immediate* parent id(s),
+        so the union of (parent -> child) pairs is a directed acyclic graph
+        of how trust and content flowed through the run — not a flat list.
+        """
+        session_records = self.get_records(session_id)
+        nodes: List[Dict[str, Any]] = []
+        edges: List[Dict[str, str]] = []
+        known = {r.record_id for r in session_records}
+        for r in session_records:
+            nodes.append({
+                "id": r.record_id,
+                "short_id": r.record_id[:8],
+                "timestamp": r.timestamp,
+                "source": r.source_origin,
+                "modality": r.modality,
+                "trust_score": r.trust_score,
+                "trust_tier": r.trust_tier,
+                "sanitizers": r.sanitizers_applied,
+            })
+            for parent in r.trust_lineage:
+                if parent in known:
+                    edges.append({"from": parent, "to": r.record_id})
+        return {"session_id": session_id, "nodes": nodes, "edges": edges}
 
     def clear(self):
         self.records.clear()
@@ -90,11 +117,14 @@ class ProvenanceAgent:
         Record the data ingestion and generate a provenance tag.
         """
         raw = raw_content if raw_content is not None else content
-        
-        # Get prior record IDs in this session to build the lineage trail
+
+        # Build a real DAG edge: the new record's parent is the *immediately
+        # preceding* record in the session (a lineage chain), not the entire
+        # history. This makes trust_lineage a set of parent edges so the
+        # ledger is a directed acyclic graph rather than a flat list.
         prior_records = self.ledger.get_records(session_id)
-        trust_lineage = [r.record_id for r in prior_records]
-        
+        trust_lineage = [prior_records[-1].record_id] if prior_records else []
+
         record = ProvenanceRecord(
             session_id=session_id,
             source_origin=source,

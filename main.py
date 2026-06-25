@@ -313,6 +313,7 @@ def get_experiments():
     """Aggregate of the real experiment artifacts for the results dashboard."""
     return JSONResponse({
         "baseline_vs_secured": _load_artifact("r3_comparison_summary.json"),
+        "adaptive_adversary": _load_artifact("r3_adaptive_comparison_summary.json"),
         "ablation": _load_artifact("r4_ablation_summary.json"),
         "hook_isolation": _load_artifact("r4_hook_isolation_summary.json"),
         "cross_agent_propagation": _load_artifact("cross_agent_propagation_summary.json"),

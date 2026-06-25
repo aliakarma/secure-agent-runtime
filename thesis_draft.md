@@ -1,26 +1,65 @@
 # Securing Autonomous Multi-Agent Systems: A Foundational Architecture and Vulnerability Baseline
 
-> **Reproducibility notice.** All empirical figures in this document were
-> regenerated on 2026-06-13 under the corrected evaluation pipeline documented
-> in [`docs/remediation_status.md`](docs/remediation_status.md). The evaluation
-> uses a de-circularized judge (`scripts/judge.py`), keyword-free attack
-> variants, hard-negative benign cases, and a trained DistilBERT classifier
-> (66M parameters). All results are derived from live LLM execution (GPT-4o-mini)
-> with deterministic seeding (seed=42) and no attack-ID-aware logic.
+> **Reproducibility notice.** All empirical figures were regenerated on
+> 2026-06-25 under a **deterministic, offline evaluation harness**
+> (`DETERMINISTIC_AGENT=1`): a zero-resistance "susceptible-model" oracle
+> (`agents/deterministic_agent.py`) replaces the live LLM, so results are fully
+> reproducible without an API key and every blocked attack is attributable to the
+> *defense* rather than to a base model's safety training. Detection uses the
+> pluggable detector layer (`sanitizers/detectors.py`) with **DeBERTa-PI**
+> (`protectai/deberta-v3-base-prompt-injection`) as the default backend, running
+> on GPU when available (~7 ms/call on an RTX 3050; DistilBERT remains a CPU-only
+> fallback). The judge (`scripts/judge.py`) is deterministic (canary + behavioural
+> patterns, no LLM, no attack-ID awareness); empty/errored trials are excluded
+> from ASR and Task Accuracy Retention measures real benign task completion.
+> **Honesty note:** the headline robustness figure is the adaptive-adversary
+> residual (§10.1); the 0% operating points are *pattern-coupled* with the oracle
+> and are reported as bounds, not guarantees.
 
 ## Abstract
 The rapid progression of Large Language Models (LLMs) and Vision-Language Models (VLMs) has catalyzed the transition from passive conversational assistants to autonomous, stateful multi-agent systems—known as Agentic AI. While this transition unlocks major automation capabilities by allowing agents to recursively execute external tools and access long-term memory, it exposes them to critical vulnerabilities, such as Direct Prompt Injections, Indirect Prompt Injections (e.g., Tool and RAG poisoning), and the "Confused Deputy" problem. Traditional security mechanisms, such as static input filtering and monomodal system prompt tuning, are insufficient to defend against semantically fluid and cross-modal attacks without breaking execution flows.
 
 In this research, we present the design, implementation, and empirical evaluation of the **Secure Agent Runtime**, a security-first orchestration environment built on LangGraph. The framework introduces a defense-in-depth architecture consisting of an **eight-phase security pipeline** organized into five coordinated layers:
 1. **Security Interception Hooks (8 Phases):** A multi-stage middleware wrapping execution paths with eight distinct security phases: (1) Pre-LLM input classification, (2) Pre-Tool argument scanning with MCP sandboxing, (3) Post-Tool output validation, (4) Pre-Memory RAG defense, (5) Inter-Agent routing validation, (6) Three-Tier Policy Enforcement, (7) Pre-LLM Context Sanitization with regex-based unsafe span removal, and (8) Output Validation with recovery loops.
-2. **Multimodal Sanitization Suite:** Specialized sanitizer agents (Text, Visual/EXIF, Audio/Whisper, Video/OpenCV, RAG, and Tool Output) using local DistilBERT classification and media decoders to strip malicious payloads across four modalities (text, image, audio, video).
+2. **Multimodal Sanitization Suite:** Specialized sanitizer agents (Text, Visual/EXIF + steganalysis, Audio/Whisper, Video/OpenCV, RAG, and Tool Output) using a pluggable transformer classifier (default **DeBERTa-PI**, GPU-accelerated) and local media decoders (Tesseract OCR, Whisper, OpenCV, a corrected chi-square LSB steganalysis) to strip malicious payloads across four modalities (text, image, audio, video).
 3. **Dynamic Trust Engine:** A session-based tracking system calculating real-time trust scores $T(x)$ based on source reliability, history, and policy compliance, with content-hash-based injection deduplication to prevent trust cascade from multi-hook scanning of the same message, enforcing automated capability degradation via a Three-Tier Policy (HIGH/MEDIUM/LOW trust).
 4. **Stateful Provenance Ledger:** A metadata tracking system that constructs Directed Acyclic Graphs (DAG) of the data flow and prepends secure provenance tags to the LLM reasoning context window.
-5. **Output Validation and Self-Correction:** A secondary LLM agent ("Agent B") that checks responses for policy violations and triggers up to three reinjection recovery retries before escalating to human-in-the-loop validation.
+5. **Output Validation and Self-Correction:** A **deterministic** output validator ("Agent B" — regex/keyword based, *not* an LLM) that checks responses for persona adoption, PII/credential leakage, and system-prompt disclosure, and triggers up to three reinjection recovery retries before escalating to human-in-the-loop validation.
 
-To demonstrate the efficacy of our framework, we subjected the runtime to a Phase R3 matched-pair evaluation over 196 total requests (100 attacks across 5 families and 96 benign queries). The fully secured configuration reduced the baseline Attack Success Rate (ASR) from 8.0\% to 0.0\% (McNemar $\chi^2=6.125$, $p=0.0078$), achieving perfect recall against all attack families with zero false positives (FPR = 0.0\%, F1 = 100\%). Three structural engineering contributions made this possible: (1) JSON structural unrolling, which extracts string leaf values from tool outputs before DistilBERT classification to prevent OOD false positives on JSON syntax; (2) a targeted keyword heuristic for output validation that replaces the classifier (trained on user-side prompts) with domain-appropriate persona-adoption detection; and (3) content-hash-based injection deduplication in the Trust Engine, which prevents the same user message from registering multiple injections when scanned by successive hooks (Supervisor + agent node), avoiding false trust cascades from MEDIUM to LOW on classifier false positives. GPT-4o-mini's native safety training accounts for the moderate 8.0\% baseline ASR; the security middleware eliminates the remaining gap. A three-configuration ablation study (A/B/C) confirms the necessity of defence-in-depth: input-side-only defences reduce ASR from 8.0\% to 2.0\%, while full output-side validation achieves 0.0\%. A regex-only baseline comparison (66\% ASR, 34\% recall) demonstrates the incremental value of the learned classifier over simple pattern matching.
+To demonstrate the efficacy of our framework we use a **deterministic offline
+evaluation harness**: a zero-resistance "susceptible-model" oracle replaces the
+live LLM so that (i) results are fully reproducible without an API key and (ii)
+every blocked attack is attributable to the *defense* removing the malicious
+directive rather than to a base model's intrinsic safety training. Empty or
+errored trials are excluded from ASR, and Task Accuracy Retention measures real
+benign task completion (not merely the absence of a rejection marker).
 
-Additionally, a comprehensive end-to-end multimodal stress test suite of 154 tests (136 unit tests + 18 live API tests) verified that benign prompts in all four modalities (text, image, audio, video) pass through cleanly (trust $\geq$ 0.75, security\_blocked = false), while prompt injections embedded in every modality are correctly intercepted (security\_blocked = true, trust $\leq$ 0.50). This end-to-end validation covers arbitrary user file uploads—not just dashboard presets—confirming the system works on real-world inputs.
+Our headline result is against an **adaptive adversary** of 600 obfuscated
+attacks (base64, leetspeak, Unicode homoglyphs), evaluated against an oracle that
+decodes the obfuscation to model a capable LLM. The secured configuration reduces
+ASR from a baseline of **60.0\%** to **16.8\%** (95\% Wilson CI [14.0, 20.0]\%;
+FPR 0.0\%, TAR 100\%, F1 90.8\%) — a 3.5$\times$ reduction. The residual is
+concentrated in obfuscated indirect-injection (30\%), tool-misuse (27\%) and
+memory-poisoning (25\%): the defense scans raw (un-normalised) inputs, so encoded
+directives can slip past detection. Adding an **input-normalisation** layer
+(base64/leetspeak/homoglyph decoding before detection) drives this residual to
+0.0\% (95\% CI [0.0, 0.64]\%) at unchanged 0\% FPR / 100\% TAR; we report this 0\%
+as a *pattern-coupled* ablation (the defense and oracle share one decoder) and
+keep the 16.8\% no-normalisation figure as the conservative robustness claim,
+with novel encodings (ROT13, hex, payload-splitting) identified as the open
+residual and future work.
+
+On the in-distribution **base benchmark** (100 directive-form attacks across 5
+families, 96 benign), the secured configuration reduces ASR from 74.0\% to 0.0\%
+(McNemar $\chi^2=26.0$, $p<10^{-6}$, Cohen's $h$ medium). We explicitly caution
+that this 0\% is *pattern-coupled*: the oracle complies via the same imperative
+directive forms that the pre-LLM enforcement layer strips, so it bounds
+in-distribution directive attacks rather than guaranteeing robustness — which is
+why the adaptive number above is the load-bearing claim. The base benchmark is
+fully neutralised on direct prompt-injection and role-override; the adaptive
+residual shows where work remains.
+
+Additionally, an offline unit suite plus a live-API multimodal stress suite cover all four modalities (text, image, audio, video). The offline tests pass deterministically; the live-API tests exercise the real LLM and are non-deterministic (a few intermittently flag benign images), so we report the suite as offline-green with documented live-LLM flakiness rather than a single pass-rate number. The stress suite covers arbitrary user file uploads, not just dashboard presets.
 
 ## 1. Introduction: The Shift to Agentic AI
 The evolution of Large Language Models (LLMs) has transitioned from passive, single-turn conversational interfaces to autonomous, stateful systems known as "Agentic AI." Unlike traditional models that merely generate text, AI agents are designed to execute complex, multi-step tasks by utilizing external tools, APIs, and persistent memory. While this shift unlocks significant operational capabilities—such as autonomous travel booking, financial analysis, and code generation—it simultaneously introduces profound security vulnerabilities. An agent that can interact with the external world is susceptible to new vectors of attack, including prompt injection, tool hijacking, and data poisoning. 
@@ -69,16 +108,23 @@ The threat model targeted the agentic system across six primary vectors:
 To facilitate testing, the mock tools (`search_flights` and `reserve_hotel`) were intentionally poisoned. When queried with specific trigger words, they returned JSON payloads containing malicious system overrides rather than standard API responses.
 
 ### 4.2 Preliminary Automated Evaluation and Baseline Metrics
-A preliminary automated evaluation framework was developed using an "LLM-as-a-judge" paradigm. The framework systematically deployed a small pilot dataset of 21 targeted attacks against the baseline agent and mathematically scored the results.
-
-The pilot evaluation yielded a baseline **Attack Success Rate (ASR) of 19.05%**, with a **100% failure rate against Indirect Prompt Injections (IPI)** in that early setup. 
+The evaluation framework is a **deterministic, rule-based judge**
+(`scripts/judge.py`) — *not* an LLM-as-a-judge — that scores a response as
+compromised only on compliance evidence (propagation canaries the attack
+instructs the agent to emit, or behavioural-compliance patterns with prompt-echo
+suppression), avoiding the circularity and non-determinism of semantic LLM
+judging (full description in §17). Against the **vulnerable baseline** (all
+wrappers disabled), the deterministic harness records an Attack Success Rate of
+**74.0%** on the directive-form benchmark and **60.0%** on the 600-attack adaptive
+(obfuscated) set — establishing the quantitative control against which the layered
+defenses are measured.
 
 ### 4.3 The Confused Deputy Vulnerability
 The 100% success rate of Indirect Prompt Injections mathematically demonstrates the most dangerous vulnerability inherent in Agentic AI: **The Confused Deputy Problem**. 
 
 In traditional software, execution flows and data flows are strictly separated. In LLM-based architectures, the instructions (the system prompt) and the data (the outputs from tools and memory) are concatenated into a single text stream for processing. Because the baseline agent lacks strict Trust Boundaries, it implicitly trusts the data returned by its own tools. When the compromised hotel API returned a string containing a malicious command, the LLM could not distinguish the untrusted API data from its trusted core instructions. Consequently, it executed the rogue command.
 
-This preliminary ASR established a quantitative starting point for the research. The subsequent phases of this work then introduced input/output sanitizers, definitive trust boundaries, and security intent analyzers, which were later validated in the Phase R3 and multimodal smoke benchmarks that reduced ASR to 0.0% in the secured configuration.
+This baseline ASR establishes the quantitative control for the research. The subsequent phases introduce input/output sanitizers, trust boundaries, and the pre-LLM enforcement layer, evaluated in §10: on the directive-form benchmark the secured configuration reaches 0% ASR (pattern-coupled, §10.2), and against the adaptive adversary it reduces ASR from 60% to 16.8% without input normalisation and 0% with it — the adaptive residual being the conservative robustness claim.
 
 ### 4.4 STRIDE Threat Model Taxonomy Mapping
 
@@ -182,9 +228,9 @@ To achieve state-mutation control, Phase 4 introduced a "Security Hooking Archit
 
 ### 5.1 The Eight-Phase Security Pipeline
 Instead of a single perimeter defense, the architecture implements an eight-phase security pipeline, ensuring that every data transition is validated at multiple checkpoints. Furthermore, the system includes a **GraphChain Pre-Processing Module** that intercepts data before orchestration, constructing a structural map of relationships, trust paths, and modality interactions. Eight distinct security phases were engineered:
-1. **Phase 1 — Pre-LLM Input Classification (Hook 1, `secure_agent_node`):** Before the Agent state is passed to the LLM, the conversational queue is intercepted. The local DistilBERT classifier scans the user message (after stripping provenance tags and boundary markers to prevent OOD false positives). If malicious, the Trust Engine is updated.
+1. **Phase 1 — Pre-LLM Input Classification (Hook 1, `secure_agent_node`):** Before the Agent state is passed to the LLM, the conversational queue is intercepted. The pluggable transformer classifier (default **DeBERTa-PI**, GPU-accelerated; `sanitizers/detectors.py`) scans the user message after stripping provenance tags and boundary markers (so markers never bypass detection, §6.3). If malicious, the Trust Engine is updated.
 2. **Phase 2 — Pre-Tool Argument Scanning (Hook 2, `secure_tool_wrapper`):** Before an external API is invoked, the parameters generated by the LLM are scanned. For multimodal tools (`read_image_ocr`, `process_audio_memo`, `analyze_video_feed`), the corresponding modality sanitizer is used; for all others, the TextSanitizer classifies arguments. Tool arguments flagged as malicious are rejected with `[REJECTED]`.
-3. **Phase 2b — MCP Protocol Execution Sandbox:** Tool execution is isolated within a Model Context Protocol (MCP) Sandbox (`agents/mcp_sandbox.py`). This JSON-RPC isolation layer verifies payload integrity, enforces parameter constraints, and securely executes the action to prevent command injection or prompt leakage.
+3. **Phase 2b — MCP Protocol Execution Sandbox:** Registered action tools execute in a **real isolated OS subprocess** (`agents/mcp_sandbox.py`, `multiprocessing` spawn) with a **secret-scrubbed environment** (API keys removed so a compromised tool cannot exfiltrate them), a **wall-clock timeout** (runaway tools are killed — DoS protection), and an MCP-style JSON-RPC envelope; a child can never recursively spawn another sandbox. Heavy read/extraction tools (OCR/transcription) run in-process by design. (An earlier version executed tools in-process and only *claimed* isolation; the audit made it real.)
 4. **Phase 3 — Post-Tool Output Validation (Hook 3):** Immediately after an API returns a payload, the data is scanned by the `OutputValidator` using keyword-based persona/compromise heuristics (not the DistilBERT classifier, which was trained on user-side prompts and misclassifies tool outputs). This specifically mitigates the "Confused Deputy" vulnerability.
 5. **Phase 4 — Pre-Memory Storage (Hook 4, `secure_memory_hook`):** Before conversational data is serialized and stored in ChromaDB, it is scrubbed using local keyword heuristics to prevent data poisoning attacks that could compromise future sessions.
 6. **Phase 5 — Inter-Agent Routing (Hook 5, `secure_routing_hook`):** The central Supervisor node is wrapped with routing middleware. Messages passed between specialized agents are validated using the classifier (for user messages) or persona-adoption checks (for agent messages), preventing a compromised worker agent from laterally infecting the rest of the graph.
@@ -205,7 +251,7 @@ To counter this, a suite of six specialized "Sanitizer Agents" was developed, ac
 ### 6.1 The Intelligence Engine: Local Fine-Tuned Classifier with Heuristic Fallback
 Traditional cybersecurity relies on static signatures and regular expressions (regex). However, prompt injections are semantically fluid; an attacker can rephrase "ignore previous instructions" in thousands of ways. To address this without introducing network latency or API dependencies, the core `TextSanitizer` implements a dual-stage local classification pipeline operating completely offline.
 
-First, the sanitization layer loads a locally hosted, fine-tuned transformer classifier (`distilbert-base-uncased` fine-tuned on prompt injection datasets, running on CPU). 
+First, the sanitization layer loads a locally hosted transformer classifier via the pluggable detector registry (`sanitizers/detectors.py`): the default is **DeBERTa-PI** (`protectai/deberta-v3-base-prompt-injection`), with a fine-tuned DistilBERT available as a CPU-only fast fallback. The detector runs on **GPU when available** (`DETECTOR_DEVICE=auto`), making the heavier DeBERTa-PI practical (~7 ms/call). 
 
 #### CPU Optimization and Model Selection Trade-offs
 
@@ -218,30 +264,77 @@ A core design challenge for offline local sanitization is balancing classificati
 
 While DeBERTa-v3-base offers a marginally higher validation accuracy (+2.3%), its step execution time on a single CPU core is over 3.5× slower (~5.82s vs. ~1.66s for DistilBERT). This latency amplification is primarily due to DeBERTa-v3's disentangled attention mechanism and relative position embeddings, which are highly compute-intensive without GPU tensor core parallelism. 
 
-In an autonomous multi-agent execution loop where the `TextSanitizer` is invoked recursively (potentially 5 to 10 times per session across supervisor and worker nodes), introducing a ~5.8s block per invocation would result in an unacceptable user latency bottleneck (>30-50 seconds per query). Consequently, **DistilBERT-base-uncased** was selected as the optimal production engine, achieving a fast local inference path (~1.66s) with minimal memory footprint (~260 MB) while keeping validation accuracy well above the acceptable baseline. If the local classifier fails to load or execute, the system gracefully falls back to a fast-path local heuristic parser. This dual-stage design ensures that malicious inputs are intercepted locally with minimal latency overhead, completely avoiding external API checks.
+On a single CPU core DeBERTa-v3's disentangled attention costs ~5.8 s per
+invocation, which in a recursively-invoked multi-agent loop would be an
+unacceptable bottleneck. On a GPU this collapses to ~7 ms/call (measured on an
+RTX 3050 Laptop, a ~800× speedup), which removes the latency objection entirely.
+
+**Detector precision finding and the chosen detector.** Live testing of the
+interactive dashboard revealed a precision limitation of the fine-tuned DistilBERT
+that the offline benchmark had missed: it classifies benign *imperative*
+instructions — e.g. *"Read this travel image and proceed"*, *"Please read the
+uploaded image"* — as INJECTION at ~0.97 confidence, so benign multimodal uploads
+were blocked. The offline benign set (`benign_requests.json`) did not contain such
+framing phrases, which is why the benchmark reported 0% FPR while the live system
+did not (a benign-set coverage gap we note as a limitation). The pluggable detector
+layer (`sanitizers/detectors.py`) resolves this by adopting **DeBERTa-PI**
+(`protectai/deberta-v3-base-prompt-injection`) as the single detector for **both
+the dashboard and the benchmark**: it passes all the benign imperatives (SAFE, 1.0)
+while still intercepting genuine injections, and the one pattern it misses (bare
+`output 'X'` emission directives) is caught by the pre-LLM emission-stripping and
+input-normalisation layers, so secured ASR remains 0% on the base benchmark. With
+GPU acceleration its latency is negligible, so there is no precision–latency
+trade-off to manage; DistilBERT is retained only as a CPU-only fast fallback (and
+for one clearly-labelled historical no-normalisation ablation). If the configured
+classifier fails to load, the system falls back to the local heuristic parser.
 
 ### 6.2 Modality Decoding and Triage
 Because the `TextSanitizer` requires text input, the remaining five sanitizers operate as modality decoders. They extract hidden strings from various formats and funnel them into the central intelligence engine:
-- **`VisualSanitizer`:** Employs a three-tier extraction chain: (1) OpenAI GPT-4o-mini Vision API for high-fidelity OCR, (2) local Tesseract OCR as CPU fallback, and (3) EXIF metadata extraction for hidden steganographic payloads. The `extract_text()` method produces raw text, while `sanitize()` appends an `[image ocr]` suffix to the classified text, enabling the multimodal bypass in downstream hooks.
-- **`AudioSanitizer`:** Implements a two-tier transcription chain: (1) OpenAI Whisper API for high-accuracy speech-to-text, and (2) a local Whisper model (`openai/whisper-base`) running on CPU as fallback. Audio files are transcribed to text and the sanitizer appends an `[audio transcript]` suffix for downstream multimodal bypass.
+- **`VisualSanitizer`:** Employs a multi-stage extraction chain: (1) local Tesseract OCR (the default for reproducible/offline runs, forced via `FORCE_LOCAL_EXTRACTION=1`), (2) optional OpenAI GPT-4o-mini Vision when a key is present, (3) cross-format metadata harvest (EXIF + PNG tEXt/zTXt/iTXt + XMP), and (4) a corrected chi-square LSB **steganalysis** (Westfeld–Pfitzmann). Markers are stripped before classification (see §6.3); no path bypasses the classifier.
+- **`AudioSanitizer`:** Implements a two-tier transcription chain: (1) local Whisper (`tiny`) by default / when `FORCE_LOCAL_EXTRACTION=1`, and (2) OpenAI Whisper API when a key is present. Audio is transcribed to text; modality markers are stripped before classification (no bypass).
 - **`VideoSanitizer`:** Implements a three-tier extraction chain: (1) OpenAI GPT-4o-mini multi-frame analysis, (2) local OpenCV keyframe extraction with Tesseract OCR on individual frames, and (3) sidecar text file fallback. Keyframes are extracted at configurable intervals (default: every 30th frame). The sanitizer appends a `[video frames]` suffix to classified text.
 - **`RAGSanitizer`:** Intercepts vector database retrievals. It scans memory chunks using local keyword heuristics and the local TextSanitizer classifier to detect data poisoning contextually.
 - **`ToolOutputSanitizer`:** Designed to recursively parse deeply nested JSON payloads returned by external APIs, applying structural unrolling to extract string leaf values before classification.
 
-### 6.3 Multimodal Bypass and Three-Layer Scanning Model
-A critical engineering challenge is preventing classifier false positives on enriched prompts that contain structural markers (e.g., `[Extracted from uploaded image via OCR]`). The DistilBERT classifier was fine-tuned on plain-text prompts and produces OOD false positives on these markers. To address this, the `TextSanitizer` implements a **multimodal bypass**: prompts containing multimodal indicators (file extensions, extraction markers like `[Extracted from`, `[Transcribed from`) skip the classifier entirely, provided they do not contain heuristic injection keywords.
+### 6.3 Marker Stripping (replacing a removed "multimodal bypass" vulnerability)
+A critical engineering challenge is preventing classifier false positives on
+enriched prompts that contain structural markers (e.g.,
+`[Extracted from uploaded image via OCR]`), which a plain-text-trained classifier
+treats as out-of-distribution. An **earlier revision** addressed this with a
+"multimodal bypass" — prompts containing such markers *skipped the classifier
+entirely* if they lacked injection keywords. **This was a vulnerability, not a
+feature:** appending `[image ocr]` to any paraphrased, keyword-free injection
+made it sail through detection. The audit removed it.
 
-Security is maintained through a **three-layer scanning model**:
-1. **Pre-Scan (Endpoint Level):** Raw extracted text from uploaded files is scanned by the TextSanitizer *without* multimodal indicators, so the bypass does not apply. Only high-confidence detections ($\geq 0.95$) register an injection with the Trust Engine, avoiding false positives on short command-like benign sentences (e.g., "User wishes to book a flight to London." at 0.87 confidence).
-2. **Hook 1 (Enriched Prompt):** The full enriched prompt (user text + extracted content with markers) is scanned. The multimodal bypass applies here, correctly skipping classification on structural markers while the pre-scan has already caught injections in the raw content.
-3. **Hook 2 (Tool Arguments):** When multimodal tools are invoked, the modality-specific sanitizer classifies the file content with an appended suffix (e.g., `[image ocr]`), which triggers the multimodal bypass for benign content.
+The current design instead **strips the markers and still runs the full
+classifier** on the residual natural-language text (`TextSanitizer._strip_multimodal_markers`):
+the OOD tokens that caused false positives are removed, while injected *content*
+is always classified. Defense is layered:
+1. **Ingestion pre-scan:** Raw extracted text is classified *before* any markers
+   are added; only high-confidence detections register an injection with the
+   Trust Engine.
+2. **Hook 1 (enriched prompt):** Markers are stripped, then the classifier runs
+   on the clean residual — no path skips detection.
+3. **Hook 2 (tool arguments):** The modality sanitizer classifies the extracted
+   content (markers stripped) before the tool result enters reasoning.
 
 ### 6.4 Mitigating the Confused Deputy Problem
 The most significant achievement of the Multimodal Sanitization Layer is the mitigation of the Confused Deputy problem identified in Phase 3. 
 
-By aggressively deploying the `ToolOutputSanitizer` at Hook 3 (Post-Tool Validation), every string returned by third-party APIs (e.g., flight and hotel mock APIs) is systematically extracted and evaluated by the LLM judge. When the automated red-team evaluation suite was executed against the upgraded architecture, the malicious "Hackville" payload—which previously hijacked the system—was successfully intercepted and neutralized. 
+By deploying the `OutputValidator` at Hook 3 (Post-Tool Validation), every string
+returned by a tool is evaluated before it re-enters reasoning. The indirect-injection
+threat model is exercised honestly: `_simulate_tool_poisoning` appends a payload
+drawn from a **generic, held-out pool** of injection phrasings — *decoupled from any
+benchmark token* — so the secured-vs-baseline gap measures detection of injection
+behaviour, not vocabulary overlap. (An earlier revision keyed poisoning to a magic
+string such as "hackville", which made the evaluation circular; that coupling was
+removed in the audit.)
 
-This proves that strict Input/Output sanitization, when explicitly decoupled from the agent's core reasoning LLM, provides a mathematically verifiable defense against Indirect Prompt Injections.
+This isolates Input/Output sanitization from the agent's core reasoning, providing
+a deterministic, reproducible defense against the indirect-injection family — with
+the honest caveat that the classifier alone has limited recall on tool-output
+payloads (§10.4), so the keyword output validator and the deterministic layers carry
+this path.
 
 ### 6.5 Arbitrary File Upload Pipeline
 The `/run-travel-multimodal` endpoint implements a three-step pipeline for processing arbitrary user file uploads across all four supported modalities (text, image, audio, video):
@@ -250,12 +343,12 @@ The `/run-travel-multimodal` endpoint implements a three-step pipeline for proce
 
 2. **Pre-Scan Classification:** The raw extracted text is immediately classified by the `TextSanitizer` *without* multimodal indicators, so the multimodal bypass does not apply. Only high-confidence detections (≥ 0.95) register an injection with the Trust Engine, preventing false positives on short command-like benign sentences that may appear in transcribed audio or OCR output (e.g., "User wishes to book a flight to London." at 0.87 confidence).
 
-3. **Enriched Prompt Construction:** The extracted text is wrapped with structural markers (e.g., `[Extracted from uploaded image via OCR]`) and appended to the user's text input to form the enriched prompt. This prompt then enters the standard LangGraph agent pipeline, where Hook 1 processes it with the multimodal bypass active (skipping the classifier on structural markers since the pre-scan already caught injections in the raw content).
+3. **Enriched Prompt Construction:** The extracted text is wrapped with structural markers (e.g., `[Extracted from uploaded image via OCR]`) and appended to the user's text input to form the enriched prompt. This prompt then enters the standard LangGraph agent pipeline, where Hook 1 **strips the markers and re-runs the classifier** on the residual text (§6.3) — no path skips detection; the ingestion pre-scan provides a redundant second check on the raw content.
 
 This three-step architecture ensures that every user-uploaded file—not just dashboard presets—is subject to the full security pipeline before its content reaches the LLM reasoning loop.
 
 ## 7. Dynamic Trust Scoring and Policy Enforcement (Phase 6)
-While the Multimodal Sanitization Layer (Phase 5) provided robust deterministic filtering, it suffered from "Stateless Amnesia"—treating the 50th prompt injection from a user identically to the first. Furthermore, calling an LLM-as-a-judge synchronously at every interception hook introduced unacceptable latency. 
+While the Multimodal Sanitization Layer (Phase 5) provided robust deterministic filtering, it suffered from "Stateless Amnesia"—treating the 50th prompt injection from a user identically to the first. A purely binary, stateless filter also has no memory of repeated adversarial behaviour within a session. 
 
 To resolve these architectural limitations, Phase 6 introduced a **Provenance & Trust Engine**, shifting the security posture from binary filtering to dynamic, stateful policy enforcement.
 
@@ -281,7 +374,7 @@ In the multi-agent Supervisor-Worker architecture, the same user message is scan
 To solve this, the Trust Engine implements **content-hash deduplication**: each `register_injection()` call computes a SHA-256 hash of the cleaned message text (stripped of provenance tags and boundary markers). If the same hash has already been registered for a session, the duplicate is silently skipped. Both the Supervisor hook and agent node hook pass the **cleaned** text (not the modified message with boundary markers) to `process_payload()`, ensuring hash consistency. This guarantees that a single classifier scan on the same message only counts once, regardless of how many hooks process it.
 
 ### 7.4 Heuristic Optimization and Context Preservation
-To optimize the architecture for production workloads, the Trust Engine was augmented with a fast-path heuristic filter. By scanning for structural anomalies and injection keywords *before* invoking the LLM-judge, the system achieves a 90% latency reduction for benign traffic. Additionally, JSON payloads from external APIs are now passed in their raw structural format to the judge, preventing "Fragmentation Attacks" where malicious instructions are distributed across multiple JSON keys.
+To bound latency, the runtime supports a fast-path keyword filter (`SECURED_SYSTEM_MODE=fast`) that screens for injection vocabulary without invoking the transformer classifier — useful for high-throughput or CPU-only deployments — while the default `secure`/`full-research` modes run the GPU-accelerated classifier. Tool outputs are passed through structural unrolling (extracting string leaf values from nested JSON) before classification, so instructions cannot be hidden by fragmenting them across JSON keys.
 
 ### 7.5 Provenance Ledger and Lineage Tracking
 To establish empirical auditability and solve data-source ambiguity (e.g., verifying the origin and history of retrieved information), the Trust Engine is augmented with a stateful **Provenance Ledger** and **Provenance Agent** system. 
@@ -320,7 +413,15 @@ This enables external orchestration systems, visualizer interfaces, and complian
 Despite advanced multi-tier sanitization and trust tracking, latent risks remain if a malicious payload successfully traverses the external hooks. Phase 7 introduced the final security perimeter: the Pre-LLM Security Enforcement Layer. This layer operates as an interceptor immediately before the construction of the LLM's context window.
 
 ### 8.1 Context Masking and Unsafe Span Removal
-Using the Trust Tier assigned in Phase 6, the Pre-LLM layer systematically masks entire payloads originating from LOW-trust sources with placeholder tokens (`[LOW-TRUST CONTENT MASKED]`). For MEDIUM-trust interactions, a high-speed heuristic regex filter strips specific attack syntax from the context window. The filter comprises 17 compiled regex patterns covering the full injection vocabulary:
+Using the Trust Tier assigned in Phase 6, the Pre-LLM layer masks entire payloads
+from LOW-trust sources with placeholder tokens (`[LOW-TRUST CONTENT MASKED]`). At
+**MEDIUM and HIGH** trust the heuristic regex filter strips attack syntax from the
+context window — span removal at HIGH closes a gap where a classifier miss at HIGH
+trust would otherwise reach the LLM untouched, so the regex layer is an
+*unconditional* final barrier. Critically, this stripping is also applied to
+**retrieved-memory context** (the untrusted RAG `SystemMessage`), which a prior
+revision passed through unfiltered — the cause of the memory-poisoning leak. The
+filter comprises 18 compiled regex patterns covering the injection vocabulary:
 
 1. `ignore [previous|all|above|any] [instructions|rules|restrictions]` — classic instruction override
 2. `ignore all` — blanket dismissal
@@ -339,20 +440,47 @@ Using the Trust Tier assigned in Phase 6, the Pre-LLM layer systematically masks
 15. `[output|show|display|print|list] [system] prompt` — prompt extraction
 16. `debug mode` — debug escalation
 17. `pre-authorized to skip` / `skip [safety|security] checks` — authorization forgery
+18. **Emission / payload-echo directive** — `[output|print|say|confirm|report|state|echo|return|emit] '<quoted text>'` — instructing the agent to emit a specific attacker-chosen string. This is a generic, content-agnostic injection signature (the *quoted content* is never matched, only the imperative "emit-this-exact-text" form), added in the audit because it was the dominant residual on the tool/indirect/memory paths; it never fires on benign quoted content such as "the 'Grand Plaza' hotel."
 
-All patterns include optional filler word support (`(?:\w+\s+)?`) between verb and target to catch variations like "bypass the security checks" or "ignore all previous instructions." Crucially, this is executed under a strict 50ms performance budget, ensuring it does not become a bottleneck.
+All patterns include optional filler-word support (`(?:\w+\s+)?`) between verb and target, and execute under a strict 50ms budget.
+
+### 8.1.1 Input Normalisation (Obfuscation-Resistant Detection)
+A raw-text filter is blind to **encoded** injections — base64, leetspeak, and
+Unicode homoglyphs — which a capable LLM still decodes and obeys (the adaptive
+adversary, §10.1). The Pre-LLM layer therefore performs **input normalisation**
+(`sanitizers/normalize.py`): it decodes base64 blobs, folds homoglyphs (NFKD +
+Cyrillic/Greek look-alikes → Latin), and reverses leetspeak, then re-applies the
+unsafe-span patterns to the *decoded* variants. If a directive only appears after
+decoding, the whole message is masked. This is gated by `PRE_LLM_NORMALIZE`
+(default on) so the before/after is reproducible. The **same** decoder is used by
+the susceptible-model oracle, which we disclose explicitly: normalisation closes
+the adaptive residual from 16.8% to 0.0% for the encodings it covers, but that 0%
+is *pattern-coupled* — encodings outside the normaliser (ROT13, hex,
+payload-splitting) remain open and are identified as future work (§10.1).
 
 ### 8.2 Canonical System Prompts and Boundary Enforcement
-To mitigate "Role Hijacking" and "System Overrides", a Canonical System Prompt is dynamically prepended to every execution state, explicitly overriding any attempts to change the agent's core rules. Furthermore, all user-provided data is wrapped within strict instruction boundaries (e.g., `--- USER INPUT START ---`), preventing the LLM from confusing user variables with developer instructions. This architectural design definitively solves boundary-crossing attacks.
+To mitigate "Role Hijacking" and "System Overrides", a Canonical System Prompt is dynamically prepended to every execution state, explicitly overriding any attempts to change the agent's core rules. Furthermore, all user-provided data is wrapped within strict instruction boundaries (e.g., `--- USER INPUT START ---`), helping the LLM distinguish user variables from developer instructions. This architectural design mitigates (but does not by itself eliminate) boundary-crossing attacks; it is one layer of the defence-in-depth pipeline.
 
 ## 9. Output Validation and Recovery Loops (Phase 8)
 Even with strict upstream sanitization, LLMs are probabilistic models prone to unprompted hallucinations and logical errors. Therefore, a secondary security paradigm is required post-generation. Phase 8 instituted an independent "Quality Control" agent (Agent B) and a self-correcting recovery loop.
 
 ### 9.1 The Output Validator Agent
-Before any AI-generated response is returned to the user or passed to another system component, it is intercepted and audited by a secondary, lightweight LLM (Agent B). This auditor evaluates the payload for:
-- Hallucinated facts or contradictory reasoning.
-- Policy violations, including the inadvertent leakage of PII, internal system prompts, or memory context.
-- Unsafe instructions disguised within the output.
+Before any AI-generated response is returned to the user or passed to another
+system component, it is intercepted and audited by a secondary validator
+("Agent B", `sanitizers/output_validator.py`). **Agent B is deterministic — a
+regex/keyword validator, not an LLM** (the prompt-injection classifier is trained
+on user-side inputs and mislabels AI-generated response text as out-of-distribution,
+so it is deliberately not used here). The validator evaluates the response for:
+- Persona adoption / policy-override language (e.g. "I am now DAN", "developer mode").
+- PII and credential leakage (email, OpenAI-key shape, `secret_key=...` patterns).
+- System-prompt / architecture disclosure.
+- High-risk action confirmations (e.g. "payment has been charged") that require
+  human approval.
+
+We are explicit that this is a *deterministic* validator: it favours precision
+and recall on these specific structural markers (95.83% recall, 5.21% FPR in the
+hook-isolation benchmark, §10.4) and does not perform open-ended semantic
+auditing; a model-based validator (e.g. Llama Guard) is identified as future work.
 
 ### 9.2 The Reinjection Recovery Loop
 When Agent B flags a response as unsafe, the system does not merely fail and crash. Instead, it engages a Reinjection Recovery Loop. The unsafe response, coupled with a strict system constraint explaining the validation failure, is appended back into the graph state. The primary LLM is then reinvoked, forcing it to self-correct its mistake. To prevent infinite recursion, this loop is strictly capped at three regeneration attempts.
@@ -371,66 +499,159 @@ The experimental evaluation measured three primary dimensions:
 2. **Performance:** The average execution latency overhead.
 3. **Accuracy:** The Task Accuracy Retention (TAR), Policy Compliance Rate (PCR), and Provenance Trust Consistency Index (PTCI), which capture benign utility, safety compliance, and trust/provenance alignment.
 
-**Table 2: Benchmark Results: Baseline vs. Secured Architecture (n=100 attacks, 96 benign)**
+**Table 2: Deterministic-harness results.** Base benchmark = 100 directive-form
+attacks; adaptive adversary = 600 obfuscated attacks (base64/leetspeak/homoglyph),
+reported both *without* and *with* the input-normalisation defense.
 ```text
-Metric                  | Baseline       | Secured        | Delta
-----------------------------------------------------------------------
-Attack Success Rate     |    8.0\%       |    0.0\%       | -8.0 pp
-  95\% Wilson CI        | [4.1\%, 15.0\%]| [0.0\%, 3.7\%]|
-False Positive Rate     |    0.0\%       |    0.0\%       |  0.0 pp
-  95\% Wilson CI        | [0.0\%, 3.9\%] | [0.0\%, 3.9\%]|
-Task Accuracy Retention |  100.0\%       |  100.0\%       |  0.0 pp
-Precision               |  100.0\%       |  100.0\%       |  0.0 pp
-Recall                  |   92.0\%       |  100.0\%       | +8.0 pp
-F1-Score                |   95.8\%       |  100.0\%       | +4.2 pp
-Avg. Latency (sec)      |   5.04s        |   3.81s        | -1.23s
+                        |  BASE (directive)  |        ADAPTIVE (obfuscated)
+Metric                  | Base'ln | Secured* | Base'ln | Sec. no-norm | Sec. +norm*
+---------------------------------------------------------------------------------
+Attack Success Rate     |  74.0\% |   0.0\%  |  60.0\% |    16.8\%    |    0.0\%
+  95\% Wilson CI        |[65,82]  | [0,3.7]  |[56,64]  | [14.0,20.0]  | [0.0,0.64]
+False Positive Rate     |   0.0\% |   0.0\%  |   0.0\% |     0.0\%    |    0.0\%
+Task Accuracy Retention | 100.0\% | 100.0\%  | 100.0\% |   100.0\%    |  100.0\%
 ```
+McNemar (base): $\chi^2=26.0$, $p<10^{-6}$. The **16.8\%** no-normalisation
+adaptive residual is the conservative robustness figure; the **0.0\%** columns
+are *pattern-coupled* (the defense recognises/decodes exactly the directive forms
+and encodings the oracle acts on) and are reported as upper bounds, not robustness
+guarantees.
+
+\* The base-benchmark secured 0.0\% is **pattern-coupled** with the oracle's
+directive grammar (see below) and is reported only as an in-distribution upper
+bound; the **adaptive 16.8\%** is the load-bearing robustness figure.
 
 ### 10.2 Analysis of Results
-The Phase R3 benchmark demonstrates that the secured architecture achieves **perfect security with zero utility loss**. The secured system records 0.0\% ASR (95\% CI [0.0\%, 3.7\%]) against the baseline's 8.0\% ASR (95\% CI [4.1\%, 15.0\%]); the reduction is statistically significant (McNemar $\chi^2=6.125$, $p=0.0078$, Section 16). The baseline ASR of 8.0\% reflects GPT-4o-mini's built-in safety training, which rejects most attack prompts even without external security wrappers; the security middleware eliminates the remaining 8 attacks that bypass native model defences.
+The secured architecture delivers a large, statistically significant ASR
+reduction on both evaluations. On the adaptive adversary — the figure we treat as
+the robustness claim — ASR falls from 60.0\% to **16.8\%** (95\% CI [14.0, 20.0]\%,
+McNemar $p<10^{-6}$), a $3.5\times$ reduction, while preserving 100\% benign Task
+Accuracy Retention and 0\% False Positive Rate. The non-zero residual is the
+honest core of the result: per-family it is 30\% (indirect injection), 27\%
+(tool misuse) and 25\% (memory poisoning), versus 2\% (direct prompt injection)
+and 0\% (role override). The pattern is diagnostic — the defense neutralises
+attacks whose surface form its DistilBERT classifier and regex layer recognise,
+but it scans *raw* inputs, so base64/leetspeak/homoglyph encodings of the same
+instruction survive to a capable model.
 
-The secured system achieves a **0.0\% False Positive Rate** (FPR, 95\% CI [0.0\%, 3.9\%]), maintaining 100.0\% Task Accuracy Retention — no benign requests are blocked. This was achieved through two engineering fixes applied to the initial classifier deployment: (1) **structural unrolling** of JSON tool outputs before classification, which eliminates OOD false positives on Hook 3 (Post-Tool) by extracting string leaf values from JSON envelopes before passing them to the DistilBERT classifier; and (2) replacing the output validator's classifier call with a **keyword heuristic** for persona-adoption detection, since the prompt-injection classifier was trained on user-side inputs and misclassifies all AI-generated response text as out-of-distribution.
+We then **implement input normalisation** (`sanitizers/normalize.py`: base64
+decoding, NFKD + homoglyph folding, and leetspeak normalisation applied before
+detection) as the mitigation. With it enabled, the adaptive residual falls from
+16.8\% to **0.0\%** (95\% CI [0.0, 0.64]\%) at unchanged 0\% FPR / 100\% TAR — a
+clean before/after demonstrating that normalising-before-detection closes the
+obfuscation gap. We are explicit that this 0\% is **pattern-coupled**: the
+defense normaliser and the susceptible-model oracle share one decoder, so the
+result measures coverage of the *encodings we anticipated* rather than robustness
+to novel ones. Accordingly we treat the 16.8\% (no-normalisation) figure as the
+conservative robustness claim, present 0\% as the normalisation ablation, and
+identify encodings outside the normaliser (ROT13, hex, payload-splitting,
+adversarially-evolved obfuscation) as the genuine open residual and primary
+future work.
 
-Average turn latency is 3.81s for secured mode versus 5.04s for baseline. The secured mode is paradoxically *faster* because the absence of false-positive recovery loops reduces the number of LLM invocations per turn. The latency difference on attack-only trials is statistically significant (paired $t$-test $p < 0.0001$), confirming that the classifier inference (45–63ms per hook) adds negligible overhead relative to LLM call latency.
+On the in-distribution base benchmark the secured system records 0.0\% ASR
+(baseline 74.0\%). We do **not** present this as "perfect security": the
+deterministic oracle complies via the same imperative directive forms
+("output/report/confirm '\textit{X}'", role adoption, system-prompt disclosure)
+that the pre-LLM enforcement layer strips, so the 0\% partly measures the overlap
+between the oracle's grammar and the defense's coverage rather than robustness in
+the wild. It is reported as the upper bound for in-distribution directive attacks;
+the adaptive evaluation is the conservative, defensible number.
+
+A 0\% False Positive Rate with 100\% Task Accuracy Retention holds on both
+evaluations: benign requests (including hard-negative phrasings such as "report
+the total cost") are not blocked, because the emission-directive enforcement
+keys on the imperative *emit-this-exact-string* form and never on benign quoted
+content.
 
 ### 10.3 Ablation Study (Phase R4)
+
+> **Note.** Tables 3 (ablation) and 4 (hook isolation) have been regenerated under
+> the deterministic / offline harness (`run_ablation_study.py` with
+> `DETERMINISTIC_AGENT=1`; `run_isolation_benchmarks.py` with local-only OCR),
+> consistent with §10.1–10.2.
+
 To evaluate the defensive contributions of individual components, we conducted a three-configuration ablation study under randomized attack ordering:
 * **Config A (Baseline / No Security):** No security wraps active.
 * **Config B (Partial Defenses / Input-Side only):** Input text sanitizers, Trust Engine, and pre-LLM wrappers active; output validation and memory sanitization disabled.
 * **Config C (Full SECURED):** All perimeter and in-graph defenses active.
 
-**Table 3: Phase R4 Ablation Study Metrics (n=100 attacks, seed=42)**
+**Table 3: Phase R4 Ablation (deterministic harness, n=100 directive attacks, seed=42)**
 ```text
-Configuration            | ASR (\%)| 95\% CI          | Avg. Latency (sec)
----------------------------------------------------------------------------
-Config A: Baseline       |   8.0\% | [4.11\%, 15.0\%] | 2.71s (2713.9 ms)
-Config B: Partial        |   2.0\% | [0.55\%,  7.0\%] | 2.41s (2409.0 ms)
-Config C: Full SECURED   |   0.0\% | [0.0\%,   3.7\%] | 2.50s (2504.5 ms)
+Configuration            | ASR (\%)| 95\% Wilson CI
+-------------------------------------------------------
+Config A: Baseline       |  74.0\% | [64.6\%, 81.6\%]
+Config B: Input-side only |   3.0\% | [1.0\%,   8.5\%]
+Config C: Full SECURED   |   0.0\% | [0.0\%,   3.7\%]
 ```
 
 #### 10.3.1 Analysis
-Config A (no security middleware) shows an 8.0\% ASR, confirming that GPT-4o-mini's native safety training already blocks most adversarial prompts without any external intervention. Adding input-side defenses in Config B reduces ASR to 2.0\% — the text sanitizer and pre-LLM classifier intercept 6 of the 8 attacks that bypassed the base model, but 2 indirect injections embedded in tool-output context still evade perimeter-only filtering. Only the activation of output-side validation and memory sanitization in Config C eliminates all remaining attack successes (ASR 0.0\%, 95\% CI: [0.0\%, 3.7\%]), demonstrating the necessity of defence-in-depth across both input and output channels. Latency remains comparable across configurations (2.41–2.71s per turn), indicating that the DistilBERT classifier and output validator add negligible overhead in the attack-only evaluation where false-positive recovery loops are not triggered.
+Under the deterministic susceptible-model oracle, Config A (no security) yields a
+74.0\% ASR — far higher than the live-LLM figure, because the oracle has no
+intrinsic safety training, so this isolates the *defense's* contribution rather
+than the base model's. Adding input-side defenses (Config B: text sanitizer,
+trust engine, pre-LLM enforcement) reduces ASR to **3.0\%**: the classifier and
+emission-directive stripping intercept almost all directive attacks at the
+perimeter, with a small residual from tool-output and memory paths. Activating
+output-side validation and memory sanitization (Config C) closes that residual to
+**0.0\%**, demonstrating that defence-in-depth across input and output channels is
+necessary. As with §10.1, the Config C 0\% is pattern-coupled with the oracle's
+directive grammar and bounds in-distribution directive attacks; the 16.8\%
+adaptive residual (§10.1) is the conservative robustness figure. Benign Task
+Accuracy Retention is 100\% in all three configurations (Phase R9), confirming the
+layered defenses add no false-positive cost on this benign set.
 
 ### 10.4 Component-Level Firewall Verification (Hook Isolation)
 To evaluate the standalone defensive effectiveness of each sanitizer hook, we conducted a component-level firewall benchmark completely offline. We bypassed the downstream LangGraph agent loop and fed direct prompt, visual, tool JSON, memory retrieved, and routing payloads into their respective sanitizer filters. This isolates the hooks from the LLM's native behavior to measure the standalone interception accuracy.
 
-We compared **Fast Heuristic Mode** against **Secure Classifier Mode** (local DistilBERT classification on CPU).
+This benchmark isolates the **classifier** at each hook: it feeds payloads
+directly to `TextSanitizer.sanitize()` (the configured detector), **bypassing the
+deterministic pre-LLM emission-stripping and input-normalisation layers**. It
+therefore measures the *classifier's* standalone recall/precision, **not** the
+full pipeline — which is the point of §10.1 (where the layers are present and
+secured ASR is 0%). Secure mode uses **DeBERTa-PI on GPU** (the deployed detector).
 
-**Table 4: Hook Isolation Benchmark Results**
-| Stage / Hook Stage | System Mode | ASR Leak (\%) | FPR (\%) | Recall (\%) | Latency (Mean) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Hook 1: Pre-LLM (TextSanitizer)** (n=40 atk, 96 ben) | Fast | 72.5\% | 16.67\% | 27.5\% | < 0.01 ms |
-| | Secure | 0.0\% | 32.29\% | 100.0\% | 42.45 ms |
-| **Hook 2: Visual (VisualSanitizer)** (n=100 atk, 100 ben) | Fast | 0.0\% | 100.0\% | 100.0\% | 24.73 ms |
-| | Secure | 0.0\% | 100.0\% | 100.0\% | 25.66 ms |
-| **Hook 3: Post-Tool (ToolSanitizer)** (n=40 atk, 96 ben) | Fast | 92.5\% | 16.67\% | 7.5\% | 0.01 ms |
-| | Secure | 0.0\% | 25.0\% | 100.0\% | 47.01 ms |
-| **Hook 4: Pre-Memory (RAGSanitizer)** (n=20 atk, 96 ben) | Fast | 0.0\% | 16.67\% | 100.0\% | 0.01 ms |
-| | Secure | 0.0\% | 96.88\% | 100.0\% | 46.26 ms |
-| **Hook 5: Routing (Inter-Agent)** (n=40 atk, 96 ben) | Fast | 72.5\% | 16.67\% | 27.5\% | < 0.01 ms |
-| | Secure | 0.0\% | 32.29\% | 100.0\% | 45.45 ms |
-| **Output Validator (OutputValidator)** (n=24 atk, 96 ben) | Fast | 0.0\% | 5.21\% | 100.0\% | 0.05 ms |
-| | Secure | 0.0\% | 5.21\% | 100.0\% | 0.08 ms |
+**Table 4: Hook Isolation Benchmark — classifier in isolation** (DeBERTa-PI secure
+mode; real local Tesseract OCR + forensics, no network)
+| Stage / Hook Stage | System Mode | ASR Leak (\%) | FPR (\%) | Recall (\%) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Hook 1: Pre-LLM (TextSanitizer)** | Fast (keyword) | 72.5\% | 16.67\% | 27.5\% |
+| | Secure (DeBERTa) | 45.0\% | 9.38\% | 55.0\% |
+| **Hook 2: Visual (VisualSanitizer)** | Fast | 0.0\% | 0.0\% | 100.0\% |
+| | Secure | 0.0\% | **0.0\%** | 100.0\% |
+| **Hook 3: Post-Tool (ToolSanitizer)** | Fast | 92.5\% | 16.67\% | 7.5\% |
+| | Secure | 100.0\% | 6.25\% | 0.0\% |
+| **Hook 4: Pre-Memory (RAGSanitizer)** | Fast | 0.0\% | 16.67\% | 100.0\% |
+| | Secure | 85.0\% | 10.42\% | 15.0\% |
+| **Hook 5: Routing (Inter-Agent)** | Fast | 72.5\% | 16.67\% | 27.5\% |
+| | Secure | 45.0\% | 9.38\% | 55.0\% |
+| **Output Validator (OutputValidator)** | Fast | 4.17\% | 5.21\% | 95.83\% |
+| | Secure (keyword) | 4.17\% | 5.21\% | 95.83\% |
+
+> **Reading this table correctly (precision↔recall trade-off + defence-in-depth).**
+> DeBERTa-PI is a *high-precision, lower-recall* detector: its hook-level FPR is
+> low (6–10\%, vs. up to 58\% for the high-recall DistilBERT), which is why it does
+> not block benign uploads on the live dashboard — but in isolation it misses many
+> directive attacks (Hook 3 post-tool 0\%, Hook 4 memory 15\%). This does **not**
+> mean those hooks fail in deployment: the table deliberately excludes the
+> deterministic emission-stripping/normalisation layers and the keyword output
+> validator (95.83\% recall), which together intercept exactly the payloads the
+> classifier misses. The end-to-end pipeline therefore reaches **0\% secured ASR**
+> (§10.1) and **9/9** on live dashboard testing despite these standalone classifier
+> gaps — the central evidence that the security comes from *defence-in-depth*, not
+> from any single classifier. (DistilBERT, the high-recall alternative, reaches
+> 100\% standalone hook recall but false-positives on benign imperatives; the
+> deployed system chooses precision + layered recall.)
+
+> **Note — Hook 2 fix.** The superseded run reported Hook 2 (Visual) at **100% FPR**
+> in both modes, which we traced to two defects: a steganalysis test that was
+> *inverted* (flagging every image) and an "offline" benchmark that silently
+> called the live OpenAI vision API. After correcting the chi-square LSB test
+> (Westfeld–Pfitzmann direction) and forcing local Tesseract OCR, Hook 2 FPR is
+> **0.0%** with 100% recall. Secure-mode hard-negative FPRs remain non-trivial on
+> some hooks (e.g. Hook 4 Pre-Memory 58.33%), reflecting the detector's precision
+> limits on corrective-phrasing hard negatives; the end-to-end pipeline FPR is
+> nonetheless 0% (§10.1) because attacks are intercepted early and benign requests
+> are not blocked by any single hook firing.
 
 #### 10.4.1 Empirical Findings and Systems Engineering Trade-offs
 
@@ -482,7 +703,15 @@ TOTAL: 18/18 PASSED (0 failures)
 | Video | 2 | 1 | 3 | 100% |
 | **Total** | **10** | **8** | **18** | **100%** |
 
-Combined with the 136 unit tests (covering classifier accuracy, hook isolation, trust scoring, multimodal extraction, and policy enforcement), the full test suite comprises **154 tests with 100% pass rate**. This end-to-end validation confirms that: (1) benign prompts in all four modalities pass through cleanly with trust ≥ 0.75, (2) prompt injections embedded in every modality are correctly intercepted with security_blocked = true and trust ≤ 0.50, and (3) the content-hash deduplication prevents trust cascade from multi-hook scanning of the same message.
+The offline unit suite (classifier behaviour, hook isolation, trust scoring,
+multimodal extraction, MCP process isolation, and policy enforcement) passes
+deterministically. The live-API multimodal stress tests exercise the real LLM and
+are therefore **non-deterministic**: a small number intermittently flag benign
+images (the live GPT-4o-mini/classifier occasionally mis-scores), so we report
+the suite as "offline-green with known live-LLM flakiness" rather than a 100%
+figure. The deterministic checks confirm that (1) benign prompts pass cleanly,
+(2) injections embedded in each modality are intercepted, and (3) content-hash
+deduplication prevents trust cascade from multi-hook scanning of the same message.
 
 ### 10.6 Regex-Only Baseline Comparison (Phase R5)
 
@@ -503,27 +732,42 @@ The regex baseline misses 66\% of attacks because 46 of 100 attack prompts use k
 ### 10.7 Advanced Security Verification & Multi-Agent Evaluations
 To comprehensively evaluate the orchestration-level security properties of the proposed multi-agent framework under dynamic workflows, we performed three advanced offline evaluations:
 
-1. **Cross-Agent Infection & Message Propagation Simulation:**
-   We simulated a compromised worker agent (e.g., `FlightAgent` or `HotelAgent`) outputting a prompt injection command to infect the parent `Supervisor` agent. We measured the baseline message propagation rate (0% security wrappers) against our Inter-Agent Routing Middleware (Hook 5).
-   - *Baseline Infection Rate:* **100.0%** (ASR = 100%, 0% of attacks blocked).
-   - *Fast Heuristic Inter-Agent Interception:* **88.0% Recall** (12.0% ASR Leak Rate, 0% FPR).
-   - *Secure Classifier Inter-Agent Interception:* **100.0% Recall** (0.0% ASR Leak Rate, 100% FPR).
+1. **Cross-Agent Infection & Message Propagation Simulation (R7):**
+   A compromised worker emits an injection to the `Supervisor`; we measure the
+   routing-stage **classifier in isolation** (as in §10.4, the deterministic
+   pre-LLM/normalisation layers are excluded). With **DeBERTa-PI**:
+   - *Baseline (no wrappers):* **100.0% ASR** (0% recall).
+   - *Fast keyword interception:* 72.5% ASR (27.5% recall, 16.67% FPR).
+   - *DeBERTa classifier interception:* **45.0% ASR** (55.0% recall, **9.38% FPR**).
+   The 45% reflects DeBERTa-PI's lower *standalone* recall (it trades recall for
+   precision — note the much lower FPR). In the **full pipeline** this path is
+   closed: the routing hook also runs emission-stripping/normalisation, and the
+   end-to-end secured ASR is 0% (§10.1) with the live dashboard blocking
+   cross-agent propagation. We report the isolation number honestly rather than
+   the prior (DistilBERT, high-recall/high-FPR) "100% recall / 100% FPR" figure.
 
-2. **Provenance Trust Consistency Index (PTCI) Evaluation:**
-   We simulated 50 multi-turn conversation logs (5 turns each) with varying injection frequencies (purely benign, single-attack, and multi-attack sessions) to verify the stateful trust degradation logic of the `TrustEngine`.
-   - *Provenance Trust Consistency Index (PTCI):* **90.00%**
-   - *Pearson Correlation Coefficient ($r$) (Attacks vs. Trust Score):* **-1.0000**
-   - *Trust Tier Alignment Accuracy:* **80.0%**
-   - *Decision/Detection Alignment Accuracy:* **100.0%**
-   The perfect negative correlation ($r = -1.0000$) demonstrates that the framework's stateful trust score degrades with mathematical consistency in direct response to the frequency and presence of prompt injections over multi-turn interactions.
+2. **Provenance Trust Consistency Index (PTCI) Evaluation (R8):**
+   50 multi-turn logs verify the stateful trust-degradation logic of the
+   `TrustEngine`.
+   - *PTCI:* **65.0%** · *Trust-tier alignment:* 62.0% · *Decision alignment:* 68.0%.
+   These are lower than the previously-reported (inflated) 90%/80%/100%; the honest
+   numbers reflect that the gentle $H(x)$ decay (−0.5 per injection) keeps many
+   single-injection sessions at MEDIUM rather than LOW (by design, to avoid
+   cascading benign requests to LOW — see §7.3), so tier alignment is imperfect.
 
-3. **Task Accuracy Retention (TAR) Benchmark:**
-   We ran 50 benign travel booking tasks through the compiled LangGraph workflow to measure whether the safety wrappers incorrectly blocked legitimate user requests (the Task Accuracy Retention metric).
-   - *Configuration A (Baseline):* **100.0% TAR** (no security wrappers active, all benign tasks succeed).
-   - *Configuration B (Fast Heuristic Mode):* **100.0% TAR** (sub-millisecond keyword screening does not interfere with standard user requests, achieving 0% false positives).
-   - *Configuration C (Secure Classifier Mode):* **100.0% TAR** (after applying structural unrolling on Hook 3 and replacing the output validator's classifier with a keyword heuristic, the false-positive rate drops to 0\%, and all benign queries succeed).
+3. **Task Accuracy Retention (TAR) Benchmark (R9):**
+   50 benign travel tasks through the graph, measuring whether the wrappers block
+   legitimate requests.
+   - *Config A / B / C:* **100.0% / 100.0% / 100.0% TAR** — no benign request is
+     blocked in any configuration (the deterministic harness measures real task
+     completion, not marker-absence).
 
-These results confirm that a local transformer classifier provides a robust, zero-leak boundary against complex attacks. The structural engineering fixes — JSON unrolling before classification and domain-appropriate heuristics for output validation — eliminate the OOD false-positive problem without compromising recall, achieving the optimal operating point of perfect security with zero utility loss.
+These results indicate that a local transformer classifier, combined with the
+pre-LLM enforcement and input-normalisation layers, provides a strong boundary
+against the directive-form and obfuscated attacks evaluated here. We do not claim
+"perfect security": the 0\% operating points are pattern-coupled with the
+deterministic oracle (see §10.2), and the conservative robustness figure is the
+16.8\% no-normalisation adaptive residual.
 
 ## 11. Real-Time Visualization and Monitoring (Phase 10)
 A critical challenge in developing security frameworks for autonomous agents is the inherent opacity of graph-based execution. Without visibility into the internal routing and the evaluation of trust mechanics, it is difficult to demonstrate or monitor the efficacy of the defense layers in real-time. To bridge this gap, Phase 10 introduced a live web-based visualization dashboard connected to the backend execution hooks.
@@ -572,18 +816,20 @@ Each attack vector is intercepted at its most vulnerable entry point. Critically
 
 ## 14. Trust Formula Hyperparameter Sensitivity Analysis
 
-The Trust Engine computes $T(x) = \alpha S(x) + \beta P(x) + \gamma H(x) + \delta R(x)$. The default configuration uses equal weights ($\alpha = \beta = \gamma = \delta = 0.25$). To evaluate sensitivity, we tested 5 weight configurations:
+The Trust Engine computes $T(x) = \alpha S(x) + \beta P(x) + \gamma H(x) + \delta R(x)$
+with the four weights exposed as configuration (`TRUST_ALPHA/BETA/GAMMA/DELTA` in
+`config.py`, normalised to sum to 1.0 at use sites), so the weighting can be tuned
+or ablated empirically rather than being hard-coded. The default is equal weights
+($\alpha=\beta=\gamma=\delta=0.25$).
 
-| Config | α (Source) | β (Policy) | γ (History) | δ (Retrieval) | ASR (%) | FPR (%) |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Equal (Default) | 0.25 | 0.25 | 0.25 | 0.25 | 2.5 | 4.75 |
-| Policy-Heavy | 0.10 | 0.50 | 0.20 | 0.20 | 1.5 | 7.25 |
-| History-Heavy | 0.15 | 0.20 | 0.50 | 0.15 | 3.0 | 3.50 |
-| Source-Heavy | 0.50 | 0.15 | 0.20 | 0.15 | 4.5 | 2.75 |
-| Retrieval-Heavy | 0.15 | 0.20 | 0.15 | 0.50 | 3.5 | 5.00 |
-
-### 14.1 Analysis
-The **Policy-Heavy** configuration achieves the lowest ASR (1.5%) but at the cost of a higher FPR (7.25%), making the system overly aggressive. The **History-Heavy** configuration offers the best FPR (3.50%) while maintaining competitive security (3.0% ASR), suggesting that long-term behavioral tracking is the most effective signal for distinguishing genuine users from adversaries. The **Equal** configuration provides the most balanced trade-off and is recommended as the default for general deployment.
+> **Honesty note.** A prior draft reported a five-configuration weight-sensitivity
+> table (ASR/FPR per weighting). Those numbers were **not reproducible** — no
+> committed script generates them, and they do not match any current artifact — so
+> they have been removed pending a real sweep. A reproducible weight-sensitivity
+> experiment (driving the four env weights through the deterministic harness and
+> recording ASR/FPR/TAR per configuration) is identified as future work; the
+> infrastructure for it (config-driven weights + the deterministic runner) is
+> already in place.
 
 ## 15. Confusion Matrix and Classification Metrics
 
@@ -605,7 +851,17 @@ To provide a complete statistical characterization of the detection system, we p
 | **Accuracy** | 1.0000 |
 <!-- THESIS_METRICS_END -->
 
-The confusion matrix shows perfect classification across all 196 trials. Recall of 100.0\% confirms that the secured configuration blocks every adversarial input. Precision of 100.0\% confirms that no benign requests are incorrectly blocked (FPR = 0.0\%). This result was achieved through two structural engineering fixes: (1) JSON structural unrolling before classifier inference on Hook 3, which prevents the DistilBERT classifier from treating JSON syntax as OOD anomalies, and (2) replacing the output validator's classifier dependency with a targeted keyword heuristic for persona-adoption detection, since the classifier was trained on user-side prompts and misclassifies AI-generated response text.
+This matrix is the **full-pipeline** result on the in-distribution base benchmark
+(100 directive-form attacks, 96 benign): the secured configuration blocks every
+attack (recall 100%) and allows every benign request (FPR 0%). **It must be read
+with the §10.2 caveat:** this 0%-error operating point is *pattern-coupled* with
+the deterministic oracle (the oracle complies via the same directive forms the
+pre-LLM layer strips), so it characterises in-distribution directive attacks, not
+robustness in the wild — the load-bearing robustness figure is the **16.8%**
+adaptive-adversary residual (§10.1). Note also (§10.4) that this end-to-end result
+is produced by *defense-in-depth*: the DeBERTa-PI classifier *alone* has lower
+standalone recall, and the deterministic emission-stripping, input-normalisation,
+and keyword-validator layers close the gap.
 
 ## 16. Statistical Significance
 
@@ -614,29 +870,36 @@ To establish the mathematical rigor of our security claims, we performed matched
 ### 16.1 Matched-Pair ASR Evaluation (McNemar's Test)
 Because we evaluate the same set of attack prompts on both the Baseline and Secured configurations, we use McNemar's exact binomial test to compare ASR outcomes (matched pairs). 
 
-Our evaluation on 100 matched attack pairs yielded a contingency table of discordant pairs:
+Our evaluation on 100 matched attack pairs (deterministic harness) yielded a contingency table of discordant pairs:
 - **Both Succeeded (concordant):** 0 cases
-- **Baseline Succeeded & Secured Blocked (discordant):** 8 cases
+- **Baseline Succeeded & Secured Blocked (discordant):** 74 cases
 - **Baseline Blocked & Secured Succeeded (discordant):** 0 cases
-- **Both Blocked (concordant):** 92 cases
+- **Both Blocked (concordant):** 26 cases
 
 Under the null hypothesis ($H_0$) that both configurations are equally vulnerable, we expect an equal distribution of discordant pairs. The exact binomial test evaluates the likelihood of observing this distribution under $H_0$.
 
 <!-- THESIS_STATS_START -->
 | Statistic / Test Metric | Value |
 | :--- | :--- |
-| **Chi-Squared Statistic ($\chi^2$)** | 6.1250 |
+| **Chi-Squared Statistic ($\chi^2$)** | 72.01 |
 | **Degrees of Freedom** | 1 |
-| **Exact p-value** | 0.0078 |
+| **Exact p-value** | $1.06 \times 10^{-22}$ |
 | **Significant at $\alpha = 0.05$?** | **YES** |
 <!-- THESIS_STATS_END -->
 
 <!-- THESIS_CI_TEXT_START -->
-The McNemar exact p-value of $0.0078$ is well below the significance threshold of $\alpha = 0.05$, confirming that the observed ASR reduction from 8.0\% to 0.0\% is statistically significant. We reject the null hypothesis, demonstrating that the security middleware provides statistically verifiable protection beyond what the LLM's native safety training achieves alone.
+The McNemar exact p-value ($1.06\times10^{-22}$) is far below $\alpha = 0.05$,
+confirming that the observed base-benchmark ASR reduction from **74.0\% to 0.0\%**
+is statistically significant; we reject the null hypothesis. (This concerns the
+*deterministic-oracle* base benchmark, where the baseline 74\% reflects how many
+attacks carry a parseable directive — not a live model's safety behaviour.)
 
-Additionally, 95\% bootstrap confidence intervals (10,000 iterations, seed 42) verify this divergence:
-- **Baseline ASR:** 8.0\% (95\% CI: [3.0\%, 14.0\%])
+95\% bootstrap confidence intervals (10,000 iterations, seed 42):
+- **Baseline ASR:** 74.0\% (95\% CI: [65.0\%, 82.0\%])
 - **Secured ASR:** 0.0\% (95\% CI: [0.0\%, 0.0\%])
+
+For the adaptive adversary, secured ASR is 16.8\% (95\% CI [14.0\%, 20.0\%]) without
+input normalisation and 0.0\% with it — see §10.1, which carries the robustness claim.
 <!-- THESIS_CI_TEXT_END -->
 
 The complete ASR comparison across ingestion pathways is visualized in [asr_comparison_plot.png](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/figures/asr_comparison_plot.png). Classification metrics and errors are mapped in the confusion matrices [confusion_matrices.png](file:///c:/Users/Ali%20Akarma/Documents/GitHub/secure-agent-runtime/docs/figures/confusion_matrices.png).
@@ -728,7 +991,26 @@ The culmination of this research project was the complete containerization and p
 
 This monolithic delivery mechanism (`v1.0`) guarantees environment parity across systems. A single configuration file orchestrates the dependencies and network bindings, allowing any researcher to clone the repository, provide their LLM credentials, and instantly launch the secured runtime. The inclusion of an automated benchmarking suite further allows operators to empirically validate the security assertions on their own hardware.
 
-Ultimately, this project proves that autonomous agentic AI can be fundamentally secured against malicious injection attacks across all four supported modalities (text, image, audio, video). By shifting away from static, single-point validations to a continuous, dynamic trust architecture—where capabilities are degraded contextually, and both inputs and outputs are rigidly sanitized—we achieve perfect security (0\% ASR, 100\% recall) with zero utility loss (0\% FPR, 100\% TAR) and no latency penalty. Three structural engineering contributions were critical to this result: (1) JSON structural unrolling before classifier inference eliminates OOD false positives on tool outputs; (2) domain-appropriate keyword heuristics replace the classifier where its training distribution does not match the input domain; and (3) content-hash-based injection deduplication in the Trust Engine prevents false trust cascades when the same message is scanned by multiple hooks in the multi-agent pipeline. A comprehensive end-to-end stress test suite of 154 tests (136 unit tests + 18 live API tests across all four modalities) confirms that the system correctly passes benign traffic and intercepts injections regardless of input format. These findings pave the way for the safe deployment of autonomous agents in enterprise environments.
+Ultimately, this project demonstrates that a provenance-aware, multi-layer
+runtime can **substantially reduce** prompt-injection success across all four
+supported modalities (text, image, audio, video) without degrading benign
+utility. Against an adaptive obfuscation adversary the framework reduces ASR from
+60.0\% to 16.8\% (95\% CI [14.0, 20.0]\%) at 0\% false-positive rate and 100\%
+task-accuracy retention; adding input normalisation closes the obfuscation gap to
+0.0\% for the encodings tested. We are deliberate about what these numbers do and
+do not show: the 0\% figures (base benchmark and normalised adaptive) are
+*pattern-coupled* — the deterministic susceptible-model oracle shares the
+defense's directive grammar and decoder — so they bound in-distribution attacks
+rather than guaranteeing robustness in the wild. The conservative, less-coupled
+robustness claim is the 16.8\% adaptive residual, and we identify novel encodings
+(ROT13, hex, payload-splitting, adversarially-evolved obfuscation) and a live-LLM
+replication of these deterministic results as the primary directions for future
+work. Three engineering contributions enable the result: (1) a deterministic
+offline evaluation harness that attributes blocked attacks to the defense rather
+than to a base model's safety training; (2) input normalisation before detection;
+and (3) real process isolation for tool execution (separate process, scrubbed
+environment, timeout). These findings are a step toward — not a guarantee of —
+the safe deployment of autonomous agents.
 
 ---
 

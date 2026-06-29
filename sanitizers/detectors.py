@@ -39,8 +39,29 @@ def _normalise_label(label: str) -> str:
     return "INJECTION" if str(label).upper() in _INJECTION_LABELS else "SAFE"
 
 
+def _pick_device() -> int:
+    """Return the HF pipeline device id: 0 (first CUDA GPU) when available,
+    else -1 (CPU). Overridable via DETECTOR_DEVICE = auto | cpu | cuda.
+
+    GPU gives a ~50-100x speedup for the disentangled-attention DeBERTa-PI
+    detector (~5.8s/inference on CPU → tens of ms on an RTX 3050), which is what
+    makes a single-detector setup (DeBERTa-PI for both dashboard and benchmark)
+    practical.
+    """
+    pref = os.getenv("DETECTOR_DEVICE", "auto").strip().lower()
+    if pref == "cpu":
+        return -1
+    try:
+        import torch
+        if torch.cuda.is_available() and pref in ("auto", "cuda", "gpu"):
+            return 0
+    except Exception:
+        pass
+    return -1
+
+
 def _load_pipeline(model: str, *, local: bool = False):
-    """Load a HF text-classification pipeline (CPU). Returns the callable or None."""
+    """Load a HF text-classification pipeline (GPU if available). Returns the callable or None."""
     from transformers import pipeline, AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(model)
@@ -49,7 +70,9 @@ def _load_pipeline(model: str, *, local: bool = False):
         tokenizer.model_input_names = [n for n in tokenizer.model_input_names if n != "token_type_ids"]
     except Exception:
         pass
-    return pipeline("text-classification", model=model, tokenizer=tokenizer, device=-1, truncation=True)
+    device = _pick_device()
+    logger.info(f"Loading detector '{model}' on device {'cuda:0' if device == 0 else 'cpu'}")
+    return pipeline("text-classification", model=model, tokenizer=tokenizer, device=device, truncation=True)
 
 
 class Detector:
@@ -99,7 +122,7 @@ def build_detector(
     *,
     local_distilbert_path: str = "./models/local_prompt_detector",
     promptguard_model: str = "meta-llama/Llama-Prompt-Guard-2-86M",
-    deberta_pi_model: str = "protectai/deberta-v3-base-prompt-injection-v2",
+    deberta_pi_model: str = "protectai/deberta-v3-base-prompt-injection",
 ) -> Tuple[Optional[object], str, Optional[str]]:
     """Return ``(detector, active_name, error)`` for the requested backend.
 

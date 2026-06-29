@@ -61,6 +61,7 @@ def run_condition(
     attacks: list,
     benign: list,
     output_dir: Path,
+    tag: str = "r3",
 ) -> tuple[list, list, dict]:
     configure_system(mode)
     print(f"\n{'=' * 70}")
@@ -109,14 +110,14 @@ def run_condition(
     summary = summarize_results(mode, attack_results, benign_results)
 
     write_csv(
-        output_dir / f"r3_{mode}_attacks.csv",
+        output_dir / f"{tag}_{mode}_attacks.csv",
         attack_results,
-        ["id", "family", "type", "status", "is_success", "latency_ms", "reasoning", "trust_score", "trust_tier", "provenance_records"],
+        ["id", "family", "type", "status", "is_success", "is_valid", "latency_ms", "reasoning", "trust_score", "trust_tier", "provenance_records"],
     )
     write_csv(
-        output_dir / f"r3_{mode}_benign.csv",
+        output_dir / f"{tag}_{mode}_benign.csv",
         benign_results,
-        ["id", "status", "latency_ms", "was_blocked", "trust_score", "trust_tier", "provenance_records"],
+        ["id", "status", "latency_ms", "was_blocked", "is_valid", "task_completed", "trust_score", "trust_tier", "provenance_records"],
     )
 
     return attack_results, benign_results, summary
@@ -228,16 +229,37 @@ def main() -> None:
     parser.add_argument("--smoke-test", action="store_true", help="Run 20 attacks + 20 benign per system")
     parser.add_argument("--max-attacks", type=int, default=None, help="Cap number of attacks")
     parser.add_argument("--max-benign", type=int, default=None, help="Cap number of benign requests")
+    parser.add_argument(
+        "--deterministic",
+        action="store_true",
+        help="Use the offline deterministic susceptible-model oracle (no live LLM, "
+             "fully reproducible). Recommended for all published numbers.",
+    )
+    parser.add_argument("--attacks-file", default=None, help="Path to an alternative attack set (e.g. datasets/adaptive_attacks.json)")
+    parser.add_argument("--benign-file", default=None, help="Path to an alternative benign set")
+    parser.add_argument("--tag", default="r3", help="Output filename prefix (e.g. 'r3_adaptive')")
     args = parser.parse_args()
 
+    if args.deterministic:
+        os.environ["DETERMINISTIC_AGENT"] = "1"
+        # No live LLM → no API rate limits to respect, and LangSmith tracing
+        # only adds noise/rate-limit errors. Disable both for a clean run.
+        os.environ["LANGCHAIN_TRACING_V2"] = "false"
+        os.environ["LANGCHAIN_TRACING"] = "false"
+        global DELAY_BETWEEN_REQUESTS
+        DELAY_BETWEEN_REQUESTS = 0.0
+        print("DETERMINISTIC_AGENT=1 — offline susceptible-model oracle active.")
+
+    tag = args.tag
     datasets_dir = PROJECT_ROOT / "datasets"
-    attacks, benign = load_datasets(args.max_attacks, args.max_benign)
+    attacks, benign = load_datasets(args.max_attacks, args.max_benign, args.attacks_file, args.benign_file)
     attacks, benign = sample_datasets(attacks, benign, seed=args.seed, smoke=args.smoke_test)
 
     manifest = {
-        "phase": "R3",
+        "phase": tag,
         "seed": args.seed,
         "smoke_test": args.smoke_test,
+        "attacks_file": args.attacks_file or "datasets/attacks.json",
         "n_attacks": len(attacks),
         "n_benign": len(benign),
         "attack_ids": [a["id"] for a in attacks],
@@ -245,13 +267,13 @@ def main() -> None:
         "started_at": datetime.now(timezone.utc).isoformat(),
         "methodology": "runtime-driven, matched-pair, deterministic judge",
     }
-    with open(datasets_dir / "r3_experiment_manifest.json", "w", encoding="utf-8") as f:
+    with open(datasets_dir / f"{tag}_experiment_manifest.json", "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
-    print(f"Phase R3 experiment: {len(attacks)} attacks + {len(benign)} benign (seed={args.seed})")
+    print(f"Phase {tag} experiment: {len(attacks)} attacks + {len(benign)} benign (seed={args.seed})")
 
-    _, _, baseline_summary = run_condition("baseline", attacks, benign, datasets_dir)
-    _, _, secured_summary = run_condition("secured", attacks, benign, datasets_dir)
+    _, _, baseline_summary = run_condition("baseline", attacks, benign, datasets_dir, tag=tag)
+    _, _, secured_summary = run_condition("secured", attacks, benign, datasets_dir, tag=tag)
 
     comparison = {
         "manifest": manifest,
@@ -259,7 +281,7 @@ def main() -> None:
         "secured": secured_summary,
         "completed_at": datetime.now(timezone.utc).isoformat(),
     }
-    with open(datasets_dir / "r3_comparison_summary.json", "w", encoding="utf-8") as f:
+    with open(datasets_dir / f"{tag}_comparison_summary.json", "w", encoding="utf-8") as f:
         json.dump(comparison, f, indent=2)
 
     generate_report(

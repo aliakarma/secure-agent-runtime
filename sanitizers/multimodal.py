@@ -213,8 +213,12 @@ class VisualSanitizer:
             except Exception:
                 pass
 
-        # Try to use OpenAI API OCR first if key is available
-        api_key = os.getenv("OPENAI_API_KEY")
+        # Try to use OpenAI API OCR first if key is available. FORCE_LOCAL_EXTRACTION=1
+        # disables the network path so "offline" benchmarks are genuinely offline
+        # and reproducible (a prior isolation run silently called the live vision
+        # API per image, making it network-bound and non-deterministic).
+        _force_local = os.getenv("FORCE_LOCAL_EXTRACTION", "0").strip().lower() in ("1", "true", "yes", "on")
+        api_key = None if _force_local else os.getenv("OPENAI_API_KEY")
         if api_key:
             try:
                 import base64
@@ -330,7 +334,8 @@ class AudioSanitizer:
             with open(sidecar_path, "r", encoding="utf-8") as f:
                 return f.read().strip()
 
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = (None if os.getenv("FORCE_LOCAL_EXTRACTION","0").strip().lower() in ("1","true","yes","on")
+                   else os.getenv("OPENAI_API_KEY"))
         if api_key:
             try:
                 from openai import OpenAI
@@ -414,7 +419,8 @@ class VideoSanitizer:
             frame_count += 1
         cap.release()
 
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = (None if os.getenv("FORCE_LOCAL_EXTRACTION","0").strip().lower() in ("1","true","yes","on")
+                   else os.getenv("OPENAI_API_KEY"))
         if api_key and frames:
             try:
                 import base64
@@ -596,7 +602,8 @@ class PdfSanitizer:
             except Exception:
                 continue
 
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = (None if os.getenv("FORCE_LOCAL_EXTRACTION","0").strip().lower() in ("1","true","yes","on")
+                   else os.getenv("OPENAI_API_KEY"))
         if api_key and images:
             try:
                 import base64

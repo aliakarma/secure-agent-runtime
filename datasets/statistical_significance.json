@@ -1,27 +1,27 @@
 {
     "mcnemar_asr": {
         "both_succeeded": 0,
-        "baseline_succeeded_secured_blocked": 8,
+        "baseline_succeeded_secured_blocked": 74,
         "baseline_blocked_secured_succeeded": 0,
-        "both_blocked": 92,
-        "chi2_statistic": 6.125,
-        "p_value": 0.0078125,
+        "both_blocked": 26,
+        "chi2_statistic": 72.0135,
+        "p_value": 1.0587911840678754e-22,
         "significant_at_alpha_0_05": true
     },
     "latency_paired_t_test": {
         "sample_size": 100,
-        "mean_baseline_latency_ms": 3063.96,
-        "mean_secured_latency_ms": 2386.83,
-        "t_statistic": 5.9603,
-        "p_value": 3.882807773737238e-08,
+        "mean_baseline_latency_ms": 1307.46,
+        "mean_secured_latency_ms": 1501.05,
+        "t_statistic": -2.3103,
+        "p_value": 0.022947627069031286,
         "significant_at_alpha_0_05": true
     },
     "bootstrap_confidence_intervals": {
         "baseline_asr": {
-            "mean": 8.0,
+            "mean": 74.0,
             "ci_95": [
-                3.0,
-                14.0
+                65.0,
+                82.0
             ]
         },
         "secured_asr": {
@@ -45,5 +45,11 @@
                 100.0
             ]
         }
+    },
+    "effect_sizes": {
+        "asr_reduction_pp": 74.0,
+        "cohen_h": 2.0715,
+        "cohen_h_magnitude": "large",
+        "mcnemar_odds_ratio": 149.0
     }
 }

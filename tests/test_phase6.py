@@ -52,20 +52,33 @@ def test_policy_enforcement():
         mcp_sandbox.allowed_tools.append("search_flights")
 
     current_session_id.set("test_session")
-    
-    # Test HIGH
-    current_trust_tier.set("HIGH")
-    assert "Success" in action_tool("test")
-    
-    # Test LOW
-    current_trust_tier.set("LOW")
-    assert "Error: Action blocked" in action_tool("test")
-    
-    # Test MEDIUM
-    current_trust_tier.set("MEDIUM")
-    assert "Error: Tool action_tool blocked" in action_tool("test")
-    # Medium allows search_flights
-    assert "Flights" in search_flights("test")
+
+    # This unit test verifies trust-tier POLICY enforcement (Hook 2), not MCP
+    # process isolation. With isolation on, the sandbox dispatches the *real*
+    # registered search_flights impl by name instead of this test's mock, so we
+    # disable isolation here to exercise the passed mock in-process.
+    import os as _os
+    _prev_iso = _os.environ.get("MCP_ISOLATION")
+    _os.environ["MCP_ISOLATION"] = "0"
+    try:
+        # Test HIGH
+        current_trust_tier.set("HIGH")
+        assert "Success" in action_tool("test")
+
+        # Test LOW
+        current_trust_tier.set("LOW")
+        assert "Error: Action blocked" in action_tool("test")
+
+        # Test MEDIUM
+        current_trust_tier.set("MEDIUM")
+        assert "Error: Tool action_tool blocked" in action_tool("test")
+        # Medium allows search_flights (read-only tool)
+        assert "Flights" in search_flights("test")
+    finally:
+        if _prev_iso is None:
+            _os.environ.pop("MCP_ISOLATION", None)
+        else:
+            _os.environ["MCP_ISOLATION"] = _prev_iso
 
 def test_provenance_ledger_and_agent():
     from sanitizers.provenance import provenance_ledger, provenance_agent

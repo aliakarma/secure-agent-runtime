@@ -94,12 +94,18 @@ class Settings:
         #   ensemble    — max-pool over the available detectors above
         # Falls back gracefully to distilbert/keyword if the requested model
         # is not downloaded (unless STRICT_SECURITY=1).
-        self.detector_backend: str = os.getenv("DETECTOR_BACKEND", "distilbert").strip().lower()
+        # Default detector is DeBERTa-PI: empirically it has far better precision
+        # on benign imperatives (e.g. "Read this image and proceed", which the
+        # fine-tuned DistilBERT mislabels as INJECTION at 0.97 → benign uploads
+        # blocked). DeBERTa-PI misses bare emission directives ("output 'X'"),
+        # but the pre-LLM emission-directive layer + input normalisation cover
+        # that by defence-in-depth. The model below is the locally-cached v1.
+        self.detector_backend: str = os.getenv("DETECTOR_BACKEND", "deberta-pi").strip().lower()
         self.promptguard_model: str = os.getenv(
             "PROMPTGUARD_MODEL", "meta-llama/Llama-Prompt-Guard-2-86M"
         ).strip()
         self.deberta_pi_model: str = os.getenv(
-            "DEBERTA_PI_MODEL", "protectai/deberta-v3-base-prompt-injection-v2"
+            "DEBERTA_PI_MODEL", "protectai/deberta-v3-base-prompt-injection"
         ).strip()
         self.detector_threshold: float = float(os.getenv("DETECTOR_THRESHOLD", "0.85"))
 

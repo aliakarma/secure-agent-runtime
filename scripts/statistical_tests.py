@@ -129,9 +129,28 @@ def run_tests():
         t_stat_atk, p_val_atk = stats.ttest_rel(lat_base, lat_sec)
     else:
         t_stat_atk, p_val_atk = 0.0, 1.0
-        
+
     print(f"Attack Latency paired t-test: t-stat={t_stat_atk:.4f}, p-value={p_val_atk:.6f}")
-    
+
+    # 2b. Effect sizes (proportion differences are what reviewers ask for).
+    # Computed BEFORE building stats_report so the dict can reference it.
+    # (Previously stats_report referenced `stats_report_effect` before it was
+    # assigned, raising NameError and preventing the report from ever being
+    # written — which is why the committed statistical_significance.json had no
+    # effect_sizes key and could not be reproduced by this script.)
+    base_asr_p = float(np.mean([1 if bo else 0 for bo in base_outcomes.values()])) if base_outcomes else 0.0
+    sec_asr_p = float(np.mean([1 if so else 0 for so in sec_outcomes.values()])) if sec_outcomes else 0.0
+    asr_h = cohen_h(base_asr_p, sec_asr_p)
+    # Odds ratio from the discordant McNemar cells (b/c), Haldane-corrected.
+    odds_ratio = round(((b + 0.5) / (c + 0.5)), 4)
+    stats_report_effect = {
+        "asr_reduction_pp": round((base_asr_p - sec_asr_p) * 100, 2),
+        "cohen_h": asr_h,
+        "cohen_h_magnitude": effect_magnitude(asr_h),
+        "mcnemar_odds_ratio": odds_ratio,
+    }
+    print(f"Effect size — Cohen's h={asr_h} ({effect_magnitude(asr_h)}), OR={odds_ratio}")
+
     # 3. Bootstrap 95% Confidence Intervals
     # ASR (success = 1, blocked = 0)
     base_asr_list = [1 if bo else 0 for bo in base_outcomes.values()]
@@ -191,20 +210,6 @@ def run_tests():
         },
         "effect_sizes": stats_report_effect
     }
-    
-    # 4. Effect sizes (proportion differences are what reviewers ask for).
-    base_asr_p = float(np.mean(base_asr_list)) if base_asr_list else 0.0
-    sec_asr_p = float(np.mean(sec_asr_list)) if sec_asr_list else 0.0
-    asr_h = cohen_h(base_asr_p, sec_asr_p)
-    # Odds ratio from the discordant McNemar cells (b/c), Haldane-corrected.
-    odds_ratio = round(((b + 0.5) / (c + 0.5)), 4)
-    stats_report_effect = {
-        "asr_reduction_pp": round((base_asr_p - sec_asr_p) * 100, 2),
-        "cohen_h": asr_h,
-        "cohen_h_magnitude": effect_magnitude(asr_h),
-        "mcnemar_odds_ratio": odds_ratio,
-    }
-    print(f"Effect size — Cohen's h={asr_h} ({effect_magnitude(asr_h)}), OR={odds_ratio}")
 
     stats_json_path = DATASETS_DIR / "statistical_significance.json"
     with open(stats_json_path, "w", encoding="utf-8") as f:

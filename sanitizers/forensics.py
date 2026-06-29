@@ -95,7 +95,7 @@ def chi_square_lsb(image_path: str) -> Dict[str, Any]:
     try:
         import numpy as np
         from PIL import Image
-        from scipy.stats import chisquare
+        from scipy.stats import chi2 as _chi2dist
     except Exception as e:
         result["reason"] = f"steganalysis deps unavailable: {e}"
         return result
@@ -107,26 +107,39 @@ def chi_square_lsb(image_path: str) -> Dict[str, Any]:
             result["reason"] = "image too small to analyse"
             return result
 
-        # Histogram of all 256 values; pair them as (2i, 2i+1).
+        # Westfeld-Pfitzmann chi-square attack on Pairs of Values (2i, 2i+1).
+        #
+        # Sequential LSB embedding of a (near-)uniform payload EQUALISES each
+        # pair, driving the observed count of 2i toward the pair mean
+        # (n_2i + n_2i+1)/2. So the embedding signature is the INABILITY to
+        # reject "the pair is already equal": a HIGH p-value. A clean natural
+        # image has unequal pairs -> large chi-square -> LOW p-value.
+        #
+        # The previous implementation reported `1 - p_value` and called a LOW
+        # p-value (large deviation) "suspected" — exactly backwards. That made
+        # every sufficiently-populated image score ~1.0 (p_value≈0), so the test
+        # detected "is an image", not "contains LSB stego", and blocked benign
+        # uploads at 100% FPR.
         hist = np.bincount(arr, minlength=256).astype(float)
-        even = hist[0::2]
-        odd = hist[1::2]
-        expected = (even + odd) / 2.0
-        mask = expected > 5  # chi-square validity: expected count >= 5
-        if mask.sum() < 8:
-            result["reason"] = "insufficient populated bins"
+        n_2i = hist[0::2]
+        n_2i1 = hist[1::2]
+        expected = (n_2i + n_2i1) / 2.0
+        mask = expected >= 5  # chi-square validity: expected count >= 5
+        if int(mask.sum()) < 8:
+            result["reason"] = "insufficient populated pairs for chi-square"
             return result
 
-        observed = even[mask]
+        obs = n_2i[mask]
         exp = expected[mask]
-        # Re-scale observed to the same total as expected to satisfy chisquare.
-        observed = observed * (exp.sum() / max(observed.sum(), 1e-9))
-        stat, p_value = chisquare(observed, exp)
-        embedding_likelihood = float(max(0.0, min(1.0, 1.0 - p_value)))
+        stat = float(np.sum((obs - exp) ** 2 / exp))
+        dof = int(mask.sum()) - 1
+        # p_value = P(chi-square_dof > stat). High p == pairs already equalised
+        # == LSB-embedding signature.
+        p_embed = float(_chi2dist.sf(stat, dof))
         result.update({
-            "suspected": embedding_likelihood > 0.95,
-            "score": round(embedding_likelihood, 4),
-            "reason": f"chi-square p_value={p_value:.4g}",
+            "suspected": p_embed > 0.95,
+            "score": round(p_embed, 4),
+            "reason": f"chi-square stat={stat:.1f}, dof={dof}, p(embed)={p_embed:.4g}",
         })
         return result
     except Exception as e:

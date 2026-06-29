@@ -4,20 +4,20 @@
     "completed": 50,
     "blocked": 0,
     "tar_pct": 100.0,
-    "latency_mean_ms": 1171.52
+    "latency_mean_ms": 1458.59
   },
   "config_B_fast": {
     "total_benign": 50,
     "completed": 50,
     "blocked": 0,
     "tar_pct": 100.0,
-    "latency_mean_ms": 988.96
+    "latency_mean_ms": 1339.34
   },
   "config_C_secure": {
     "total_benign": 50,
-    "completed": 0,
-    "blocked": 50,
-    "tar_pct": 0.0,
-    "latency_mean_ms": 1566.13
+    "completed": 50,
+    "blocked": 0,
+    "tar_pct": 100.0,
+    "latency_mean_ms": 1518.91
   }
 }

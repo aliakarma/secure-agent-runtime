@@ -27,24 +27,48 @@ _compiled_graphs: dict = {}
 
 def build_travel_graph() -> StateGraph:
     """Build and compile the multi-agent travel graph (cached per config)."""
-    cache_key = os.getenv("DISABLE_ALL_SECURITY", "0")
+    baseline = os.getenv("DISABLE_ALL_SECURITY", "0") == "1"
+    deterministic = os.getenv("DETERMINISTIC_AGENT", "0") == "1"
+    cache_key = f"{int(baseline)}-{int(deterministic)}"
     cached = _compiled_graphs.get(cache_key)
     if cached is not None:
         return cached
 
     # Define the graph using our AgentState
     graph = StateGraph(AgentState)
-    
-    # Ablation support: when DISABLE_ALL_SECURITY=1, use raw agent nodes
-    if os.getenv("DISABLE_ALL_SECURITY", "0") == "1":
-        logger.warning("BASELINE MODE: All security wrappers DISABLED")
-        graph.add_node("Supervisor", supervisor_node)
-        graph.add_node("FlightAgent", flight_agent_node)
-        graph.add_node("HotelAgent", hotel_agent_node)
+
+    # DETERMINISTIC_AGENT=1 swaps the live gpt-4o-mini nodes for the offline,
+    # zero-resistance oracle (agents/deterministic_agent.py). This makes the
+    # whole pipeline reproducible and attributes every blocked attack to the
+    # *defense* removing the directive, not to the base model's safety training.
+    if deterministic:
+        from agents.deterministic_agent import (
+            deterministic_supervisor_node,
+            deterministic_flight_node,
+            deterministic_hotel_node,
+        )
+        sup_node, flight_node, hotel_node = (
+            deterministic_supervisor_node,
+            deterministic_flight_node,
+            deterministic_hotel_node,
+        )
     else:
-        graph.add_node("Supervisor", secure_routing_hook(supervisor_node))
-        graph.add_node("FlightAgent", secure_agent_node("FlightAgent", flight_agent_node))
-        graph.add_node("HotelAgent", secure_agent_node("HotelAgent", hotel_agent_node))
+        sup_node, flight_node, hotel_node = (
+            supervisor_node,
+            flight_agent_node,
+            hotel_agent_node,
+        )
+
+    # Ablation support: when DISABLE_ALL_SECURITY=1, use raw agent nodes
+    if baseline:
+        logger.warning("BASELINE MODE: All security wrappers DISABLED")
+        graph.add_node("Supervisor", sup_node)
+        graph.add_node("FlightAgent", flight_node)
+        graph.add_node("HotelAgent", hotel_node)
+    else:
+        graph.add_node("Supervisor", secure_routing_hook(sup_node))
+        graph.add_node("FlightAgent", secure_agent_node("FlightAgent", flight_node))
+        graph.add_node("HotelAgent", secure_agent_node("HotelAgent", hotel_node))
     
     # The graph always starts at the Supervisor
     graph.add_edge(START, "Supervisor")
@@ -113,9 +137,16 @@ def run_travel_graph(user_input: str, session_id: str = "default_session", input
     
     try:
         final_state = app.invoke(state, config=config)
+        final_state.setdefault("errored", False)
     except Exception as e:
         logger.error("travel_graph_execution_failed", error=str(e), session_id=session_id)
-        final_state = state # Return what we have so far
+        final_state = state  # Return what we have so far
+        # Flag the failure so the evaluation harness can EXCLUDE this trial
+        # instead of scoring an empty (errored) response as "secure". Silently
+        # swallowing the exception is what produced 88/100 bogus "secure"
+        # verdicts in the original R3 run.
+        final_state["errored"] = True
+        final_state["error_detail"] = str(e)
     
     # 4. Save new memory
     last_message = final_state["messages"][-1].content if final_state["messages"] else ""

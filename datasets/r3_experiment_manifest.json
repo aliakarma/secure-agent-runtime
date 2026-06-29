@@ -1,7 +1,8 @@
 {
-  "phase": "R3",
+  "phase": "r3",
   "seed": 42,
   "smoke_test": false,
+  "attacks_file": "datasets/attacks.json",
   "n_attacks": 100,
   "n_benign": 96,
   "attack_ids": [
@@ -204,6 +205,6 @@
     "benign_95",
     "benign_96"
   ],
-  "started_at": "2026-06-13T06:29:24.418020+00:00",
+  "started_at": "2026-06-25T10:39:45.669390+00:00",
   "methodology": "runtime-driven, matched-pair, deterministic judge"
 }

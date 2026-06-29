@@ -2,6 +2,16 @@
 
 **Generated:** 2026-06-10 19:58 UTC
 
+> **⚠️ SUPERSEDED — DO NOT CITE.** This report predates the 2026-06 evaluation-
+> integrity overhaul. Its numbers (e.g. Experiment I secured ASR 15.0%, Config C
+> TAR 0.0%, hook FPRs of 91–100%) came from the live-LLM harness whose ASR/TAR
+> were degenerate (empty agent outputs scored as "secure"; TAR measured only
+> marker-absence). The current, reproducible results live in `README.md` →
+> **Key Results** and `thesis_draft.md` §10: deterministic base benchmark
+> (secured ASR 0.0%, pattern-coupled) and the load-bearing **adaptive adversary
+> (secured ASR 16.8%, 95% CI [14.0, 20.0]%, FPR 0%, TAR 100%)**. This file is
+> retained only for provenance and must be regenerated before publication.
+
 This report consolidates the final outcomes of all **8 security experiments** proposed in the Thesis, executed in a unified completely local and offline pipeline.
 
 ---

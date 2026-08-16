@@ -46,7 +46,8 @@ def train_model():
         
         # Tokenization function
         def tokenize_func(batch):
-            return tokenizer(batch["text"], truncation=True, padding="max_length", max_length=128)
+            # Paper §5.4: maximum sequence length 256.
+            return tokenizer(batch["text"], truncation=True, padding="max_length", max_length=256)
             
         logger.info("Tokenizing datasets...")
         tokenized_train = train_dataset.map(tokenize_func, batched=True)
@@ -67,13 +68,19 @@ def train_model():
             output_dir=output_dir,
             eval_strategy="epoch",
             save_strategy="epoch",
+            # Paper §5.4: AdamW at 2e-5 under linear decay with 10% warmup,
+            # batch size 32, weight decay 0.01, 3 epochs, early stopping on
+            # validation F1 with patience 1.
             learning_rate=2e-5,
-            per_device_train_batch_size=8,
-            per_device_eval_batch_size=8,
+            lr_scheduler_type="linear",
+            warmup_ratio=0.10,
+            per_device_train_batch_size=32,
+            per_device_eval_batch_size=32,
             num_train_epochs=3,
             weight_decay=0.01,
             load_best_model_at_end=True,
-            metric_for_best_model="eval_loss",
+            metric_for_best_model="f1",
+            greater_is_better=True,
             logging_steps=10,
             report_to="none", # Disable weight & biases
             fp16=(device_name == "cuda"), # Use mixed precision on GPU for faster training
@@ -98,14 +105,17 @@ def train_model():
                 "recall": recall
             }
             
-        # Instantiate Trainer
+        # Instantiate Trainer with early stopping on validation F1, patience 1
+        # (paper §5.4).
+        from transformers import EarlyStoppingCallback
         trainer = Trainer(
             model=model,
             args=training_args,
             train_dataset=tokenized_train,
             eval_dataset=tokenized_test,
             processing_class=tokenizer,
-            compute_metrics=compute_metrics
+            compute_metrics=compute_metrics,
+            callbacks=[EarlyStoppingCallback(early_stopping_patience=1)],
         )
         
         logger.info("Starting classifier fine-tuning loop...")

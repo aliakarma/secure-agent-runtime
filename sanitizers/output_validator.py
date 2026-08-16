@@ -32,6 +32,32 @@ class OutputValidator:
         text_lower = text.lower()
         return any(m in text_lower for m in markers)
 
+    @staticmethod
+    def _classifier_persona_check(text: str) -> bool:
+        """Substitute the learned detector for the keyword heuristic.
+
+        Paper §5.8 explains why this is the *wrong* component at this position:
+        the detector is fine-tuned to recognise injection *attempts*, which are
+        adversarial text written by an attacker, whereas the validator's job is
+        to recognise persona *compromise*, which is compliant text written by
+        the model itself after capture. Those distributions barely overlap.
+        Table 10 measures the substitution as five additional successful attacks
+        on the higher-base-rate arm; ``OUTPUT_VALIDATOR_USE_CLASSIFIER=1``
+        enables it for that row.
+        """
+        try:
+            from sanitizers.multimodal import TextSanitizer
+            return bool(TextSanitizer().sanitize(text).is_malicious)
+        except Exception as exc:
+            logger.warning(f"Classifier-mode output validation failed: {exc}")
+            return False
+
+    def _persona_check(self, text: str) -> bool:
+        from config import settings
+        if settings.output_validator_use_classifier:
+            return self._classifier_persona_check(text)
+        return self._output_persona_check(text)
+
     def validate(self, response_text: str) -> ValidatorResult:
         """
         Validates the generated AI response using local heuristic and regex checks.
@@ -39,8 +65,8 @@ class OutputValidator:
         if not response_text or not response_text.strip():
             return ValidatorResult(is_safe=True, reason="Empty output", needs_human_approval=False)
 
-        # 1. Check for persona-adoption / override language via keyword heuristic
-        if self._output_persona_check(response_text):
+        # 1. Check for persona-adoption / override language
+        if self._persona_check(response_text):
             return ValidatorResult(
                 is_safe=False,
                 reason="Persona adoption or policy override detected in output.",

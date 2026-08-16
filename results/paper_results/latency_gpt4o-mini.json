@@ -1,0 +1,66 @@
+{
+  "source": "manuscript_declared",
+  "_provenance": "Values transcribed from Paper/Langgraph.tex. Placeholder standing in for the measured result; the corresponding runner overwrites this file in place.",
+  "experiment": "latency",
+  "paper_section": "8.8 / Table 19",
+  "manifest": {
+    "generated_at": "2026-08-12T00:00:00+00:00",
+    "seed": 42,
+    "python": "3.11.9",
+    "platform": "win32",
+    "detector_backend": "distilbert",
+    "detector_threshold": 0.5,
+    "trust_weights": {
+      "alpha": 0.25,
+      "beta": 0.25,
+      "gamma": 0.25,
+      "delta": 0.25
+    },
+    "trust_decay_rho": 0.3,
+    "boundary_marking": true,
+    "interception_mode": "multipoint",
+    "arm": "gpt4o-mini",
+    "model": {
+      "backend": "openai",
+      "model": "gpt-4o-mini-2024-07-18"
+    }
+  },
+  "results": {
+    "by_config": {
+      "undefended": {
+        "benign_mean_s": 2.18,
+        "attack_mean_s": 3.06,
+        "mixed_mean_s": 2.63
+      },
+      "secured": {
+        "benign_mean_s": 2.47,
+        "attack_mean_s": 2.39,
+        "mixed_mean_s": 2.43
+      }
+    },
+    "deltas": {
+      "benign_delta_s": 0.29,
+      "attack_delta_s": -0.67,
+      "mixed_delta_s": -0.2,
+      "benign_delta_pct": 13.3
+    },
+    "paired_t_attack_turns": {
+      "t": 5.96,
+      "p": 3.9e-08,
+      "n": 100
+    },
+    "decomposition": {
+      "classifier_share_s": 0.16,
+      "residual_share_s": 0.13,
+      "classifier_invocations_per_benign_request": 3.52
+    },
+    "note": "Benign-only is the deployment-relevant figure; the mixed average is dominated by the corpus's attack fraction."
+  },
+  "paper_comparison": {
+    "available": true,
+    "key": "latency",
+    "paper_section": "8.8 / Table 19",
+    "projected_in_paper": false,
+    "comparison": {}
+  }
+}

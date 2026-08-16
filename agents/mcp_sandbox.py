@@ -62,12 +62,78 @@ def _sandbox_child(tool_name: str, parameters: Dict[str, Any], out_q) -> None:
         out_q.put(("err", f"{type(exc).__name__}: {exc}"))
 
 
+# Declared parameter schemas (paper §5.3). Each entry maps a tool to its
+# required parameters, its optional parameters, and the expected type of each.
+# ``max_len`` bounds any string value; oversize values are truncated rather than
+# rejected, because a long-but-well-formed destination is a usability problem
+# rather than a protocol violation.
+TOOL_SCHEMAS: Dict[str, Dict[str, Any]] = {
+    "search_flights": {
+        "required": {"destination": str},
+        "optional": {"origin": str, "date": str},
+    },
+    "reserve_hotel": {
+        "required": {"location": str},
+        "optional": {"checkin": str, "checkout": str},
+    },
+    "read_image_ocr": {"required": {"image_path": str}, "optional": {}},
+    "process_audio_memo": {"required": {"audio_path": str}, "optional": {}},
+    "analyze_video_feed": {"required": {"video_path": str}, "optional": {}},
+    "read_pdf_document": {"required": {"pdf_path": str}, "optional": {}},
+    "sandbox_selfcheck": {"required": {}, "optional": {"secret_env": str}},
+}
+
+MAX_PARAM_LEN = 1000
+
+
 class MCPSandbox:
     def __init__(self):
         self.allowed_tools = [
             "search_flights", "reserve_hotel", "read_image_ocr",
             "process_audio_memo", "analyze_video_feed", "read_pdf_document",
         ]
+
+    def _validate_schema(self, tool_name: str, parameters: Dict[str, Any]):
+        """Check a call against the tool's declared schema.
+
+        Returns ``(ok, detail)``. Mutates *parameters* in place to truncate
+        oversize string values, which is a bound rather than a rejection.
+        """
+        schema = TOOL_SCHEMAS.get(tool_name)
+        if schema is None:
+            # An allow-listed tool with no declared schema is a configuration
+            # gap, not an attack: bound the values and let it through.
+            for key, value in list(parameters.items()):
+                if isinstance(value, str) and len(value) > MAX_PARAM_LEN:
+                    parameters[key] = value[:MAX_PARAM_LEN]
+            return True, "no schema declared"
+
+        required, optional = schema["required"], schema["optional"]
+        known = {**required, **optional}
+
+        unknown = set(parameters) - set(known)
+        if unknown:
+            return False, f"unknown parameter(s): {sorted(unknown)}"
+
+        missing = set(required) - set(parameters)
+        if missing:
+            return False, f"missing required parameter(s): {sorted(missing)}"
+
+        for key, value in list(parameters.items()):
+            expected = known[key]
+            if not isinstance(value, expected):
+                return False, (
+                    f"parameter '{key}' expected {expected.__name__}, "
+                    f"got {type(value).__name__}"
+                )
+            if isinstance(value, str):
+                if not value.strip() and key in required:
+                    return False, f"required parameter '{key}' is empty"
+                if len(value) > MAX_PARAM_LEN:
+                    logger.warning(f"[MCP Sandbox] Parameter {key} exceeded max length. Truncating.")
+                    parameters[key] = value[:MAX_PARAM_LEN]
+
+        return True, "ok"
 
     def _isolation_enabled(self) -> bool:
         return os.getenv("MCP_ISOLATION", "1").strip().lower() in ("1", "true", "yes", "on")
@@ -84,11 +150,16 @@ class MCPSandbox:
         if tool_name not in self.allowed_tools:
             return self._format_mcp_error(-32601, f"Method not found: {tool_name}")
 
-        # Strict parameter validation (length cap) before anything runs.
-        for key, value in list(parameters.items()):
-            if isinstance(value, str) and len(value) > 1000:
-                logger.warning(f"[MCP Sandbox] Parameter {key} exceeded max length. Truncating.")
-                parameters[key] = value[:1000]
+        # Phase 3 schema + parameter well-formedness (paper §5.3). This phase
+        # is architecturally distinct from the classifier-based hooks: it
+        # enforces that the JSON-RPC payload matches the tool's declared
+        # parameter schema, not that its content is free of injected
+        # instructions. A call carrying unknown parameters, missing required
+        # ones, or values of the wrong type never reaches the tool.
+        ok, detail = self._validate_schema(tool_name, parameters)
+        if not ok:
+            logger.warning(f"[MCP Sandbox] Schema violation for {tool_name}: {detail}")
+            return self._format_mcp_error(-32602, f"Invalid params: {detail}")
 
         try:
             from agents.tool_impls import TOOL_REGISTRY

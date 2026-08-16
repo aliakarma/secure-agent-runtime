@@ -28,6 +28,11 @@ class AgentState(TypedDict):
     # Session ID for state tracking
     session_id: str
 
+    # R(x) for the retrieved memory fragment governing this turn: the cosine
+    # similarity between the fragment and the active query (paper §5.5).
+    # 1.0 when nothing was retrieved, so non-retrieval transitions are unaffected.
+    retrieval_confidence: float
+
     # True when the raw inputs were already classified at the ingestion
     # boundary (multimodal endpoint). Set by the server, never derived from
     # user content, so the assembled enriched prompt can safely skip the

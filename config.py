@@ -100,24 +100,89 @@ class Settings:
         # blocked). DeBERTa-PI misses bare emission directives ("output 'X'"),
         # but the pre-LLM emission-directive layer + input normalisation cover
         # that by defence-in-depth. The model below is the locally-cached v1.
-        self.detector_backend: str = os.getenv("DETECTOR_BACKEND", "deberta-pi").strip().lower()
+        # PAPER SPEC (§5.4, Table 3): DistilBERT is the selected detector —
+        # chosen over DeBERTa-v3 on the CPU latency profile (1.66 s vs 5.82 s
+        # batch over the 240-prompt validation split) at a cost of 2.3 points
+        # of validation accuracy. Set DETECTOR_BACKEND=deberta-pi to restore
+        # the higher-precision backend; note the live-dashboard finding that
+        # DistilBERT flags benign imperatives ("Read this image and proceed")
+        # at 0.97, which is why deberta-pi was previously the default here.
+        self.detector_backend: str = os.getenv("DETECTOR_BACKEND", "distilbert").strip().lower()
         self.promptguard_model: str = os.getenv(
             "PROMPTGUARD_MODEL", "meta-llama/Llama-Prompt-Guard-2-86M"
         ).strip()
         self.deberta_pi_model: str = os.getenv(
             "DEBERTA_PI_MODEL", "protectai/deberta-v3-base-prompt-injection"
         ).strip()
-        self.detector_threshold: float = float(os.getenv("DETECTOR_THRESHOLD", "0.85"))
+        # Paper §5.4: "a fixed decision threshold of 0.5 on the injection-class
+        # probability". This value now drives the sanitizer directly — it was
+        # previously shadowed by a hardcoded 0.85 in sanitizers/multimodal.py.
+        self.detector_threshold: float = float(os.getenv("DETECTOR_THRESHOLD", "0.5"))
 
         # ── Trust Engine weights (T = αS + βP + γH + δR) ───────────────
         # Config-driven so the weighting can be tuned / ablated empirically
         # instead of being hard-coded. Normalised to sum to 1.0 at use sites.
+        # Paper §5.5: equal weighting is the default; §8.14 sweeps five settings.
         self.trust_alpha: float = float(os.getenv("TRUST_ALPHA", "0.25"))  # source reliability
         self.trust_beta: float = float(os.getenv("TRUST_BETA", "0.25"))    # policy compliance
         self.trust_gamma: float = float(os.getenv("TRUST_GAMMA", "0.25"))  # historical behaviour
         self.trust_delta: float = float(os.getenv("TRUST_DELTA", "0.25"))  # retrieval confidence
         self.trust_high_threshold: float = float(os.getenv("TRUST_HIGH_THRESHOLD", "0.8"))
         self.trust_medium_threshold: float = float(os.getenv("TRUST_MEDIUM_THRESHOLD", "0.4"))
+
+        # ── Trust Engine source-reliability tiers S(x) (paper §5.5) ─────
+        # "An internal system prompt scores 1.0, a user turn 0.5, a tool or
+        # API response 0.3, and a retrieved memory fragment 0.4."
+        self.trust_source_system: float = float(os.getenv("TRUST_SOURCE_SYSTEM", "1.0"))
+        self.trust_source_user: float = float(os.getenv("TRUST_SOURCE_USER", "0.5"))
+        self.trust_source_tool: float = float(os.getenv("TRUST_SOURCE_TOOL", "0.3"))
+        self.trust_source_memory: float = float(os.getenv("TRUST_SOURCE_MEMORY", "0.4"))
+
+        # H(σ) multiplicative decay factor ρ (paper §5.5, Algorithm 1).
+        # H ← ρH on each *registered* injection; monotone non-increasing with
+        # no intra-session recovery.
+        self.trust_decay_rho: float = float(os.getenv("TRUST_DECAY_RHO", "0.3"))
+
+        # ── Ablation switches (paper §8.3 leave-one-out, Table 10) ──────
+        # Each disables exactly one mechanism from the otherwise-complete
+        # pipeline. Default off = mechanism enabled.
+        self.disable_structural_unrolling: bool = _flag("DISABLE_STRUCTURAL_UNROLLING", False)
+        self.disable_hash_dedup: bool = _flag("DISABLE_HASH_DEDUP", False)
+        self.disable_memory_adaptation: bool = _flag("DISABLE_MEMORY_ADAPTATION", False)
+        # Substitutes the learned classifier for the Phase 9 keyword heuristic
+        # (paper §5.8: "substituting the classifier for the heuristic at this
+        # position raises attack success by five attacks").
+        self.output_validator_use_classifier: bool = _flag("OUTPUT_VALIDATOR_USE_CLASSIFIER", False)
+
+        # ── Phase 8 boundary marking (paper §8.4, Table 11) ─────────────
+        # Boundary markers + canonical system prompt are a simplified form of
+        # spotlighting (Hines et al. 2024) — prior work embedded in Phase 8.
+        # They must toggle independently of trust-aware span masking so the
+        # decontamination experiment can attribute credit.
+        self.boundary_marking: bool = _flag("BOUNDARY_MARKING", True)
+        # Per-span regex budget; on expiry Phase 8 FAILS CLOSED (masks).
+        self.pre_llm_span_budget_ms: float = float(os.getenv("PRE_LLM_SPAN_BUDGET_MS", "50"))
+
+        # ── Interception topology (paper §8.11 perimeter baseline) ──────
+        # perimeter: detector at ingress/egress only, no internal transitions.
+        # multipoint: all five hooks (default, the paper's runtime).
+        self.interception_mode: str = os.getenv("INTERCEPTION_MODE", "multipoint").strip().lower()
+
+        # ── Agent model backend (paper §7.3) ────────────────────────────
+        # openai   — gpt-4o-mini-2024-07-18 via the OpenAI API
+        # vllm     — meta-llama/Llama-3.1-8B-Instruct served locally, bf16
+        # deterministic — the offline susceptible-model oracle (repo-only)
+        self.agent_backend: str = os.getenv("AGENT_BACKEND", "openai").strip().lower()
+        self.openai_agent_model: str = os.getenv("OPENAI_AGENT_MODEL", "gpt-4o-mini-2024-07-18").strip()
+        self.vllm_model: str = os.getenv("VLLM_MODEL", "meta-llama/Llama-3.1-8B-Instruct").strip()
+        self.vllm_base_url: str = os.getenv("VLLM_BASE_URL", "http://localhost:8000/v1").strip()
+
+        # ── Scoring instruments (paper §7.4) ────────────────────────────
+        # llm_judge  — GPT-4o, the paper's PRIMARY instrument (κ=0.84)
+        # rule_based — the paper's deterministic grader (κ=0.09, lower bound)
+        # canary     — this repo's canary/behavioural judge (scripts/judge.py)
+        self.scoring_instrument: str = os.getenv("SCORING_INSTRUMENT", "llm_judge").strip().lower()
+        self.judge_model: str = os.getenv("JUDGE_MODEL", "gpt-4o-2024-08-06").strip()
 
         # ── Multimodal forensics ──────────────────────────────────────
         # Enable real LSB steganalysis (chi-square) on uploaded images.

@@ -1,10 +1,13 @@
 import sys
 from unittest.mock import patch, MagicMock
 
-# Mock ChatOpenAI before importing from sanitizers to avoid OpenAI API key errors
-sys.modules['langchain_openai'] = MagicMock()
-
 import pytest
+
+# Nothing in this module needs a live LLM: the recovery loop is exercised with
+# MockAgent. A previous revision stubbed sys.modules['langchain_openai'] with a
+# MagicMock at import time, which leaked into every test collected afterwards in
+# the same session and made unrelated graph tests fail depending on file order.
+# The agent nodes already build their chat model lazily, so no stub is needed.
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from sanitizers.recovery_loop import with_validation_and_recovery
 

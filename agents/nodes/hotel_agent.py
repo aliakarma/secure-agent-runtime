@@ -2,7 +2,7 @@
 Hotel Agent Node.
 """
 
-from langchain_openai import ChatOpenAI
+from agents.model_backends import build_chat_model
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langgraph.prebuilt import create_react_agent
 from agents.tools import reserve_hotel, read_image_ocr, process_audio_memo, analyze_video_feed, read_pdf_document
@@ -31,10 +31,7 @@ _hotel_react_agent = None
 def get_hotel_react_agent():
     global _hotel_react_agent
     if _hotel_react_agent is None:
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1).with_fallbacks([
-            ChatOpenAI(model="gpt-4o", temperature=0, timeout=10, max_retries=1),
-            ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=10, max_retries=1)
-        ])
+        llm = build_chat_model(timeout=60)
         _hotel_react_agent = create_react_agent(
             model=llm,
             tools=[reserve_hotel, read_image_ocr, process_audio_memo, analyze_video_feed, read_pdf_document],

@@ -2,12 +2,25 @@ import functools
 import contextvars
 import os
 import re as _re
+from config import settings
 from logging_config import get_logger
 
 logger = get_logger(__name__)
 
+
+def perimeter_only() -> bool:
+    """True when the runtime is wired as a perimeter filter.
+
+    The external-baseline arm of paper §8.11: the same detector placed at the
+    ingress/egress boundary only, never on internal transitions. Hooks 2, 3, 4
+    and 5 stand down; Hook 1 (ingress) and the Phase 9 validator (egress)
+    remain. It represents the perimeter-filtering *class* rather than a
+    reproduction of any released system.
+    """
+    return settings.interception_mode == "perimeter"
+
 from sanitizers.multimodal import TextSanitizer, VisualSanitizer, ToolOutputSanitizer, RAGSanitizer, AudioSanitizer, VideoSanitizer, PdfSanitizer, SanitizerResult
-from sanitizers.trust_engine import trust_engine
+from sanitizers.trust_engine import TIER_ORDER, trust_engine
 from sanitizers.pre_llm import pre_llm_sanitizer
 from sanitizers.recovery_loop import with_validation_and_recovery
 
@@ -158,8 +171,27 @@ def secure_tool_wrapper(func):
             
         tool_name = func.__name__
         session_id = current_session_id.get()
+
+        # Phase 7 dispatch check consults the SESSION tier (Equation 2), not
+        # the tier of the current transition — that is what makes Policy 1
+        # ("no state-mutating tool executes on a session below HIGH") hold
+        # even when the write request itself scores well.
+        #
+        # The engine is authoritative for accumulated session state, but the
+        # context tier is taken into account too and the MINIMUM wins, matching
+        # Equation 2's semantics: a caller that has already observed a lower
+        # tier cannot have it silently raised by an engine lookup.
         tier = current_trust_tier.get()
-        
+        if os.getenv("DISABLE_TRUST_ENGINE", "0") != "1":
+            session_tier = trust_engine.session_tier(session_id)
+            if TIER_ORDER[session_tier] < TIER_ORDER[tier]:
+                tier = session_tier
+            current_trust_tier.set(tier)
+
+        # Perimeter arm: internal transitions are not mediated at all.
+        if perimeter_only():
+            return func(*args, **kwargs)
+
         # Phase 6: Three-Tier Policy Enforcement
         if tier == "LOW":
             logger.warning(f"Hook 2 (Policy Enforcement): Blocked {tool_name} due to LOW trust tier.")
@@ -300,7 +332,12 @@ def secure_routing_hook(supervisor_runnable):
     def wrapper(state):
         session_id = state.get("session_id", "default_session")
         logger.info("Hook 5 Triggered: Intercepting state before Supervisor routing.")
-        
+
+        # Perimeter arm: inter-agent routing is an internal transition and is
+        # therefore not mediated (paper §8.11).
+        if perimeter_only():
+            return supervisor_runnable(state)
+
         # Check agent outputs only if output validator is enabled
         if os.getenv("DISABLE_OUTPUT_VALIDATOR", "0") != "1" and os.getenv("DISABLE_ALL_SECURITY", "0") != "1":
             if state and "messages" in state and len(state["messages"]) > 0:
@@ -396,7 +433,12 @@ def secure_memory_hook(session_id: str, memory_string: str) -> str:
     # Ablation: if all security or memory sanitization is disabled, pass through
     if os.getenv("DISABLE_ALL_SECURITY", "0") == "1" or os.getenv("DISABLE_MEMORY_SANITIZATION", "0") == "1":
         return memory_string
-    
+
+    # Perimeter arm: the memory write is an internal transition (paper §8.11).
+    if perimeter_only():
+        return memory_string
+
+
     logger.info("Hook 4 Triggered: Intercepting data before saving to memory.")
     res = rag_sanitizer.sanitize(memory_string)
 

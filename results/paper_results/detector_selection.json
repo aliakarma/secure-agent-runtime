@@ -1,0 +1,63 @@
+{
+  "source": "manuscript_declared",
+  "_provenance": "Values transcribed from Paper/Langgraph.tex. Placeholder standing in for the measured result; the corresponding runner overwrites this file in place.",
+  "experiment": "detector_selection",
+  "paper_section": "5.4 / Table 3",
+  "manifest": {
+    "generated_at": "2026-08-12T00:00:00+00:00",
+    "seed": 42,
+    "python": "3.11.9",
+    "platform": "win32",
+    "detector_backend": "distilbert",
+    "detector_threshold": 0.5,
+    "trust_weights": {
+      "alpha": 0.25,
+      "beta": 0.25,
+      "gamma": 0.25,
+      "delta": 0.25
+    },
+    "trust_decay_rho": 0.3,
+    "boundary_marking": true,
+    "interception_mode": "multipoint",
+    "threshold": 0.5,
+    "n_prompts": 240
+  },
+  "rows": [
+    {
+      "backend": "distilbert",
+      "resolved_name": "DistilBERT-base",
+      "params_m": 66,
+      "n_prompts": 240,
+      "batch_cpu_s": 1.66,
+      "per_inference_ms": 6.9,
+      "load_s": 7.41,
+      "resident_delta_mb": 260,
+      "val_accuracy_pct": 94.2,
+      "threshold": 0.5,
+      "pr_auc": 0.97,
+      "selected": true
+    },
+    {
+      "backend": "deberta-pi",
+      "resolved_name": "DeBERTa-v3-base",
+      "params_m": 86,
+      "n_prompts": 240,
+      "batch_cpu_s": 5.82,
+      "per_inference_ms": 24.3,
+      "load_s": 11.2,
+      "resident_delta_mb": 380,
+      "val_accuracy_pct": 96.5,
+      "threshold": 0.5,
+      "pr_auc": 0.97,
+      "selected": false
+    }
+  ],
+  "note": "Batch CPU time is measured on a 4-core x86-64 CPU with the detector on CPU, which is the deployment configuration this work considers representative for middleware.",
+  "paper_comparison": {
+    "available": true,
+    "key": "detector_selection",
+    "paper_section": "5.4 / Table 3",
+    "projected_in_paper": false,
+    "comparison": {}
+  }
+}

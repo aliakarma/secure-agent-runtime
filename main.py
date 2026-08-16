@@ -501,6 +501,24 @@ async def run_travel_multimodal_endpoint(
             elif modality == "pdf":
                 extracted_text = pdf_sanitizer.extract_text(resolved_path)
             logger.info(f"Pre-extracted {modality} text ({len(extracted_text)} chars)")
+
+            # Record that this content genuinely came from a modality sanitizer
+            # in this turn. The extraction marker added to the enriched prompt
+            # below is honored downstream only against this record (paper §5.4,
+            # provenance-gated marker authentication) — a marker string written
+            # into a user turn or a tool response has no such provenance and is
+            # scanned on the normal text path instead.
+            if extracted_text.strip():
+                from sanitizers.provenance import provenance_agent
+                provenance_agent.tag_input(
+                    session_id=session_id,
+                    content=extracted_text,
+                    source=f"modality:{modality}",
+                    modality=modality,
+                    sanitizers=[f"{modality.capitalize()}Sanitizer"],
+                    trust_score=trust_engine.calculate_trust(session_id, "user", False),
+                    trust_tier=trust_engine.session_tier(session_id),
+                )
         except Exception as e:
             logger.error(f"Pre-extraction failed for {modality}: {e}")
 

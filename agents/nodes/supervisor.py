@@ -4,7 +4,7 @@ Supervisor Agent Node.
 
 from typing import Literal
 from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
+from agents.model_backends import build_chat_model
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from agents.state import AgentState
 from logging_config import get_logger
@@ -45,10 +45,7 @@ _supervisor_chain = None
 def get_supervisor_chain():
     global _supervisor_chain
     if _supervisor_chain is None:
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=10, max_retries=1).with_fallbacks([
-            ChatOpenAI(model="gpt-4o", temperature=0, timeout=10, max_retries=1),
-            ChatOpenAI(model="gpt-3.5-turbo", temperature=0, timeout=10, max_retries=1)
-        ])
+        llm = build_chat_model(timeout=60)
         _supervisor_chain = prompt | llm.with_structured_output(Route)
     return _supervisor_chain
 

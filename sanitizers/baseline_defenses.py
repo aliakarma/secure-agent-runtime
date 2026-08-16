@@ -52,3 +52,32 @@ DEFENSES = {
     "spotlight_datamark": spotlight_datamark,
     "spotlight_encode": spotlight_encode,
 }
+
+
+def spotlight_messages(messages, variant: str = "datamark"):
+    """Apply a spotlighting variant to the untrusted spans of a message list.
+
+    This is the *end-to-end* baseline arm of paper §8.11, as distinct from the
+    offline detector-proxy comparison: every token of untrusted content — tool
+    responses, retrieved fragments, inter-agent messages, and the user turn —
+    is transformed, and the system prompt instructs the model to treat marked
+    spans as data. No auxiliary model runs, no state is carried, and no request
+    is ever blocked, so the arm has no false-positive mechanism at all.
+    """
+    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+
+    transform = DEFENSES.get(variant, spotlight_datamark)
+    out = [SystemMessage(content=_SYSTEM_NOTE, id="spotlight_system_note")]
+
+    for msg in messages:
+        if getattr(msg, "id", None) == "spotlight_system_note":
+            continue
+        if isinstance(msg, (HumanMessage, ToolMessage)):
+            msg.content = transform(str(msg.content))
+        elif isinstance(msg, SystemMessage):
+            content = str(msg.content)
+            # Retrieved memory is untrusted; the canonical guard prompt is not.
+            if content.lstrip().lower().startswith("context from previous"):
+                msg.content = transform(content)
+        out.append(msg)
+    return out

@@ -1,5 +1,7 @@
 import json
 import os
+from typing import Optional
+
 import pytesseract
 from PIL import Image
 from pydantic import BaseModel, Field
@@ -17,10 +19,16 @@ class SanitizerResult(BaseModel):
     reason: str = Field(description="Explanation for why the content was flagged or marked safe.")
     confidence: float = Field(default=1.0, description="Confidence score between 0.0 and 1.0 representing how confident you are in this classification.")
 
-# Confidence threshold: only flag as malicious when the classifier is at
-# least this confident.  Benign travel queries often land at 0.55-0.75
-# confidence for LABEL_1 — well below a genuine injection (>0.95).
-CONFIDENCE_THRESHOLD = 0.85
+# Detector decision threshold on the injection-class probability.
+#
+# Paper §5.4 fixes this at 0.5 and reports the operating-point metrics there,
+# releasing the full precision-recall curve with the artifact. The value is read
+# from settings rather than hardcoded here: this constant previously shadowed
+# `settings.detector_threshold`, so changing DETECTOR_THRESHOLD had no effect on
+# the sanitizer that actually classifies.
+from config import settings as _settings
+
+CONFIDENCE_THRESHOLD = _settings.detector_threshold
 
 class TextSanitizer:
     # Shared across instances so swapping in a heavy model (Prompt Guard 2,
@@ -68,6 +76,49 @@ class TextSanitizer:
                     f"but none loaded: {self.init_error}. "
                     "Train DistilBERT via scripts/train_local_classifier.py or set DETECTOR_BACKEND."
                 )
+
+    @staticmethod
+    def marker_is_authenticated(text: str, session_id: Optional[str] = None) -> bool:
+        """Is an extraction marker in *text* backed by a provenance record?
+
+        Paper §5.4: an extraction marker (``[Extracted from uploaded image via
+        OCR]`` and friends) is honored only when the payload carries a
+        provenance record showing it originated from a modality sanitizer in
+        the current turn. A literal marker string appearing in a user turn, a
+        tool response, or a retrieved document has no such provenance, so it is
+        stripped and the surrounding content is scanned on the normal text path
+        rather than waved through.
+
+        Without this authentication step the marker bypass is exploitable by
+        writing the marker string into any text channel, which is why the paper
+        calls provenance-gated marker handling a required part of the mechanism
+        rather than an optimization.
+        """
+        if session_id is None:
+            return False
+        modality = TextSanitizer._marker_modality(text)
+        if modality is None:
+            return False
+        try:
+            from sanitizers.provenance import provenance_agent
+            return provenance_agent.has_modality_provenance(session_id, modality)
+        except Exception:
+            return False
+
+    @staticmethod
+    def _marker_modality(text: str) -> Optional[str]:
+        """Which modality a marker in *text* claims to come from, if any."""
+        lowered = str(text).lower()
+        claims = {
+            "image": ("extracted from uploaded image", "[image ocr]"),
+            "audio": ("transcribed from uploaded audio", "[audio transcript]"),
+            "video": ("extracted from uploaded video", "[video frames]"),
+            "pdf": ("extracted from uploaded pdf", "[pdf document]"),
+        }
+        for modality, needles in claims.items():
+            if any(needle in lowered for needle in needles):
+                return modality
+        return None
 
     @staticmethod
     def _strip_multimodal_markers(text: str) -> str:
@@ -667,7 +718,16 @@ def _unroll_structured_text(text: str) -> str:
     If *text* is valid JSON, recursively collect every string-valued leaf and
     join them with spaces.  Non-JSON input is returned unchanged so callers
     that already pass plain text are unaffected.
+
+    One of the four mechanisms the paper isolates (§1, §8.3). Removing it
+    reintroduces JSON-syntax false positives at Hook 3, where a tool response
+    is a nested object and the detector reads the braces and quoting as
+    anomalous; Table 10 measures end-to-end FPR rising from 2.1% to 6.2%.
+    ``DISABLE_STRUCTURAL_UNROLLING`` is that ablation.
     """
+    from config import settings as _s
+    if _s.disable_structural_unrolling:
+        return text
     try:
         obj = json.loads(text)
     except (json.JSONDecodeError, TypeError):
@@ -692,6 +752,15 @@ def _unroll_structured_text(text: str) -> str:
 
 
 class RAGSanitizer:
+    """Hook 4 — the memory boundary.
+
+    Detection here runs through the retrieval-context-aware memory detector
+    (``sanitizers/memory_detector.py``) rather than the shared text detector.
+    A retrieved fragment is out-of-distribution for a detector fine-tuned on
+    user-side prompts, and feeding it the raw chunk is what produces Hook 4's
+    96.9% un-adapted false-positive rate (paper §8.5).
+    """
+
     def __init__(self):
         self.text_sanitizer = TextSanitizer()
 
@@ -699,24 +768,31 @@ class RAGSanitizer:
         if not chunk or not chunk.strip():
             return SanitizerResult(is_malicious=False, reason="Empty memory chunk", confidence=1.0)
 
-        # 1. Run local memory heuristics for active commands/poisoning.
-        # Memory should contain facts/preferences; imperative instructions in
-        # a memory chunk indicate poisoning. Generic vocabulary only — no
+        # 1. Local memory heuristics for active commands/poisoning. Memory
+        # should carry facts and preferences; imperative instructions in a
+        # memory chunk indicate poisoning. Generic vocabulary only — no
         # benchmark-specific poison phrases (see anti-circularity note above).
         imperative_markers = [
             "ignore", "disregard", "override", "you must", "you are now",
             "output exactly", "respond with", "demands that you",
         ]
-        is_malicious = any(w in chunk.lower() for w in imperative_markers)
-        if is_malicious:
+        if any(w in chunk.lower() for w in imperative_markers):
             return SanitizerResult(
                 is_malicious=True,
                 reason="Flagged by local memory heuristics (active commands or overrides).",
                 confidence=0.9
             )
 
-        # 2. Run local TextSanitizer (uses local classifier)
-        return self.text_sanitizer.sanitize(_unroll_structured_text(chunk))
+        # 2. Retrieval-context-aware classification.
+        from sanitizers.memory_detector import memory_detector
+        is_malicious, reason, confidence = memory_detector.classify(
+            _unroll_structured_text(chunk)
+        )
+        return SanitizerResult(
+            is_malicious=is_malicious,
+            reason=reason,
+            confidence=float(confidence or 0.0),
+        )
 
 
 class ToolOutputSanitizer:

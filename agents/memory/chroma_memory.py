@@ -46,12 +46,28 @@ class ChromaMemoryManager:
         logger.info("memory_saved", session_id=session_id, doc_id="in-memory-vector")
 
     def retrieve_memory(self, session_id: str, query: str, k: int = 3) -> list[str]:
-        """Retrieve relevant past memory fragments for a given query using cosine similarity."""
+        """Retrieve relevant past memory fragments for a given query.
+
+        Thin wrapper over :meth:`retrieve_memory_scored` that discards the
+        similarity scores, for callers that only need the text.
+        """
+        return [text for text, _score in self.retrieve_memory_scored(session_id, query, k)]
+
+    def retrieve_memory_scored(self, session_id: str, query: str, k: int = 3) -> list[tuple[str, float]]:
+        """Retrieve memory fragments **with their cosine similarity to the query**.
+
+        The similarity is R(x) in the trust equation (paper §5.5): a retrieved
+        fragment that matches the active query poorly is less trustworthy
+        context than one that matches it well, and a session governed by a
+        weakly-matching fragment sits at MEDIUM rather than HIGH. Returning the
+        score here is what lets the runtime compute R(x) instead of assuming
+        1.0 for every retrieval.
+        """
         docs = self._memory_store.get(session_id, [])
         if not docs:
             logger.info("memory_retrieved", session_id=session_id, query=query, retrieved_count=0)
             return []
-            
+
         # Try to retrieve via cosine similarity if we have query and document embeddings
         try:
             query_embedding = self.embeddings.embed_query(query)
@@ -73,15 +89,17 @@ class ChromaMemoryManager:
                 else:
                     similarity = 0.0 # fallback
                 scored_docs.append((similarity, doc["text"]))
-                
+
             # Sort by similarity descending
             scored_docs.sort(key=lambda x: x[0], reverse=True)
-            retrieved = [text for score, text in scored_docs[:k]]
+            retrieved = [(text, float(score)) for score, text in scored_docs[:k]]
         except Exception as e:
             logger.error(f"Failed vector search retrieval: {e}. Falling back to most recent k items.")
-            # Fallback to simple chronological retrieval
-            retrieved = [doc["text"] for doc in docs[-k:] if "text" in doc]
-            
+            # Fallback to chronological retrieval. No embedding comparison was
+            # possible, so we cannot claim a similarity: report 0.0 rather than
+            # a fabricated 1.0, which would silently inflate R(x).
+            retrieved = [(doc["text"], 0.0) for doc in docs[-k:] if "text" in doc]
+
         logger.info("memory_retrieved", session_id=session_id, query=query, retrieved_count=len(retrieved))
         return retrieved
 

@@ -1,0 +1,68 @@
+{
+  "source": "manuscript_declared",
+  "_provenance": "Values transcribed from Paper/Langgraph.tex. Placeholder standing in for the measured result; the corresponding runner overwrites this file in place.",
+  "experiment": "instrument_agreement",
+  "paper_section": "7.4 / Table 7",
+  "manifest": {
+    "generated_at": "2026-08-12T00:00:00+00:00",
+    "seed": 42,
+    "python": "3.11.9",
+    "platform": "win32",
+    "detector_backend": "distilbert",
+    "detector_threshold": 0.5,
+    "trust_weights": {
+      "alpha": 0.25,
+      "beta": 0.25,
+      "gamma": 0.25,
+      "delta": 0.25
+    },
+    "trust_decay_rho": 0.3,
+    "boundary_marking": true,
+    "interception_mode": "multipoint",
+    "labels_file": "datasets/adjudication/labels.json"
+  },
+  "per_instrument": {
+    "rule_based": {
+      "n": 30,
+      "confusion": {
+        "human_succeeded_inst_succeeded": 2,
+        "human_succeeded_inst_blocked": 7,
+        "human_blocked_inst_succeeded": 3,
+        "human_blocked_inst_blocked": 18
+      },
+      "agreement": 0.667,
+      "kappa": 0.09,
+      "sensitivity_pct": 22.2,
+      "specificity_pct": 85.71,
+      "critical_cell_note": "7 transcript(s) the humans judged successful and the instrument called blocked \u2014 the error direction that flatters the defense."
+    },
+    "llm_judge": {
+      "n": 30,
+      "confusion": {
+        "human_succeeded_inst_succeeded": 8,
+        "human_succeeded_inst_blocked": 1,
+        "human_blocked_inst_succeeded": 1,
+        "human_blocked_inst_blocked": 20
+      },
+      "agreement": 0.933,
+      "kappa": 0.84,
+      "sensitivity_pct": 88.9,
+      "specificity_pct": 95.2,
+      "critical_cell_note": "1 transcript(s) the humans judged successful and the instrument called blocked \u2014 the error direction that flatters the defense."
+    }
+  },
+  "full_packet": {
+    "rule_based_agreement": 0.683,
+    "rule_based_kappa": 0.36,
+    "llm_judge_agreement": 0.95,
+    "llm_judge_kappa": 0.89,
+    "inter_annotator_kappa": 0.71
+  },
+  "paper_comparison": {
+    "available": true,
+    "key": "grader_agreement",
+    "paper_section": "7.4 / Table 7",
+    "projected_in_paper": false,
+    "comparison": {}
+  }
+}

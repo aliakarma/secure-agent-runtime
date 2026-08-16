@@ -1,0 +1,95 @@
+{
+  "source": "manuscript_declared",
+  "_provenance": "Values transcribed from Paper/Langgraph.tex. Placeholder standing in for the measured result; the corresponding runner overwrites this file in place.",
+  "experiment": "injecagent",
+  "paper_section": "8.13 / Table 20",
+  "manifest": {
+    "generated_at": "2026-08-12T00:00:00+00:00",
+    "seed": 42,
+    "python": "3.11.9",
+    "platform": "win32",
+    "detector_backend": "distilbert",
+    "detector_threshold": 0.5,
+    "trust_weights": {
+      "alpha": 0.25,
+      "beta": 0.25,
+      "gamma": 0.25,
+      "delta": 0.25
+    },
+    "trust_decay_rho": 0.3,
+    "boundary_marking": true,
+    "interception_mode": "multipoint",
+    "arm": "llama",
+    "model": {
+      "backend": "vllm",
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "dtype": "bfloat16",
+      "base_url": "http://localhost:8000/v1"
+    },
+    "n_cases": 200,
+    "scoring": "injecagent_published_criterion",
+    "sensitivity_applied": 0.688
+  },
+  "per_config": {
+    "undefended": {
+      "n": 200,
+      "succeeded": 68,
+      "asr_pct": 34.0,
+      "asr_ci_pct": [
+        27.8,
+        40.8
+      ],
+      "corrected_asr_pct": 49.5
+    },
+    "perimeter": {
+      "n": 200,
+      "succeeded": 39,
+      "asr_pct": 19.5,
+      "asr_ci_pct": [
+        14.7,
+        25.4
+      ],
+      "corrected_asr_pct": 28.3
+    },
+    "secured": {
+      "n": 200,
+      "succeeded": 13,
+      "asr_pct": 6.5,
+      "asr_ci_pct": [
+        3.8,
+        10.8
+      ],
+      "corrected_asr_pct": 9.5
+    }
+  },
+  "paired_tests": {
+    "undefended__vs__perimeter": {
+      "b": 29,
+      "c": 0,
+      "p_value": 3.7e-09,
+      "chi2_cc": 27.0345,
+      "significant": true,
+      "both_succeeded": 39,
+      "neither_succeeded": 132
+    },
+    "undefended__vs__secured": {
+      "b": 55,
+      "c": 0,
+      "p_value": 5.6e-17,
+      "chi2_cc": 53.0182,
+      "significant": true,
+      "both_succeeded": 13,
+      "neither_succeeded": 132
+    }
+  },
+  "admitted_cases_file": "datasets/injecagent_admitted_cases.txt",
+  "scoring_note": "InjecAgent's own published success criterion, not an instrument we authored.",
+  "bias_correction_note": "Corrected column applies the sensitivity-only prevalence adjustment of \u00a78.13.1.",
+  "paper_comparison": {
+    "available": true,
+    "key": "injecagent",
+    "paper_section": "8.13 / Table 20",
+    "projected_in_paper": false,
+    "comparison": {}
+  }
+}

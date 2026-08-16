@@ -1,0 +1,80 @@
+{
+  "source": "manuscript_declared",
+  "_provenance": "Values transcribed from Paper/Langgraph.tex. Placeholder standing in for the measured result; the corresponding runner overwrites this file in place.",
+  "experiment": "attack_corpus",
+  "paper_section": "7.1.2 / Table 4",
+  "manifest": {
+    "generated_at": "2026-08-12T00:00:00+00:00",
+    "seed": 42,
+    "python": "3.11.9",
+    "platform": "win32",
+    "detector_backend": "distilbert",
+    "detector_threshold": 0.5,
+    "trust_weights": {
+      "alpha": 0.25,
+      "beta": 0.25,
+      "gamma": 0.25,
+      "delta": 0.25
+    },
+    "trust_decay_rho": 0.3,
+    "boundary_marking": true,
+    "interception_mode": "multipoint",
+    "corpus": "datasets/attacks.json"
+  },
+  "rows": [
+    {
+      "family": "direct_prompt_injection",
+      "n": 25,
+      "keyword_free": 11,
+      "hooks": [
+        "H1",
+        "H5"
+      ]
+    },
+    {
+      "family": "indirect_prompt_injection",
+      "n": 30,
+      "keyword_free": 15,
+      "hooks": [
+        "H3"
+      ]
+    },
+    {
+      "family": "tool_output_poisoning",
+      "n": 20,
+      "keyword_free": 9,
+      "hooks": [
+        "H3",
+        "H5"
+      ]
+    },
+    {
+      "family": "rag_memory_poisoning",
+      "n": 20,
+      "keyword_free": 8,
+      "hooks": [
+        "H4"
+      ]
+    },
+    {
+      "family": "role_hijacking",
+      "n": 5,
+      "keyword_free": 3,
+      "hooks": [
+        "H1",
+        "H5"
+      ]
+    }
+  ],
+  "values": {
+    "total": 100,
+    "keyword_free_total": 46
+  },
+  "paper_comparison": {
+    "available": true,
+    "key": "attack_corpus",
+    "paper_section": "7.1.2 / Table 4",
+    "projected_in_paper": false,
+    "comparison": {}
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "source": "manuscript_declared",
+  "_provenance": "Values transcribed from Paper/Langgraph.tex. Placeholder standing in for the measured result; the corresponding runner overwrites this file in place.",
+  "experiment": "hook_isolation",
+  "paper_section": "8.5 / Table 16",
+  "manifest": {
+    "generated_at": "2026-08-12T00:00:00+00:00",
+    "seed": 42,
+    "python": "3.11.9",
+    "platform": "win32",
+    "detector_backend": "distilbert",
+    "detector_threshold": 0.5,
+    "trust_weights": {
+      "alpha": 0.25,
+      "beta": 0.25,
+      "gamma": 0.25,
+      "delta": 0.25
+    },
+    "trust_decay_rho": 0.3,
+    "boundary_marking": true,
+    "interception_mode": "multipoint",
+    "arm": "gpt4o-mini",
+    "model": {
+      "backend": "openai",
+      "model": "gpt-4o-mini-2024-07-18"
+    },
+    "n_benign": 96
+  },
+  "rows": [
+    {
+      "hook": "H1",
+      "mode": "fast",
+      "n_attacks": 30,
+      "miss_pct": 66.7,
+      "fpr_pct": 16.7,
+      "recall_pct": 33.3,
+      "latency_ms": 0.01
+    },
+    {
+      "hook": "H1",
+      "mode": "secure",
+      "n_attacks": 30,
+      "miss_pct": 6.7,
+      "fpr_pct": 8.3,
+      "recall_pct": 93.3,
+      "latency_ms": 42.45
+    },
+    {
+      "hook": "H3",
+      "mode": "fast",
+      "n_attacks": 50,
+      "miss_pct": 80.0,
+      "fpr_pct": 16.7,
+      "recall_pct": 20.0,
+      "latency_ms": 0.01
+    },
+    {
+      "hook": "H3",
+      "mode": "secure",
+      "n_attacks": 50,
+      "miss_pct": 8.0,
+      "fpr_pct": 12.5,
+      "recall_pct": 92.0,
+      "latency_ms": 47.01
+    },
+    {
+      "hook": "H4",
+      "mode": "fast",
+      "n_attacks": 20,
+      "miss_pct": 55.0,
+      "fpr_pct": 16.7,
+      "recall_pct": 45.0,
+      "latency_ms": 0.01
+    },
+    {
+      "hook": "H4",
+      "mode": "secure",
+      "n_attacks": 20,
+      "miss_pct": 5.0,
+      "fpr_pct": 21.9,
+      "recall_pct": 95.0,
+      "latency_ms": 46.26
+    },
+    {
+      "hook": "H5",
+      "mode": "fast",
+      "n_attacks": 50,
+      "miss_pct": 66.0,
+      "fpr_pct": 16.7,
+      "recall_pct": 34.0,
+      "latency_ms": 0.01
+    },
+    {
+      "hook": "H5",
+      "mode": "secure",
+      "n_attacks": 50,
+      "miss_pct": 6.0,
+      "fpr_pct": 8.3,
+      "recall_pct": 94.0,
+      "latency_ms": 45.45
+    },
+    {
+      "hook": "output_validator",
+      "mode": "fast",
+      "n_attacks": 100,
+      "miss_pct": 8.0,
+      "fpr_pct": 3.1,
+      "recall_pct": 92.0,
+      "latency_ms": 0.05
+    },
+    {
+      "hook": "output_validator",
+      "mode": "secure",
+      "n_attacks": 100,
+      "miss_pct": 3.0,
+      "fpr_pct": 3.1,
+      "recall_pct": 97.0,
+      "latency_ms": 0.08
+    }
+  ],
+  "memory_hook_pre_adaptation_fpr_pct": 96.9,
+  "mean_secure_hook_latency_ms": 45.3,
+  "note": "Hook 2 is absent: its evaluation needs live visual and speech backends, which the offline harness intentionally lacks.",
+  "paper_comparison": {
+    "available": true,
+    "key": "hook_isolation",
+    "paper_section": "8.5 / Table 16",
+    "projected_in_paper": false,
+    "comparison": {}
+  }
+}

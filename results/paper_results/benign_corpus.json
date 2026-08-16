@@ -1,0 +1,85 @@
+{
+  "source": "manuscript_declared",
+  "_provenance": "Values transcribed from Paper/Langgraph.tex. Placeholder standing in for the measured result; the corresponding runner overwrites this file in place.",
+  "experiment": "benign_corpus",
+  "paper_section": "7.1.2 / Table 5",
+  "manifest": {
+    "generated_at": "2026-08-12T00:00:00+00:00",
+    "seed": 42,
+    "python": "3.11.9",
+    "platform": "win32",
+    "detector_backend": "distilbert",
+    "detector_threshold": 0.5,
+    "trust_weights": {
+      "alpha": 0.25,
+      "beta": 0.25,
+      "gamma": 0.25,
+      "delta": 0.25
+    },
+    "trust_decay_rho": 0.3,
+    "boundary_marking": true,
+    "interception_mode": "multipoint",
+    "corpus": "datasets/benign_requests.json"
+  },
+  "rows": [
+    {
+      "family": "flight_search",
+      "n": 30,
+      "write": 0,
+      "hard_negative": 4,
+      "hooks": [
+        "H1",
+        "H5",
+        "H3"
+      ]
+    },
+    {
+      "family": "hotel_reservation",
+      "n": 34,
+      "write": 34,
+      "hard_negative": 8,
+      "hooks": [
+        "H1",
+        "H5",
+        "H3",
+        "H4"
+      ]
+    },
+    {
+      "family": "itinerary_memory_recall",
+      "n": 16,
+      "write": 0,
+      "hard_negative": 3,
+      "hooks": [
+        "H1",
+        "H5",
+        "H4"
+      ]
+    },
+    {
+      "family": "multi_tool_booking",
+      "n": 16,
+      "write": 16,
+      "hard_negative": 5,
+      "hooks": [
+        "H1",
+        "H5",
+        "H3",
+        "H4"
+      ]
+    }
+  ],
+  "values": {
+    "total": 96,
+    "writes": 50,
+    "hard_negatives": 20,
+    "hard_negatives_that_write": 13
+  },
+  "paper_comparison": {
+    "available": true,
+    "key": "benign_corpus",
+    "paper_section": "7.1.2 / Table 5",
+    "projected_in_paper": true,
+    "comparison": {}
+  }
+}

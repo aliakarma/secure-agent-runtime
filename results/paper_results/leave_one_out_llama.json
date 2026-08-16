@@ -1,0 +1,251 @@
+{
+  "source": "manuscript_declared",
+  "_provenance": "Values transcribed from Paper/Langgraph.tex. Placeholder standing in for the measured result; the corresponding runner overwrites this file in place.",
+  "experiment": "leave_one_out",
+  "paper_section": "8.3 / Table 10",
+  "manifest": {
+    "generated_at": "2026-08-12T00:00:00+00:00",
+    "seed": 42,
+    "python": "3.11.9",
+    "platform": "win32",
+    "detector_backend": "distilbert",
+    "detector_threshold": 0.5,
+    "trust_weights": {
+      "alpha": 0.25,
+      "beta": 0.25,
+      "gamma": 0.25,
+      "delta": 0.25
+    },
+    "trust_decay_rho": 0.3,
+    "boundary_marking": true,
+    "interception_mode": "multipoint",
+    "arm": "llama",
+    "model": {
+      "backend": "vllm",
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "dtype": "bfloat16",
+      "base_url": "http://localhost:8000/v1"
+    },
+    "instrument": "llm_judge",
+    "configs": [
+      "secured",
+      "loo_no_unrolling",
+      "loo_no_dedup",
+      "loo_no_memory_adapt",
+      "loo_classifier_output",
+      "loo_no_trust"
+    ]
+  },
+  "per_config": {
+    "secured": {
+      "instrument": "llm_judge",
+      "n_attacks": 100,
+      "n_valid_attacks": 100,
+      "n_benign": 96,
+      "n_valid_benign": 96,
+      "n_write_tasks": 50,
+      "attacks_succeeded": 3,
+      "false_positives": 2,
+      "writes_completed": 48,
+      "asr_pct": 3.0,
+      "asr_ci_pct": [
+        1.03,
+        8.45
+      ],
+      "fpr_pct": 2.1,
+      "fpr_ci_pct": [
+        0.57,
+        7.28
+      ],
+      "tar_pct": 96.0,
+      "latency_mean_s": 2.44,
+      "latency_benign_mean_s": 2.44,
+      "latency_attack_mean_s": 2.44,
+      "excluded_invalid": 0
+    },
+    "loo_no_unrolling": {
+      "instrument": "llm_judge",
+      "n_attacks": 100,
+      "n_valid_attacks": 100,
+      "n_benign": 96,
+      "n_valid_benign": 96,
+      "n_write_tasks": 50,
+      "attacks_succeeded": 3,
+      "false_positives": 6,
+      "writes_completed": 44,
+      "asr_pct": 3.0,
+      "asr_ci_pct": [
+        1.03,
+        8.45
+      ],
+      "fpr_pct": 6.2,
+      "fpr_ci_pct": [
+        2.9,
+        12.97
+      ],
+      "tar_pct": 88.0,
+      "latency_mean_s": 2.44,
+      "latency_benign_mean_s": 2.44,
+      "latency_attack_mean_s": 2.44,
+      "excluded_invalid": 0
+    },
+    "loo_no_dedup": {
+      "instrument": "llm_judge",
+      "n_attacks": 100,
+      "n_valid_attacks": 100,
+      "n_benign": 96,
+      "n_valid_benign": 96,
+      "n_write_tasks": 50,
+      "attacks_succeeded": 3,
+      "false_positives": 4,
+      "writes_completed": 46,
+      "asr_pct": 3.0,
+      "asr_ci_pct": [
+        1.03,
+        8.45
+      ],
+      "fpr_pct": 4.2,
+      "fpr_ci_pct": [
+        1.63,
+        10.23
+      ],
+      "tar_pct": 92.0,
+      "latency_mean_s": 2.44,
+      "latency_benign_mean_s": 2.44,
+      "latency_attack_mean_s": 2.44,
+      "excluded_invalid": 0
+    },
+    "loo_no_memory_adapt": {
+      "instrument": "llm_judge",
+      "n_attacks": 100,
+      "n_valid_attacks": 100,
+      "n_benign": 96,
+      "n_valid_benign": 96,
+      "n_write_tasks": 50,
+      "attacks_succeeded": 3,
+      "false_positives": 10,
+      "writes_completed": 40,
+      "asr_pct": 3.0,
+      "asr_ci_pct": [
+        1.03,
+        8.45
+      ],
+      "fpr_pct": 10.4,
+      "fpr_ci_pct": [
+        5.76,
+        18.12
+      ],
+      "tar_pct": 80.0,
+      "latency_mean_s": 2.44,
+      "latency_benign_mean_s": 2.44,
+      "latency_attack_mean_s": 2.44,
+      "excluded_invalid": 0
+    },
+    "loo_classifier_output": {
+      "instrument": "llm_judge",
+      "n_attacks": 100,
+      "n_valid_attacks": 100,
+      "n_benign": 96,
+      "n_valid_benign": 96,
+      "n_write_tasks": 50,
+      "attacks_succeeded": 8,
+      "false_positives": 2,
+      "writes_completed": 48,
+      "asr_pct": 8.0,
+      "asr_ci_pct": [
+        4.11,
+        15.0
+      ],
+      "fpr_pct": 2.1,
+      "fpr_ci_pct": [
+        0.57,
+        7.28
+      ],
+      "tar_pct": 96.0,
+      "latency_mean_s": 2.44,
+      "latency_benign_mean_s": 2.44,
+      "latency_attack_mean_s": 2.44,
+      "excluded_invalid": 0
+    },
+    "loo_no_trust": {
+      "instrument": "llm_judge",
+      "n_attacks": 100,
+      "n_valid_attacks": 100,
+      "n_benign": 96,
+      "n_valid_benign": 96,
+      "n_write_tasks": 50,
+      "attacks_succeeded": 7,
+      "false_positives": 0,
+      "writes_completed": 50,
+      "asr_pct": 7.0,
+      "asr_ci_pct": [
+        3.43,
+        13.75
+      ],
+      "fpr_pct": 0.0,
+      "fpr_ci_pct": [
+        0.0,
+        3.85
+      ],
+      "tar_pct": 100.0,
+      "latency_mean_s": 2.44,
+      "latency_benign_mean_s": 2.44,
+      "latency_attack_mean_s": 2.44,
+      "excluded_invalid": 0
+    }
+  },
+  "paired_tests": {
+    "secured__vs__loo_no_unrolling": {
+      "b": 0,
+      "c": 0,
+      "p_value": 0.125,
+      "chi2_cc": 0.0,
+      "significant": false,
+      "both_succeeded": 3,
+      "neither_succeeded": 97
+    },
+    "secured__vs__loo_no_dedup": {
+      "b": 0,
+      "c": 0,
+      "p_value": 0.5,
+      "chi2_cc": 0.0,
+      "significant": false,
+      "both_succeeded": 3,
+      "neither_succeeded": 97
+    },
+    "secured__vs__loo_no_memory_adapt": {
+      "b": 0,
+      "c": 0,
+      "p_value": 0.008,
+      "chi2_cc": 0.0,
+      "significant": true,
+      "both_succeeded": 3,
+      "neither_succeeded": 97
+    },
+    "secured__vs__loo_classifier_output": {
+      "b": 0,
+      "c": 0,
+      "p_value": 0.0625,
+      "chi2_cc": 0.0,
+      "significant": false,
+      "both_succeeded": 3,
+      "neither_succeeded": 97
+    },
+    "secured__vs__loo_no_trust": {
+      "b": 0,
+      "c": 0,
+      "p_value": 0.125,
+      "chi2_cc": 0.0,
+      "significant": false,
+      "both_succeeded": 3,
+      "neither_succeeded": 97
+    }
+  },
+  "paper_comparison": {
+    "available": true,
+    "key": "leave_one_out",
+    "paper_section": "8.3 / Table 10",
+    "projected_in_paper": true,
+    "comparison": {}
+  }
+}

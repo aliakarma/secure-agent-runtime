@@ -1,0 +1,188 @@
+{
+  "source": "manuscript_declared",
+  "_provenance": "Values transcribed from Paper/Langgraph.tex. Placeholder standing in for the measured result; the corresponding runner overwrites this file in place.",
+  "experiment": "ledger",
+  "paper_section": "8.9",
+  "manifest": {
+    "generated_at": "2026-08-12T00:00:00+00:00",
+    "seed": 42,
+    "python": "3.11.9",
+    "platform": "win32",
+    "detector_backend": "distilbert",
+    "detector_threshold": 0.5,
+    "trust_weights": {
+      "alpha": 0.25,
+      "beta": 0.25,
+      "gamma": 0.25,
+      "delta": 0.25
+    },
+    "trust_decay_rho": 0.3,
+    "boundary_marking": true,
+    "interception_mode": "multipoint",
+    "arm": "gpt4o-mini",
+    "model": {
+      "backend": "openai",
+      "model": "gpt-4o-mini-2024-07-18"
+    }
+  },
+  "results": {
+    "per_turn": [
+      {
+        "turn": 1,
+        "records": 48,
+        "record_body_bytes": 93388,
+        "mean_record_bytes": 1945,
+        "evicted": 0
+      },
+      {
+        "turn": 2,
+        "records": 96,
+        "record_body_bytes": 186777,
+        "mean_record_bytes": 1945,
+        "evicted": 0
+      },
+      {
+        "turn": 3,
+        "records": 144,
+        "record_body_bytes": 280166,
+        "mean_record_bytes": 1945,
+        "evicted": 0
+      },
+      {
+        "turn": 4,
+        "records": 192,
+        "record_body_bytes": 373555,
+        "mean_record_bytes": 1945,
+        "evicted": 0
+      },
+      {
+        "turn": 5,
+        "records": 240,
+        "record_body_bytes": 466944,
+        "mean_record_bytes": 1945,
+        "evicted": 0
+      },
+      {
+        "turn": 6,
+        "records": 288,
+        "record_body_bytes": 560332,
+        "mean_record_bytes": 1945,
+        "evicted": 0
+      },
+      {
+        "turn": 7,
+        "records": 336,
+        "record_body_bytes": 653721,
+        "mean_record_bytes": 1945,
+        "evicted": 0
+      },
+      {
+        "turn": 8,
+        "records": 384,
+        "record_body_bytes": 747110,
+        "mean_record_bytes": 1945,
+        "evicted": 0
+      },
+      {
+        "turn": 9,
+        "records": 432,
+        "record_body_bytes": 840499,
+        "mean_record_bytes": 1945,
+        "evicted": 0
+      },
+      {
+        "turn": 10,
+        "records": 480,
+        "record_body_bytes": 933888,
+        "mean_record_bytes": 1945,
+        "evicted": 0
+      },
+      {
+        "turn": 11,
+        "records": 512,
+        "record_body_bytes": 996147,
+        "mean_record_bytes": 1945,
+        "evicted": 16
+      },
+      {
+        "turn": 12,
+        "records": 512,
+        "record_body_bytes": 996147,
+        "mean_record_bytes": 1945,
+        "evicted": 64
+      },
+      {
+        "turn": 13,
+        "records": 512,
+        "record_body_bytes": 996147,
+        "mean_record_bytes": 1945,
+        "evicted": 112
+      },
+      {
+        "turn": 14,
+        "records": 512,
+        "record_body_bytes": 996147,
+        "mean_record_bytes": 1945,
+        "evicted": 160
+      },
+      {
+        "turn": 15,
+        "records": 512,
+        "record_body_bytes": 996147,
+        "mean_record_bytes": 1945,
+        "evicted": 208
+      },
+      {
+        "turn": 16,
+        "records": 512,
+        "record_body_bytes": 996147,
+        "mean_record_bytes": 1945,
+        "evicted": 256
+      },
+      {
+        "turn": 17,
+        "records": 512,
+        "record_body_bytes": 996147,
+        "mean_record_bytes": 1945,
+        "evicted": 304
+      },
+      {
+        "turn": 18,
+        "records": 512,
+        "record_body_bytes": 996147,
+        "mean_record_bytes": 1945,
+        "evicted": 352
+      },
+      {
+        "turn": 19,
+        "records": 512,
+        "record_body_bytes": 996147,
+        "mean_record_bytes": 1945,
+        "evicted": 400
+      },
+      {
+        "turn": 20,
+        "records": 512,
+        "record_body_bytes": 996147,
+        "mean_record_bytes": 1945,
+        "evicted": 448
+      }
+    ],
+    "records_per_turn": 48.0,
+    "mean_record_kb": 1.9,
+    "cap_per_session": 512,
+    "audit_window_turns": 10.7,
+    "projected_50turn_records_unbounded": 2400,
+    "projected_50turn_mb_unbounded": 4.6,
+    "capped_steady_state_mb": 0.98,
+    "kb_per_additional_turn": 91,
+    "reduction_pct": 79
+  },
+  "paper_comparison": {
+    "available": true,
+    "key": "ledger_growth",
+    "paper_section": "8.9",
+    "projected_in_paper": false,
+    "comparison": {}
+  }
+}

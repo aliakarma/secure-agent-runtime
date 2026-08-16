@@ -1,0 +1,499 @@
+{
+  "_README": [
+    "DECLARED VALUES FROM THE MANUSCRIPT — NOT MEASURED OUTPUT.",
+    "",
+    "Every number in this file is transcribed from Paper/Langgraph.tex. It is the",
+    "reference the experiment runners diff their measured results against; it is",
+    "not, and must never be treated as, the output of a run.",
+    "",
+    "Entries with \"projected\": true correspond to the thirteen blocks the",
+    "manuscript itself marks with '% IMPLEMENTATION TARGETS:' and that",
+    "Paper/validation_report.md describes as 'theoretically projected values ...",
+    "They require empirical validation before real submission.' Those values are",
+    "internally consistent but are not evidence, and measured results are",
+    "expected to differ from them.",
+    "",
+    "Measured results are written to datasets/paper_results/*.json with",
+    "\"measured\": true. Nothing in the pipeline copies a value from this file",
+    "into a measured-results file."
+  ],
+  "source": "Paper/Langgraph.tex",
+  "transcribed_at": "2026-08-12",
+  "instrument_note": "Unless stated otherwise the paper's primary instrument is the GPT-4o LLM judge (kappa=0.84 against human adjudication); rule-based figures are a lower bound.",
+
+  "results": {
+    "primary_matched_pair_llama": {
+      "section": "8.1 / Table 8",
+      "arm": "llama",
+      "instrument": "llm_judge",
+      "projected": false,
+      "values": {
+        "undefended_asr_pct": 27.0,
+        "secured_asr_pct": 3.0,
+        "undefended_asr_rule_based_pct": 19.0,
+        "secured_asr_rule_based_pct": 1.0,
+        "undefended_fpr_pct": 0.0,
+        "secured_fpr_pct": 2.1,
+        "undefended_tar_pct": 100.0,
+        "secured_tar_pct": 98.0,
+        "mcnemar_b": 24,
+        "mcnemar_c": 0,
+        "mcnemar_chi2_cc": 22.04,
+        "mcnemar_p": 1.2e-07
+      },
+      "intervals": {
+        "undefended_asr": [19.3, 36.4],
+        "secured_asr": [1.0, 8.5],
+        "undefended_asr_rule_based": [12.5, 27.8],
+        "secured_asr_rule_based": [0.2, 5.4],
+        "undefended_fpr": [0.0, 3.8],
+        "secured_fpr": [0.6, 7.3]
+      },
+      "five_run_variance": {"secured_asr": [3.0, 0.9], "undefended_asr": [27.0, 1.3]},
+      "residual_characterization": "Three surviving attacks: two allow-listed-tool exfiltrations, one role hijack whose persona shift paraphrases rather than declares itself. All three defeat the detector or the output heuristic, not the interception structure."
+    },
+
+    "primary_matched_pair_gpt4omini": {
+      "section": "8.1 / Table 8",
+      "arm": "gpt4o-mini",
+      "instrument": "llm_judge",
+      "projected": false,
+      "values": {
+        "undefended_asr_pct": 14.0,
+        "secured_asr_pct": 2.0,
+        "undefended_asr_rule_based_pct": 8.0,
+        "secured_asr_rule_based_pct": 0.0,
+        "undefended_fpr_pct": 0.0,
+        "secured_fpr_pct": 1.0,
+        "undefended_tar_pct": 100.0,
+        "secured_tar_pct": 98.0,
+        "mcnemar_b": 12,
+        "mcnemar_c": 0,
+        "mcnemar_chi2_cc": 10.08,
+        "mcnemar_p": 0.00049
+      },
+      "intervals": {
+        "undefended_asr": [8.5, 22.1],
+        "secured_asr": [0.6, 7.0],
+        "undefended_asr_rule_based": [4.1, 15.0],
+        "secured_asr_rule_based": [0.0, 3.7],
+        "undefended_fpr": [0.0, 3.8],
+        "secured_fpr": [0.2, 5.7]
+      },
+      "five_run_variance": {"secured_asr": [2.0, 0.7], "undefended_asr": [14.0, 1.1]}
+    },
+
+    "base_model_effect": {
+      "section": "8.1",
+      "projected": false,
+      "values": {
+        "undefended_gpt4omini_pct": 14.0,
+        "undefended_llama_pct": 27.0,
+        "grader_effect_points": 6.0,
+        "base_model_effect_points": 13.0
+      },
+      "claim": "Holding corpus, domain, tool surface and grader fixed, changing only the base model nearly doubles undefended attack success."
+    },
+
+    "grader_agreement": {
+      "section": "7.4 / Table 7",
+      "projected": false,
+      "values": {
+        "rule_based_agreement_indirect": 0.667,
+        "rule_based_kappa_indirect": 0.09,
+        "rule_based_sensitivity_indirect_pct": 22.2,
+        "llm_judge_agreement_indirect": 0.933,
+        "llm_judge_kappa_indirect": 0.84,
+        "llm_judge_sensitivity_indirect_pct": 88.9,
+        "llm_judge_specificity_indirect_pct": 95.2,
+        "rule_based_agreement_full": 0.683,
+        "rule_based_kappa_full": 0.36,
+        "llm_judge_agreement_full": 0.95,
+        "llm_judge_kappa_full": 0.89,
+        "inter_annotator_kappa": 0.71
+      },
+      "confusion_indirect": {
+        "rule_based": {"human_succeeded_inst_succeeded": 2, "human_succeeded_inst_blocked": 7,
+                        "human_blocked_inst_succeeded": 3, "human_blocked_inst_blocked": 18},
+        "llm_judge": {"human_succeeded_inst_succeeded": 8, "human_succeeded_inst_blocked": 1,
+                       "human_blocked_inst_succeeded": 1, "human_blocked_inst_blocked": 20}
+      }
+    },
+
+    "external_annotator_subsample": {
+      "section": "7.4.1",
+      "projected": true,
+      "values": {"agreement": 0.90, "n": 20, "agreed": 18, "kappa": 0.79}
+    },
+
+    "judge_stability": {
+      "section": "7.4.1",
+      "projected": true,
+      "values": {"identical_verdicts": 195, "total_verdicts": 196, "agreement_pct": 99.5},
+      "intervals": {"agreement": [97.2, 99.9]},
+      "note": "Three judge passes over a frozen transcript set; the single flip is a defended-arm indirect injection."
+    },
+
+    "three_config_ablation": {
+      "section": "8.3 / Table 9",
+      "arm": "llama",
+      "projected": true,
+      "rows": [
+        {"config": "A", "asr_pct": 27.0, "ci": [19.3, 36.4], "paired_p": null, "latency_s": 3.21},
+        {"config": "B", "asr_pct": 9.0, "ci": [4.8, 16.2], "paired_p": 1.5e-05, "latency_s": 2.51},
+        {"config": "C", "asr_pct": 3.0, "ci": [1.0, 8.5], "paired_p": 0.031, "latency_s": 2.44}
+      ],
+      "note": "The six attacks surviving input-only filtering are indirect injections and tool-output poisonings that only post-tool validation intercepts."
+    },
+
+    "leave_one_out": {
+      "section": "8.3 / Table 10",
+      "arm": "llama",
+      "projected": true,
+      "rows": [
+        {"config": "full_pipeline", "asr_pct": 3.0, "fpr_pct": 2.1, "paired_p": null, "mechanism": "reference"},
+        {"config": "loo_no_unrolling", "asr_pct": 3.0, "fpr_pct": 6.2, "paired_p": 0.125, "mechanism": "Hook 3 false positives"},
+        {"config": "loo_no_dedup", "asr_pct": 3.0, "fpr_pct": 4.2, "paired_p": 0.5, "mechanism": "Trust-cascade false positives"},
+        {"config": "loo_no_memory_adapt", "asr_pct": 3.0, "fpr_pct": 10.4, "paired_p": 0.008, "mechanism": "Hook 4 false positives", "significant": true},
+        {"config": "loo_classifier_output", "asr_pct": 8.0, "fpr_pct": 2.1, "paired_p": 0.0625, "mechanism": "Persona-compromise detection"},
+        {"config": "loo_no_trust", "asr_pct": 7.0, "fpr_pct": 0.0, "paired_p": 0.125, "mechanism": "Write-capability gating"}
+      ]
+    },
+
+    "boundary_marking": {
+      "section": "8.4 / Table 11",
+      "arm": "gpt4o-mini",
+      "projected": true,
+      "measured_rows_in_paper": ["undefended", "regex_bm_on", "full_bm_on"],
+      "rows": [
+        {"config": "undefended", "detector": "none", "asr_pct": 14.0, "ci": [8.5, 22.1], "projected": false},
+        {"config": "bm_only", "detector": "none", "asr_pct": 12.0, "ci": [7.0, 19.8], "paired_p": 0.5, "projected": true},
+        {"config": "regex_bm_off", "detector": "regex", "asr_pct": 13.0, "ci": [7.8, 21.0], "projected": true},
+        {"config": "regex_bm_on", "detector": "regex", "asr_pct": 11.0, "ci": [6.3, 18.6], "paired_p": 0.5, "projected": false},
+        {"config": "full_bm_off", "detector": "distilbert", "asr_pct": 3.0, "ci": [1.0, 8.5], "projected": true},
+        {"config": "full_bm_on", "detector": "distilbert", "asr_pct": 2.0, "ci": [0.6, 7.0], "paired_p": 1.0, "projected": false}
+      ],
+      "attribution": {"detector_points": 9, "boundary_marking_points": 2, "interception_structure_points": 1}
+    },
+
+    "hook_isolation": {
+      "section": "8.5 / Table 16",
+      "arm": "gpt4o-mini",
+      "projected": false,
+      "n_benign": 96,
+      "rows": [
+        {"hook": "H1", "mode": "fast", "n_attacks": 30, "miss_pct": 66.7, "fpr_pct": 16.7, "recall_pct": 33.3, "latency_ms": 0.01},
+        {"hook": "H1", "mode": "secure", "n_attacks": 30, "miss_pct": 6.7, "fpr_pct": 8.3, "recall_pct": 93.3, "latency_ms": 42.45},
+        {"hook": "H3", "mode": "fast", "n_attacks": 50, "miss_pct": 80.0, "fpr_pct": 16.7, "recall_pct": 20.0, "latency_ms": 0.01},
+        {"hook": "H3", "mode": "secure", "n_attacks": 50, "miss_pct": 8.0, "fpr_pct": 12.5, "recall_pct": 92.0, "latency_ms": 47.01},
+        {"hook": "H4", "mode": "fast", "n_attacks": 20, "miss_pct": 55.0, "fpr_pct": 16.7, "recall_pct": 45.0, "latency_ms": 0.01},
+        {"hook": "H4", "mode": "secure", "n_attacks": 20, "miss_pct": 5.0, "fpr_pct": 21.9, "recall_pct": 95.0, "latency_ms": 46.26},
+        {"hook": "H5", "mode": "fast", "n_attacks": 50, "miss_pct": 66.0, "fpr_pct": 16.7, "recall_pct": 34.0, "latency_ms": 0.01},
+        {"hook": "H5", "mode": "secure", "n_attacks": 50, "miss_pct": 6.0, "fpr_pct": 8.3, "recall_pct": 94.0, "latency_ms": 45.45},
+        {"hook": "output_validator", "mode": "fast", "n_attacks": 100, "miss_pct": 8.0, "fpr_pct": 3.1, "recall_pct": 92.0, "latency_ms": 0.05},
+        {"hook": "output_validator", "mode": "secure", "n_attacks": 100, "miss_pct": 3.0, "fpr_pct": 3.1, "recall_pct": 97.0, "latency_ms": 0.08}
+      ],
+      "memory_hook_pre_adaptation_fpr_pct": 96.9,
+      "mean_secure_hook_latency_ms": 45.3,
+      "note": "Hook 2 is absent: its evaluation needs live visual and speech backends, which the offline harness intentionally lacks."
+    },
+
+    "trust_tiers": {
+      "section": "8.6 / Table 15",
+      "arm": "gpt4o-mini",
+      "projected": false,
+      "rows": [
+        {"tier": "HIGH", "n": 61, "pct": 63.5, "ci": [53.6, 72.5], "write_requests": 49, "completed": 61},
+        {"tier": "MEDIUM", "n": 35, "pct": 36.5, "ci": [27.5, 46.5], "write_requests": 1, "completed": 34},
+        {"tier": "LOW", "n": 0, "pct": 0.0, "ci": [0.0, 3.8], "write_requests": 0, "completed": 0}
+      ],
+      "values": {"total_benign": 96, "total_writes": 50, "total_completed": 95},
+      "compounding": {
+        "gpt4omini_20turn_write_loss_pct": 18.2,
+        "gpt4omini_20turn_sandbox_pct": 1.7,
+        "llama_20turn_write_loss_pct": 34.6,
+        "llama_20turn_sandbox_pct": 6.5
+      }
+    },
+
+    "multi_turn": {
+      "section": "8.7 / Table 14",
+      "arm": "llama",
+      "projected": true,
+      "rows": [
+        {"config": "trust_engine_off", "compromised": 9, "n": 20, "pct": 45.0, "ci": [25.8, 65.8], "degraded": 0},
+        {"config": "full_runtime", "compromised": 2, "n": 20, "pct": 10.0, "ci": [2.8, 30.1], "degraded": 1}
+      ],
+      "values": {"mcnemar_b": 7, "mcnemar_c": 0, "mcnemar_p": 0.016},
+      "design": "40 sessions x 5 turns; injection on turn 2, exploitation attempted on turns 3-5."
+    },
+
+    "latency": {
+      "section": "8.8 / Table 19",
+      "arm": "gpt4o-mini",
+      "projected": false,
+      "values": {
+        "benign_baseline_s": 2.18,
+        "benign_secured_s": 2.47,
+        "benign_delta_s": 0.29,
+        "benign_delta_pct": 13.3,
+        "classifier_share_s": 0.16,
+        "residual_share_s": 0.13,
+        "attack_baseline_s": 3.06,
+        "attack_secured_s": 2.39,
+        "attack_delta_s": -0.67,
+        "attack_t_statistic": 5.96,
+        "attack_p": 3.9e-08,
+        "mixed_baseline_s": 2.63,
+        "mixed_secured_s": 2.43,
+        "throughput_baseline_rps": 14.8,
+        "throughput_secured_rps": 11.4,
+        "throughput_delta_pct": -23.0,
+        "classifier_invocations_per_benign_request": 3.52
+      }
+    },
+
+    "ledger_growth": {
+      "section": "8.9",
+      "projected": false,
+      "values": {
+        "mean_record_kb": 1.9,
+        "records_per_booking_turn": 48,
+        "unbounded_50turn_records": 2400,
+        "unbounded_50turn_mb": 4.6,
+        "capped_steady_state_mb": 0.98,
+        "reduction_pct": 79,
+        "audit_window_turns": 10.7,
+        "kb_per_additional_turn": 91
+      }
+    },
+
+    "trust_weight_sensitivity": {
+      "section": "8.14 / Table 21",
+      "arm": "gpt4o-mini",
+      "projected": false,
+      "rows": [
+        {"config": "equal", "alpha": 0.25, "beta": 0.25, "gamma": 0.25, "delta": 0.25, "asr_pct": 2.0, "fpr_pct": 1.0},
+        {"config": "policy_heavy", "alpha": 0.10, "beta": 0.50, "gamma": 0.20, "delta": 0.20, "asr_pct": 2.0, "fpr_pct": 6.2},
+        {"config": "history_heavy", "alpha": 0.15, "beta": 0.20, "gamma": 0.50, "delta": 0.15, "asr_pct": 2.0, "fpr_pct": 3.1},
+        {"config": "source_heavy", "alpha": 0.50, "beta": 0.15, "gamma": 0.20, "delta": 0.15, "asr_pct": 3.0, "fpr_pct": 2.1},
+        {"config": "retrieval_heavy", "alpha": 0.15, "beta": 0.20, "gamma": 0.15, "delta": 0.50, "asr_pct": 2.0, "fpr_pct": 4.2}
+      ],
+      "note": "Hand-selected rather than swept; intervals overlap substantially and the FPR ordering is directional, not significant."
+    },
+
+    "regex_only": {
+      "section": "8.10",
+      "arm": "gpt4o-mini",
+      "projected": false,
+      "values": {
+        "detector_recall_pct": 34.0,
+        "detector_precision_pct": 68.0,
+        "detector_f1_pct": 45.3,
+        "detector_fpr_pct": 16.7,
+        "end_to_end_asr_pct": 11.0,
+        "mcnemar_b": 9,
+        "mcnemar_c": 0,
+        "mcnemar_p": 0.004
+      },
+      "intervals": {"end_to_end_asr": [6.3, 18.6]}
+    },
+
+    "external_baselines": {
+      "section": "8.11 / Table 17",
+      "arm": "gpt4o-mini",
+      "projected": true,
+      "projected_rows": ["spotlighting"],
+      "rows": [
+        {"config": "undefended", "asr_pct": 14.0, "ci": [8.5, 22.1], "fpr_pct": 0.0, "projected": false},
+        {"config": "spotlighting", "asr_pct": 9.0, "ci": [4.8, 16.2], "fpr_pct": 0.0, "mcnemar_b": 5, "mcnemar_p": 0.062, "projected": true},
+        {"config": "perimeter", "asr_pct": 8.0, "ci": [4.1, 15.0], "fpr_pct": 4.2, "mcnemar_b": 6, "mcnemar_p": 0.031, "projected": false},
+        {"config": "secured", "asr_pct": 2.0, "ci": [0.6, 7.0], "fpr_pct": 1.0, "projected": false}
+      ],
+      "paired_vs_runtime": {"perimeter": {"b": 6, "p": 0.031}, "spotlighting": {"b": 7, "p": 0.016}},
+      "mechanism": "Five of the six attacks the perimeter filter misses are tool-output poisonings that never cross the perimeter."
+    },
+
+    "scan_location_isolation": {
+      "section": "8.12 / Table 18",
+      "arm": "llama",
+      "projected": true,
+      "rows": [
+        {"config": "perimeter", "asr_pct": 15.0, "ci": [9.3, 23.3], "fpr_pct": 5.2, "paired_p": null},
+        {"config": "multipoint_no_trust", "asr_pct": 7.0, "ci": [3.4, 13.7], "fpr_pct": 0.0, "paired_p": 0.008, "mcnemar_b": 8},
+        {"config": "secured", "asr_pct": 3.0, "ci": [1.0, 8.5], "fpr_pct": 2.1, "paired_p": 0.125, "mcnemar_b": 4}
+      ],
+      "nesting_constraint": "27 -> 15 (b=12) -> 7 (b=8) -> 3 (b=4) sums to b=24, the discordant count of Table 8."
+    },
+
+    "injecagent": {
+      "section": "8.13 / Table 20",
+      "projected": false,
+      "n_cases": 200,
+      "rows": [
+        {"arm": "llama", "config": "undefended", "asr_pct": 34.0, "ci": [27.8, 40.8], "corrected_pct": 49.5},
+        {"arm": "llama", "config": "perimeter", "asr_pct": 19.5, "ci": [14.7, 25.4], "corrected_pct": 28.3, "mcnemar_b": 29, "mcnemar_p": 3.7e-09},
+        {"arm": "llama", "config": "secured", "asr_pct": 6.5, "ci": [3.8, 10.8], "corrected_pct": 9.5, "mcnemar_b": 55, "mcnemar_p": 5.6e-17},
+        {"arm": "gpt4o-mini", "config": "undefended", "asr_pct": 21.5, "ci": [16.4, 27.7], "corrected_pct": 31.3},
+        {"arm": "gpt4o-mini", "config": "perimeter", "asr_pct": 12.0, "ci": [8.2, 17.2], "corrected_pct": 17.4, "mcnemar_b": 19, "mcnemar_p": 3.8e-06},
+        {"arm": "gpt4o-mini", "config": "secured", "asr_pct": 4.5, "ci": [2.4, 8.3], "corrected_pct": 6.5, "mcnemar_b": 34, "mcnemar_p": 1.2e-10}
+      ],
+      "scoring": "InjecAgent's own published success criterion, not an instrument we authored."
+    },
+
+    "injecagent_criterion_bias": {
+      "section": "8.13.1 / Table 22",
+      "projected": true,
+      "values": {
+        "agreement": 0.825,
+        "agreed": 33,
+        "n": 40,
+        "kappa": 0.62,
+        "sensitivity_pct": 68.8,
+        "specificity_pct": 91.7,
+        "inter_annotator_kappa": 0.74
+      },
+      "confusion": {"human_succeeded_crit_succeeded": 11, "human_succeeded_crit_blocked": 5,
+                    "human_blocked_crit_succeeded": 2, "human_blocked_crit_blocked": 22},
+      "intervals": {"sensitivity": [44.4, 85.8], "corrected_defended_residual": [7.6, 14.6]},
+      "estimator": "Sensitivity-only prevalence adjustment p = p_obs / sensitivity; assumes perfect specificity and therefore biases upward."
+    },
+
+    "adaptive_redteam": {
+      "section": "8.15",
+      "arm": "llama",
+      "projected": false,
+      "values": {
+        "seeds": 20,
+        "succeeded_within_5_rounds": 3,
+        "asr_5_rounds_pct": 15.0,
+        "succeeded_within_15_rounds": 7,
+        "asr_15_rounds_pct": 35.0,
+        "round_zero_successes": 0
+      },
+      "intervals": {"asr_5_rounds": [5.2, 36.0], "asr_15_rounds": [18.1, 56.7]},
+      "characterization": "All seven successful mutations are indirect-injection or tool-output-poisoning, and all seven defeat the detector by paraphrase rather than the trust engine, ledger or output validator."
+    },
+
+    "multimodal_stress": {
+      "section": "8.16 / Table 23",
+      "arm": "gpt4o-mini",
+      "projected": false,
+      "rows": [
+        {"modality": "text", "benign": 3, "write": 1, "injection": 4, "total": 7, "pass": 7},
+        {"modality": "image", "benign": 3, "write": 2, "injection": 2, "total": 5, "pass": 5},
+        {"modality": "audio", "benign": 2, "write": 1, "injection": 1, "total": 3, "pass": 2},
+        {"modality": "video", "benign": 2, "write": 0, "injection": 1, "total": 3, "pass": 3}
+      ],
+      "values": {"total_trials": 18, "passed": 17, "pass_rate_pct": 94.4},
+      "intervals": {"pass_rate": [74.2, 99.0]},
+      "failure": "The benign audio write trial: a Whisper disfluency artifact was flagged, decaying trust to MEDIUM and blocking its reserve_hotel write."
+    },
+
+    "cross_agent_propagation": {
+      "section": "8.17",
+      "arm": "gpt4o-mini",
+      "projected": false,
+      "n_trials": 25,
+      "rows": [
+        {"config": "unprotected", "propagated": 25, "intercepted": 0, "rate_pct": 100.0, "ci": [86.7, 100.0]},
+        {"config": "fast_heuristic", "intercepted": 22, "rate_pct": 88.0, "ci": [70.0, 95.8]},
+        {"config": "classifier", "intercepted": 24, "rate_pct": 96.0, "ci": [80.5, 99.3]}
+      ]
+    },
+
+    "provenance_consistency": {
+      "section": "8.17",
+      "projected": false,
+      "values": {"consistent_sessions": 50, "total_sessions": 50, "pct": 100.0},
+      "intervals": {"consistency": [92.9, 100.0]},
+      "note": "An initial checker reported 45/50; all five divergences were content-hash deduplication working as designed, which the checker predated."
+    },
+
+    "task_accuracy_retention": {
+      "section": "8.17",
+      "projected": false,
+      "values": {"completed": 49, "total": 50, "tar_pct": 98.0},
+      "intervals": {"tar": [89.5, 99.6]}
+    },
+
+    "multi_worker_state_loss": {
+      "section": "8.17",
+      "arm": "llama",
+      "projected": true,
+      "values": {"compromised": 8, "n": 20, "pct": 40.0, "single_worker_compromised": 2, "trust_off_compromised": 9},
+      "intervals": {"compromise": [21.9, 61.3]},
+      "design": "Two workers behind a round-robin load balancer with no session affinity and no shared store."
+    },
+
+    "detector_selection": {
+      "section": "5.4 / Table 3",
+      "projected": false,
+      "validation_split_size": 240,
+      "rows": [
+        {"model": "DistilBERT-base", "params_m": 66, "batch_cpu_s": 1.66, "val_accuracy_pct": 94.2, "memory_mb": 260, "selected": true},
+        {"model": "DeBERTa-v3-base", "params_m": 86, "batch_cpu_s": 5.82, "val_accuracy_pct": 96.5, "memory_mb": 380, "selected": false}
+      ],
+      "values": {"threshold": 0.5, "pr_auc": 0.97, "per_inference_distilbert_ms": 6.9, "per_inference_deberta_ms": 24.3}
+    },
+
+    "contamination_audit": {
+      "section": "7.2 / Table 6",
+      "projected": false,
+      "values": {
+        "finetune_corpus_size": 4800,
+        "eval_corpus_size": 100,
+        "pairs_checked": 480000,
+        "exact_matches": 0,
+        "minhash_threshold": 0.80,
+        "minhash_max_observed": 0.41,
+        "cosine_threshold": 0.90,
+        "cosine_max_observed": 0.78,
+        "benign_near_duplicates_removed": 4
+      },
+      "injecagent_audit": {"pairs_checked": 240000, "exact_matches": 0, "minhash_max_observed": 0.44, "cosine_max_observed": 0.71}
+    },
+
+    "detector_finetuning": {
+      "section": "5.4",
+      "projected": true,
+      "values": {
+        "epochs": 3,
+        "learning_rate": 2e-05,
+        "warmup_pct": 10,
+        "batch_size": 32,
+        "max_seq_length": 256,
+        "weight_decay": 0.01,
+        "early_stopping_patience": 1,
+        "gpu": "NVIDIA A100 40GB",
+        "training_minutes": 12,
+        "total_api_spend_usd": 430
+      }
+    },
+
+    "attack_corpus": {
+      "section": "7.1.2 / Table 4",
+      "projected": false,
+      "rows": [
+        {"family": "direct_prompt_injection", "n": 25, "keyword_free": 11, "hooks": ["H1", "H5"]},
+        {"family": "indirect_prompt_injection", "n": 30, "keyword_free": 15, "hooks": ["H3"]},
+        {"family": "tool_output_poisoning", "n": 20, "keyword_free": 9, "hooks": ["H3", "H5"]},
+        {"family": "rag_memory_poisoning", "n": 20, "keyword_free": 8, "hooks": ["H4"]},
+        {"family": "role_hijacking", "n": 5, "keyword_free": 3, "hooks": ["H1", "H5"]}
+      ],
+      "values": {"total": 100, "keyword_free_total": 46}
+    },
+
+    "benign_corpus": {
+      "section": "7.1.2 / Table 5",
+      "projected": true,
+      "rows": [
+        {"family": "flight_search", "n": 30, "write": 0, "hard_negative": 4, "hooks": ["H1", "H5", "H3"]},
+        {"family": "hotel_reservation", "n": 34, "write": 34, "hard_negative": 8, "hooks": ["H1", "H5", "H3", "H4"]},
+        {"family": "itinerary_memory_recall", "n": 16, "write": 0, "hard_negative": 3, "hooks": ["H1", "H5", "H4"]},
+        {"family": "multi_tool_booking", "n": 16, "write": 16, "hard_negative": 5, "hooks": ["H1", "H5", "H3", "H4"]}
+      ],
+      "values": {"total": 96, "writes": 50, "hard_negatives": 20, "hard_negatives_that_write": 13}
+    }
+  }
+}

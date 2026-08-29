@@ -193,9 +193,9 @@ class Settings:
         return bool(self.api_token)
 
 
-@lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
 
 
 settings = get_settings()
+

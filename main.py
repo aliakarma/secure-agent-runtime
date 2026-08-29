@@ -13,7 +13,7 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(override=True)
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, Form, Header, HTTPException, Depends

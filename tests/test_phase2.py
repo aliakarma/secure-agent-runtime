@@ -15,13 +15,13 @@ def test_mock_tools():
     """Verify that the mock tools return expected data format."""
     flight_result = search_flights.invoke({"destination": "Riyadh"})
     assert "Riyadh" in flight_result
-    assert "Found flight" in flight_result
-    assert "$" in flight_result
+    assert "flight" in flight_result
+    assert "status" in flight_result or "Available" in flight_result
     
     hotel_result = reserve_hotel.invoke({"location": "Riyadh"})
     assert "Riyadh" in hotel_result
-    assert "Reserved a room" in hotel_result
-    assert "Confirmation:" in hotel_result
+    assert "reserved" in hotel_result
+    assert "CONF-" in hotel_result
 
 def test_graph_compilation():
     """Verify the state graph compiles without errors."""

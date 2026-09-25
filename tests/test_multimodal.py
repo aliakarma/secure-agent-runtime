@@ -43,6 +43,8 @@ def test_run_image_benign():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "completed"
+    if data["security_blocked"]:
+        print("\nDEBUG MESSAGES:", data["messages"])
     assert data["security_blocked"] is False
 
 def test_run_image_ocr_injection():

@@ -59,16 +59,25 @@ def _resident_mb() -> float:
 
 
 def measure_backend(backend: str, split: List[dict], threshold: float) -> Dict[str, Any]:
+    """``backend`` is a registry name, or ``local:<path>`` for a fine-tuned
+    checkpoint written by scripts/train_detector.py (the paper compares two such
+    checkpoints, DistilBERT and DeBERTa-v3-base, trained on the same corpus)."""
     from sanitizers.detectors import build_detector
 
     gc.collect()
     before_mb = _resident_mb()
 
     load_start = time.perf_counter()
-    detector, name, error = build_detector(backend)
+    if backend.startswith("local:"):
+        detector, name, error = build_detector("local", local_distilbert_path=backend.split(":", 1)[1])
+    else:
+        detector, name, error = build_detector(backend)
     load_s = time.perf_counter() - load_start
     if detector is None:
         return {"backend": backend, "error": error or "detector unavailable"}
+
+    report_path = Path(backend.split(":", 1)[1]) / "training_report.json" if backend.startswith("local:") else None
+    training = json.loads(report_path.read_text(encoding="utf-8")) if report_path and report_path.exists() else None
 
     after_mb = _resident_mb()
 
@@ -116,10 +125,21 @@ def measure_backend(backend: str, split: List[dict], threshold: float) -> Dict[s
     del detector
     gc.collect()
 
+    p_val = tp / (tp + fp) if (tp + fp) else 1.0
+    r_val = tp / (tp + fn) if (tp + fn) else 0.0
+    f1 = 2 * p_val * r_val / (p_val + r_val) if (p_val + r_val) else 0.0
+    fpr = fp / (fp + tn) if (fp + tn) else 0.0
+
     return {
         "backend": backend,
         "resolved_name": name,
+        "base_model": (training or {}).get("base_model"),
         "params_m": params_m,
+        "precision_pct": round(p_val * 100, 2),
+        "recall_pct": round(r_val * 100, 2),
+        "f1_pct": round(f1 * 100, 2),
+        "fpr_pct": round(fpr * 100, 2),
+        "train_wall_time_s": (training or {}).get("wall_time_s"),
         "n_prompts": len(split),
         "batch_cpu_s": round(batch_s, 3),
         "per_inference_ms": round(batch_s / len(split) * 1000, 2) if split else 0.0,
@@ -135,7 +155,8 @@ def measure_backend(backend: str, split: List[dict], threshold: float) -> Dict[s
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Paper Table 3: detector selection")
-    parser.add_argument("--backends", default="distilbert,deberta-pi")
+    parser.add_argument("--backends",
+                        default="local:./models/prompt_detector,local:./models/prompt_detector_deberta_v3")
     parser.add_argument("--threshold", type=float, default=None)
     args = parser.parse_args()
 
@@ -155,8 +176,10 @@ def main() -> None:
         if "error" in row:
             print(f"    unavailable: {row['error']}")
         else:
-            print(f"    acc {row['val_accuracy_pct']:.1f}%  batch {row['batch_cpu_s']:.2f}s  "
-                  f"({row['per_inference_ms']:.1f}ms/inference)  PR-AUC {row['pr_auc']}")
+            print(f"    {row.get('base_model') or row['resolved_name']}: "
+                  f"acc {row['val_accuracy_pct']:.1f}%  P {row['precision_pct']:.1f}  "
+                  f"R {row['recall_pct']:.1f}  F1 {row['f1_pct']:.1f}  FPR {row['fpr_pct']:.1f}  "
+                  f"batch {row['batch_cpu_s']:.2f}s ({row['per_inference_ms']:.1f}ms)  PR-AUC {row['pr_auc']}")
 
     emit("detector_selection", {
         "experiment": "detector_selection",

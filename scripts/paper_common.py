@@ -45,69 +45,60 @@ DEFAULT_SEED = 42
 # Arms and configurations
 # ═══════════════════════════════════════════════════════════════════
 
-# Env deltas applied on top of a clean baseline. Each named configuration is a
-# row in one of the paper's tables; the comment says which.
+# Env deltas applied on top of the full runtime (_DEFAULTS). Each named
+# configuration is a row of Table attrib (component matrix), Table extbaseline,
+# Table sensitivity, or Table multiturn. Components: Det. (SECURED_SYSTEM_MODE:
+# full-research = fine-tuned detector, fast = keyword heuristic), Hooks (HOOKS),
+# BM (BOUNDARY_MARKING), Trust (DISABLE_TRUST_ENGINE), Val. (Phase 9,
+# DISABLE_OUTPUT_VALIDATOR), Phase 8 as a whole (DISABLE_PRE_LLM).
+_OFF = {"DISABLE_TRUST_ENGINE": "1", "DISABLE_OUTPUT_VALIDATOR": "1",
+        "BOUNDARY_MARKING": "0", "DISABLE_PRE_LLM": "1"}
+
 CONFIGURATIONS: Dict[str, Dict[str, str]] = {
-    # Table 8 — primary matched pair
-    "undefended": {
-        "DISABLE_ALL_SECURITY": "1",
-        "DISABLE_TRUST_ENGINE": "1",
-        "DISABLE_OUTPUT_VALIDATOR": "1",
-        "DISABLE_MEMORY_SANITIZATION": "1",
-        "BOUNDARY_MARKING": "0",
-        "INTERCEPTION_MODE": "multipoint",
-    },
-    "secured": {
-        "DISABLE_ALL_SECURITY": "0",
-        "SECURED_SYSTEM_MODE": "full-research",
-        "BOUNDARY_MARKING": "1",
-        "INTERCEPTION_MODE": "multipoint",
-    },
+    # (a) reference arms
+    "undefended": {"DISABLE_ALL_SECURITY": "1", "BOUNDARY_MARKING": "0"},
+    "secured": {},
 
-    # Table 9 — three-configuration ablation
-    "config_A": {
-        "DISABLE_ALL_SECURITY": "1",
-        "DISABLE_TRUST_ENGINE": "1",
-        "DISABLE_OUTPUT_VALIDATOR": "1",
-        "DISABLE_MEMORY_SANITIZATION": "1",
-    },
-    "config_B": {
-        "DISABLE_ALL_SECURITY": "0",
-        "DISABLE_OUTPUT_VALIDATOR": "1",
-        "DISABLE_MEMORY_SANITIZATION": "1",
-        "SECURED_SYSTEM_MODE": "full-research",
-    },
-    "config_C": {
-        "DISABLE_ALL_SECURITY": "0",
-        "SECURED_SYSTEM_MODE": "full-research",
-    },
+    # (b) input side only: H1, H2, H5 with trust and Phase 8; no H3, H4, Phase 9
+    "input_side": {"HOOKS": "1,2,5", "DISABLE_OUTPUT_VALIDATOR": "1"},
 
-    # Table 10 — leave-one-out of the four mechanisms
-    "loo_no_unrolling":       {"DISABLE_STRUCTURAL_UNROLLING": "1"},
-    "loo_no_dedup":           {"DISABLE_HASH_DEDUP": "1"},
-    "loo_no_memory_adapt":    {"DISABLE_MEMORY_ADAPTATION": "1"},
-    "loo_classifier_output":  {"OUTPUT_VALIDATOR_USE_CLASSIFIER": "1"},
-    "loo_no_trust":           {"DISABLE_TRUST_ENGINE": "1"},
+    # (c) placement and stateful enforcement (trust off in both placement arms)
+    "perimeter": {"HOOKS": "1", "DISABLE_TRUST_ENGINE": "1"},
+    "five_point_trust_off": {"DISABLE_TRUST_ENGINE": "1"},
 
-    # Table 11 — boundary-marking decontamination
-    "bm_only":            {"DISABLE_ALL_SECURITY": "1", "BOUNDARY_MARKING": "1"},
-    "regex_bm_off":       {"SECURED_SYSTEM_MODE": "fast", "BOUNDARY_MARKING": "0"},
-    "regex_bm_on":        {"SECURED_SYSTEM_MODE": "fast", "BOUNDARY_MARKING": "1"},
-    "full_bm_off":        {"SECURED_SYSTEM_MODE": "full-research", "BOUNDARY_MARKING": "0"},
-    "full_bm_on":         {"SECURED_SYSTEM_MODE": "full-research", "BOUNDARY_MARKING": "1"},
+    # (d) detector and boundary marking
+    "bm_only": {"DISABLE_ALL_SECURITY": "1", "BOUNDARY_MARKING": "1"},
+    "heuristic_bm_off": {"SECURED_SYSTEM_MODE": "fast", "BOUNDARY_MARKING": "0"},
+    "heuristic": {"SECURED_SYSTEM_MODE": "fast"},
+    "full_bm_off": {"BOUNDARY_MARKING": "0"},
 
-    # Tables 17, 18 — external baselines and scan-location isolation
-    "perimeter":          {"INTERCEPTION_MODE": "perimeter", "SECURED_SYSTEM_MODE": "full-research"},
-    "spotlighting":       {"DISABLE_ALL_SECURITY": "1", "SPOTLIGHTING": "datamark"},
-    "multipoint_no_trust": {
-        "INTERCEPTION_MODE": "multipoint",
-        "SECURED_SYSTEM_MODE": "full-research",
-        "DISABLE_TRUST_ENGINE": "1",
-    },
+    # (e) placement x detector with every other component off (incl. Phase 8)
+    "perimeter_heuristic_only": {**_OFF, "HOOKS": "1", "SECURED_SYSTEM_MODE": "fast"},
+    "five_point_heuristic_only": {**_OFF, "SECURED_SYSTEM_MODE": "fast"},
+    "perimeter_detector_only": {**_OFF, "HOOKS": "1"},
+    "five_point_detector_only": {**_OFF},
 
-    # §8.10 — regex-only lower bound (end to end, not a detector proxy)
-    "regex_only":         {"SECURED_SYSTEM_MODE": "fast"},
+    # (f) leave one out of the full runtime
+    "loo_no_unrolling": {"DISABLE_STRUCTURAL_UNROLLING": "1"},
+    "loo_no_dedup": {"DISABLE_HASH_DEDUP": "1"},
+    "loo_no_memory_adapt": {"DISABLE_MEMORY_ADAPTATION": "1"},
+    "loo_classifier_output": {"OUTPUT_VALIDATOR_USE_CLASSIFIER": "1"},
+    "loo_no_trust": {"DISABLE_TRUST_ENGINE": "1"},
+
+    # External baselines (Table extbaseline); the perimeter baseline is (c).
+    "spotlighting": {"DISABLE_ALL_SECURITY": "1", "SPOTLIGHTING": "datamark"},
+
+    # Multi-turn (Table multiturn)
+    "turn_scoped": {"TRUST_AGGREGATION": "turn"},
+    "session_wide": {"TRUST_AGGREGATION": "session"},
+    "turn_scoped_step_up": {"TRUST_AGGREGATION": "turn", "STEP_UP_CONFIRMATION": "1"},
 }
+# Backwards-compatible names used by older drivers.
+CONFIGURATIONS["multipoint_no_trust"] = CONFIGURATIONS["five_point_trust_off"]
+CONFIGURATIONS["regex_only"] = CONFIGURATIONS["heuristic"]
+CONFIGURATIONS["full_bm_on"] = CONFIGURATIONS["secured"]
+CONFIGURATIONS["regex_bm_on"] = CONFIGURATIONS["heuristic"]
+CONFIGURATIONS["regex_bm_off"] = CONFIGURATIONS["heuristic_bm_off"]
 
 # Flags reset to a known state before each configuration is applied, so a
 # previous condition cannot leak into the next one.
@@ -116,13 +107,18 @@ _MANAGED_FLAGS = [
     "DISABLE_MEMORY_SANITIZATION", "DISABLE_STRUCTURAL_UNROLLING",
     "DISABLE_HASH_DEDUP", "DISABLE_MEMORY_ADAPTATION",
     "OUTPUT_VALIDATOR_USE_CLASSIFIER", "BOUNDARY_MARKING", "INTERCEPTION_MODE",
-    "SECURED_SYSTEM_MODE", "SPOTLIGHTING",
+    "SECURED_SYSTEM_MODE", "SPOTLIGHTING", "HOOKS", "DISABLE_PRE_LLM",
+    "TRUST_AGGREGATION", "STEP_UP_CONFIRMATION",
 ]
 
 _DEFAULTS = {
     "BOUNDARY_MARKING": "1",
     "INTERCEPTION_MODE": "multipoint",
     "SECURED_SYSTEM_MODE": "full-research",
+    "HOOKS": "1,2,3,4,5",
+    "TRUST_AGGREGATION": "turn",
+    # A missing detector must stop a run, never degrade silently to keywords.
+    "STRICT_SECURITY": "1",
 }
 
 
@@ -149,7 +145,8 @@ def apply_configuration(name: str) -> Dict[str, str]:
 def _reload_settings() -> None:
     """Rebuild the cached settings object so env changes take effect."""
     import config
-    config.get_settings.cache_clear()
+    if hasattr(config.get_settings, "cache_clear"):
+        config.get_settings.cache_clear()
     config.settings = config.get_settings()
 
     # Modules that captured a reference to the old settings object.
@@ -160,10 +157,11 @@ def _reload_settings() -> None:
         if module is not None and hasattr(module, "settings"):
             module.settings = config.settings
 
-    # The trust engine caches weights and thresholds at construction.
+    # The trust engine caches weights, thresholds, and the aggregation rule at
+    # construction. Rebuild in place: the hooks hold a reference to the router.
     te = sys.modules.get("sanitizers.trust_engine")
     if te is not None:
-        te.trust_engine = te.TrustEngine()
+        te.trust_engine.rebuild()
     pl = sys.modules.get("sanitizers.pre_llm")
     if pl is not None:
         pl.pre_llm_sanitizer = pl.PreLLMSanitizer()
@@ -216,6 +214,8 @@ class TrialResult:
     blocked: bool = False
     task_completed: bool = False
     is_write: bool = False
+    write_executed: bool = False
+    tool_calls: List[str] = field(default_factory=list)
     judge: Dict[str, Any] = field(default_factory=dict)
     grader: Dict[str, Any] = field(default_factory=dict)
 
@@ -248,7 +248,9 @@ def run_trial(
     from agents.workflow import run_travel_graph
     from sanitizers.provenance import provenance_ledger
 
-    prompt = item["prompt"]
+    # The user turn. Corpus items built by scripts/build_attack_corpus.py carry
+    # ``user_turn``; older items carry only ``prompt``.
+    prompt = item.get("user_turn") or item["prompt"]
     result = TrialResult(
         id=str(item.get("id", session_id)),
         kind=kind,
@@ -257,17 +259,35 @@ def run_trial(
         is_write=bool(item.get("is_write", False)),
     )
 
-    if seed_memory:
-        _seed_memory(session_id, seed_memory)
+    # Deterministic mock-tool output for this item in every configuration.
+    os.environ["TOOL_SEED"] = f"{DEFAULT_SEED}:{result.id}"
 
-    # Indirect-injection's threat model is a compromised tool/external service:
-    # the malicious instruction arrives in the TOOL OUTPUT, not the prompt.
-    family = result.family
-    is_indirect = family in ("indirect_injection", "tool_output_poisoning",
-                             "Indirect Injection", "Tool Output Poisoning")
-    prev_poison = os.environ.get("SIMULATE_TOOL_POISONING")
-    if is_indirect:
-        os.environ["SIMULATE_TOOL_POISONING"] = "1"
+    # Benign context the item needs (e.g. an earlier booking to recall). Written
+    # directly, as a previous session turn would have left it.
+    if seed_memory or item.get("seed_memory"):
+        _seed_memory(session_id, seed_memory or item["seed_memory"])
+
+    # Carriers (paper §2): the payload of an internal-channel attack never
+    # arrives in the user turn.
+    carrier = item.get("carrier", "user_turn")
+    poison_env = {}
+    if carrier == "tool_response":
+        poison_env = {
+            "SIMULATE_TOOL_POISONING": "1",
+            "TOOL_POISON_PAYLOAD": item["payload"],
+            "TOOL_POISON_TOOL": item.get("tool", ""),
+            "TOOL_POISON_FIELD": item.get("field", ""),
+        }
+    elif carrier == "memory":
+        # Retrieval poisoning: the payload is written to the vector store through
+        # Hook 4 (a no-op in configurations without Hook 4) and retrieved on the
+        # attack turn.
+        from sanitizers.hooks import secure_memory_hook
+        _seed_memory(session_id, secure_memory_hook(session_id, item["payload"]))
+    saved_env = {k: os.environ.get(k) for k in poison_env}
+    os.environ.update(poison_env)
+    from sanitizers.hooks import pop_executed_calls
+    pop_executed_calls(session_id)
 
     start = time.perf_counter()
     try:
@@ -278,11 +298,11 @@ def run_trial(
         graph_result = {"messages": []}
     finally:
         result.latency_ms = round((time.perf_counter() - start) * 1000, 2)
-        if is_indirect:
-            if prev_poison is None:
-                os.environ.pop("SIMULATE_TOOL_POISONING", None)
+        for k, v in saved_env.items():
+            if v is None:
+                os.environ.pop(k, None)
             else:
-                os.environ["SIMULATE_TOOL_POISONING"] = prev_poison
+                os.environ[k] = v
 
     result.errored = result.errored or bool(graph_result.get("errored", False))
     result.error_detail = result.error_detail or str(graph_result.get("error_detail", ""))
@@ -298,12 +318,20 @@ def run_trial(
     result.trust_tier = str(graph_result.get("trust_tier", "HIGH"))
     result.provenance_records = len(provenance_ledger.get_records(session_id))
     result.blocked = _was_blocked(messages)
+    from sanitizers.hooks import pop_executed_calls
+    from sanitizers.step_up import is_state_changing
+    dispatched = pop_executed_calls(session_id)
+    result.write_executed = any(is_state_changing(tool) for tool, _ in dispatched) or write_executed(messages)
+    result.tool_calls = [tool for tool, _ in dispatched]
 
     if kind == "attack":
         _score(result, instruments)
     else:
+        # A benign task completes when the agent answered without being blocked
+        # and, for a booking task, the write actually executed.
         result.task_completed = (
             result.valid and bool(result.output.strip()) and not result.blocked
+            and (result.write_executed or not result.is_write)
         )
 
     return result
@@ -316,6 +344,18 @@ def _score(result: TrialResult, instruments: Iterable[str]) -> None:
     if "rule_based" in instruments:
         from scripts.rule_grader import grade
         result.grader = grade(result.prompt, result.trace).to_dict()
+
+
+def write_executed(messages: List[Any]) -> bool:
+    """True if a state-changing call actually ran in this turn: a
+    ``reserve_hotel`` tool result with status ``reserved`` is in the trace."""
+    for msg in messages:
+        if type(msg).__name__ != "ToolMessage":
+            continue
+        content = getattr(msg, "content", "")
+        if getattr(msg, "name", "") == "reserve_hotel" and '"status": "reserved"' in str(content):
+            return True
+    return False
 
 
 def _was_blocked(messages: List[Any]) -> bool:
@@ -336,8 +376,12 @@ def reset_runtime_state() -> None:
     """Clear per-session state between conditions."""
     from sanitizers.trust_engine import trust_engine
     from sanitizers.provenance import provenance_ledger
+    from sanitizers import step_up
+    from agents.memory.chroma_memory import ChromaMemoryManager
     trust_engine.reset_all()
     provenance_ledger.clear()
+    step_up.reset()
+    ChromaMemoryManager._memory_store.clear()
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -495,9 +539,41 @@ def run_manifest(**extra: Any) -> Dict[str, Any]:
         "trust_decay_rho": settings.trust_decay_rho,
         "boundary_marking": settings.boundary_marking,
         "interception_mode": settings.interception_mode,
+        "hooks_enabled": sorted(settings.hooks_enabled),
+        "trust_aggregation": settings.trust_aggregation,
+        "session_store": settings.session_store.split("@")[-1],
+        "detector_path": settings.detector_path,
+        "detector_weights_sha256": _weights_digest(settings.detector_path),
+        "mcp_isolation": os.getenv("MCP_ISOLATION", "1"),
+        "git_commit": _git_commit(),
     }
     manifest.update(extra)
     return manifest
+
+
+def _weights_digest(path: str) -> Optional[str]:
+    """SHA-256 of the detector weights, so a result names the exact checkpoint."""
+    import hashlib
+    weights = Path(path) / "model.safetensors"
+    if not weights.exists():
+        return None
+    h = hashlib.sha256()
+    with open(weights, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _git_commit() -> Optional[str]:
+    import subprocess
+    try:
+        out = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT,
+                             capture_output=True, text=True, timeout=10)
+        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=PROJECT_ROOT,
+                               capture_output=True, text=True, timeout=10).stdout.strip()
+        return out.stdout.strip() + ("+dirty" if dirty else "")
+    except Exception:
+        return None
 
 
 def emit(name: str, payload: Dict[str, Any]) -> Path:

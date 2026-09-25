@@ -1,12 +1,12 @@
 # Secure Agent Runtime
 
 ![Python](https://img.shields.io/badge/python-3.11-blue)
-![Detector](https://img.shields.io/badge/detector-DeBERTa--PI%20(GPU)-green)
+![Detector](https://img.shields.io/badge/detector-DistilBERT%20%2F%20DeBERTa--PI-green)
 ![LangGraph](https://img.shields.io/badge/LangGraph-enabled-orange)
 ![Eval](https://img.shields.io/badge/eval-deterministic%20%2F%20offline-purple)
 
 The **Secure Agent Runtime** is a security-first execution environment for
-autonomous LLM agents (Agentic AI). It implements an **eight-phase, defence-in-depth
+autonomous LLM agents (Agentic AI). It implements a **nine-phase, defence-in-depth
 security pipeline** on LangGraph that defends against direct prompt injection,
 indirect injection (RAG/tool poisoning), the Confused Deputy problem, and
 **multimodal** injection (text, image, audio, video), with a provenance-aware
@@ -29,12 +29,12 @@ nondeterminism) so they reproduce exactly.
    a zero-resistance "susceptible-model" oracle that makes every blocked attack
    attributable to the *defense* (not a base model's safety training), excludes
    empty/errored trials from ASR, and measures *real* task completion for TAR.
-2. **A defense-in-depth runtime**: 8 interception phases, a provenance ledger +
-   trust engine ($T(x)$ with content-hash dedup), input normalization
+2. **A defense-in-depth runtime**: 9 sequential interception phases, a provenance ledger +
+   trust engine ($T(x)$ with content-hash dedup), fine-tuned memory-boundary detection, input normalization
    (base64/leet/homoglyph), real MCP **subprocess isolation** (separate process,
    secret-scrubbed env, timeout), and a corrected chi-square LSB steganalysis.
 3. **An honest characterization of the precision/recall trade-off** between
-   detectors (DeBERTa-PI vs DistilBERT), showing the classifier alone is one
+   detectors (DistilBERT vs DeBERTa-PI), showing the classifier alone is one
    layer and the deterministic layers carry recall.
 4. **Full reproducibility**: GPU/CPU support, fixed seeds, single-command runs,
    and explicitly-disclosed limitations (pattern coupling, judge recall, encoding
@@ -47,44 +47,30 @@ nondeterminism) so they reproduce exactly.
 
 ## Architecture
 
-The system implements defence-in-depth through 8 coordinated security phases built on LangGraph:
+The system implements defence-in-depth through 9 coordinated, sequential security phases built on LangGraph (Paper Table 2):
 
 | Phase | Name | Hook | Description |
-|-------|------|------|-------------|
-| 1 | Pre-LLM Input Classification | `secure_agent_node` | Pluggable detector (default **DeBERTa-PI**, GPU) scans user messages; markers stripped (no bypass) |
-| 2 | Pre-Tool Argument Scanning | `secure_tool_wrapper` | Multimodal sanitizers classify tool args |
-| 2b | MCP Execution Sandbox | `mcp_sandbox.py` | **Real subprocess isolation** (separate process + secret-scrubbed env + timeout kill); JSON-RPC envelope |
-| 3 | Post-Tool Output Validation | Hook 3 | Deterministic keyword/regex validator detects compromised outputs |
-| 4 | Pre-Memory Storage | `secure_memory_hook` | Scrubs data before ChromaDB write |
-| 5 | Inter-Agent Routing | `secure_routing_hook` | Validates Supervisor-Worker messages |
-| 6 | Three-Tier Policy Enforcement | Trust Engine | HIGH/MEDIUM/LOW capability degradation |
-| 7 | Pre-LLM Context Sanitization | `pre_llm.py` | 18-pattern regex + **input normalization** (base64/leet/homoglyph), 50ms budget |
-| 8 | Output Validation & Recovery | Output Validator | **Deterministic** validator (Agent B, regex — *not* an LLM) + 3-retry recovery |
+| ------- | ------ | ------ | ------------- |
+| 1 | Ingestion Boundary Pre-Scan | Ingestion | Pre-scans raw prompt & extracted multimodal content; degrades trust on injection |
+| 2 | Worker Input Interception | `H1` | Fine-tuned classifier scans user turn before worker inference; strips span `[SANITIZED]` |
+| 3 | Tool Call Validation | `H2` | Validates tool names & arguments before dispatch; blocks unauthenticated writes |
+| 4 | Sandbox Tool Execution | Engine | JSON-RPC subprocess isolation (separate process, secret-scrubbed env, 10s timeout) |
+| 5 | Tool Output Interception | `H3` | Unrolls JSON tool output, scans text payload, strips unsafe spans |
+| 6 | Memory Storage Interception | `H4` | Fine-tuned memory-adapted detector screens state before vector DB persistence |
+| 7 | Inter-Agent Return Interception | `H5` | Screens worker response before returning control to supervisor agent |
+| 8 | Dynamic Capability Tier Masking | Enforcer | Enforces HIGH/MEDIUM/LOW policy tiers; masks high-risk tools at degraded trust |
+| 9 | Pre-LLM Context Sanitization | Pre-LLM | 17-pattern regex + input normalization (base64/leet/homoglyph), 50ms budget |
 
 **Multimodal Sanitizers:** Text (pluggable detector — see below), Image (GPT-4o-mini Vision / Tesseract / EXIF + chi-square LSB steganalysis), Audio (Whisper API / local Whisper), Video (GPT-4o-mini / OpenCV+OCR), PDF (PyMuPDF text layer + GPT-4o-mini/Tesseract page OCR + metadata/annotation/JavaScript inspection), RAG, Tool Output.
 
 ### Detector backend (`DETECTOR_BACKEND`, `sanitizers/detectors.py`)
 
-The default detector is **`deberta-pi`** (`protectai/deberta-v3-base-prompt-injection`),
-used for **both the dashboard and the benchmark**. It has high precision — it does
-**not** false-positive on benign imperatives like *"Read this image and proceed"*,
-which the fine-tuned DistilBERT flagged as INJECTION at 0.97 (so DistilBERT blocked
-benign image uploads on the live dashboard). The detector runs on **GPU when
-available** (`DETECTOR_DEVICE=auto|cpu|cuda`): on an RTX 3050, DeBERTa-PI inference
-is ~7 ms/call vs. ~5.8 s on CPU (**~800×**), which is what makes it practical for
-both interactive use *and* the 600-attack batches.
+Per Paper §5.4 and Table 2/3, **`distilbert`** (local fine-tuned DistilBERT, 66M params) is the **primary default detector**, chosen for its ultra-low CPU latency profile (1.66s vs 5.82s batch over 240 prompts).
 
-- `distilbert` remains available (`DETECTOR_BACKEND=distilbert`) as a CPU-only fast
-  fallback; one historical no-normalization **ablation** is reported with it (clearly
-  labelled). DeBERTa-PI's only recall gap (bare `output 'X'` directives) is covered
-  by the pre-LLM emission-stripping + input-normalization layers, so secured ASR is
-  0% on the base benchmark with either detector.
-- **CPU note:** without a CUDA GPU, DeBERTa-PI is ~3.5× slower than DistilBERT per
-  inference; set `DETECTOR_BACKEND=distilbert` for large CPU-only batch runs.
+**`deberta-pi`** (`protectai/deberta-v3-base-prompt-injection-v2`) is available as the high-precision backend option (`DETECTOR_BACKEND=deberta-pi`). When a GPU is available (`DETECTOR_DEVICE=auto|cpu|cuda`), DeBERTa-PI inference runs in ~7ms/call, providing exceptional precision on complex benign inputs.
 
-**Live dashboard verification** (DeBERTa-PI + GPU + input normalization): checked
-end-to-end **9/9** — blocks plain, base64, leetspeak, and image-OCR injections, and
-passes benign text and benign images, including the imperatives DistilBERT mislabeled.
+- `distilbert` remains the primary zero-dependency default (`DETECTOR_BACKEND=distilbert`) and ships with the repository weights in `models/prompt_detector/`.
+- DeBERTa-PI can be selected for high-precision runs via `DETECTOR_BACKEND=deberta-pi`.
 
 **Trust Engine:** `T(x) = 0.25*S(x) + 0.25*P(x) + 0.25*H(x) + 0.25*R(x)` with content-hash deduplication to prevent trust cascade from multi-hook scanning.
 
@@ -93,11 +79,13 @@ passes benign text and benign images, including the imperatives DistilBERT misla
 ## Quick Start
 
 ### Prerequisites
+
 - **Python 3.12+**
 - **Docker & Docker Compose** (for containerized deployment)
 - **OpenAI API Key** (for GPT-4o-mini and Whisper)
 
 ### 1. Clone and Configure
+
 ```bash
 git clone https://github.com/aliakarma/secure-agent-runtime.git
 cd secure-agent-runtime
@@ -107,17 +95,21 @@ cp .env.example .env   # Windows: copy .env.example .env
 ```
 
 Edit `.env` and add your OpenAI API key:
+
 ```env
 OPENAI_API_KEY=sk-proj-...
 ```
 
 ### 2a. Docker Deployment (Recommended)
+
 ```bash
 docker-compose up --build
 ```
+
 Dashboard: [http://localhost:8080/static/index.html](http://localhost:8080/static/index.html)
 
 ### 2b. Local Deployment
+
 ```bash
 python -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
@@ -128,34 +120,48 @@ uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
 ### 3. Quick Smoke Test
+
 ```bash
 python run_demo.py
 ```
 
 ---
 
-## Training the Local Classifier
+## Training the Local Classifiers
 
-The TextSanitizer uses a fine-tuned DistilBERT (66M params) for offline classification. To retrain:
+The runtime uses fine-tuned DistilBERT (66M params) models for text and memory classification.
+
+To retrain the primary input prompt detector:
 
 ```bash
 python scripts/train_local_classifier.py
 ```
 
-This saves model weights to `./models/local_prompt_detector/`.
+This saves model weights to `./models/prompt_detector/`.
+
+To train the memory boundary detector (Paper §8.5):
+
+```bash
+python scripts/train_memory_detector.py
+```
+
+This saves weights and adaptation manifests to `./models/memory_prompt_detector/`.
 
 ---
 
 ## Running Tests
 
-### Test Suite (140 tests)
+### Test Suite (166 tests)
+
 ```bash
 pytest
 ```
+
 Offline unit tests run without network; the multimodal/graph integration tests
 exercise the live agent graph and use `OPENAI_API_KEY` when present.
 
 ### End-to-End Multimodal Stress Test (18 tests, requires live server)
+
 ```bash
 # In one terminal: start the server
 uvicorn main:app --host 0.0.0.0 --port 8080
@@ -177,7 +183,7 @@ python scripts/run_all_experiments.py
 Or run individual phases:
 
 | Experiment | Command | Output |
-|------------|---------|--------|
+| ------------ | --------- | -------- |
 | R3: Baseline vs. Secured | `python scripts/run_baseline_vs_secured.py --seed 42` | `datasets/r3_comparison_summary.json` |
 | R4a: Ablation Study | `python scripts/run_ablation_study.py --seed 42` | `datasets/r4_ablation_summary.json` |
 | R4b: Hook Isolation | `python scripts/run_isolation_benchmarks.py` | `datasets/r4_hook_isolation_summary.json` |
@@ -204,7 +210,7 @@ Task Accuracy Retention measures *real* benign task completion.
 against an oracle that *decodes* the obfuscation (models a capable LLM):
 
 | Metric (baseline 60.0%) | Secured, **no normalization** | Secured, **with normalization** |
-|--------|--------|--------|
+| -------- | -------- | -------- |
 | Attack Success Rate | **16.8%** | **0.0%** \* |
 | ASR 95% Wilson CI | [14.0, 20.0]% | [0.0, 0.64]% |
 | False Positive Rate | 0.0% | 0.0% |
@@ -266,11 +272,17 @@ python scripts/run_multimodal_smoke.py
 ## REST API Endpoints
 
 | Method | Route | Description |
-|--------|-------|-------------|
+| -------- | ------- | ------------- |
 | `POST` | `/run-travel-graph` | Execute a text-only travel agent session |
 | `POST` | `/run-travel-multimodal` | Execute with file upload (image/audio/video/pdf) |
-| `GET` | `/api/provenance?session_id=X` | Retrieve provenance lineage DAG |
+| `GET` | `/api/provenance?session_id=X` | Retrieve provenance lineage records |
+| `GET` | `/api/provenance-dag?session_id=X` | Retrieve explicit provenance node/edge DAG |
+| `GET` | `/api/graphchain?session_id=X` | Retrieve GraphChain structural maps & trust path |
 | `GET` | `/api/events?since_id=N` | Real-time telemetry event stream |
+| `GET` | `/api/threat-model` | Expose formal threat model & contributions |
+| `GET` | `/api/trust-model` | Expose trust engine configuration & weighting formula |
+| `GET` | `/api/detector` | Expose active detector backend metrics & threshold |
+| `GET` | `/api/research/experiments` | Aggregate research experiment summary artifacts |
 
 ---
 
@@ -323,7 +335,7 @@ All deployment-sensitive behaviour is centralized in `config.py` and driven by
 environment variables (see `.env.example`):
 
 | Concern | Control | Development default | Production (`APP_ENV=production`) |
-|---------|---------|---------------------|-----------------------------------|
+| --------- | --------- | --------------------- | ----------------------------------- |
 | API authentication | `API_TOKEN` | open (loud warning) | **required** (Bearer token; startup fails if unset) |
 | CORS | `ALLOWED_ORIGINS` | same-origin only | explicit allow-list |
 | Upload size | `MAX_UPLOAD_BYTES` | 25 MiB, streamed | enforced |
@@ -340,6 +352,7 @@ dir (separate from the research corpus), per-session telemetry scoping, and a
 ## Limitations & Threats to Validity
 
 **Scientific (read before citing any number):**
+
 - **Pattern coupling.** The 0% operating points (base benchmark; normalized
   adaptive) are coupled with the deterministic oracle — it complies via the same
   directive grammar the defense strips, and shares the obfuscation decoder. They
@@ -362,6 +375,7 @@ dir (separate from the research corpus), per-session telemetry scoping, and a
   baselines.
 
 **Engineering:**
+
 - **In-Memory State:** trust/provenance/telemetry stores are bounded (LRU,
   thread-safe) but in-process; externalize to Redis for horizontal scaling. State
   is lost on restart.

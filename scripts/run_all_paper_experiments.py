@@ -111,10 +111,10 @@ PLAN: Dict[str, List[Dict[str, Any]]] = {
     "stateful": [
         {"label": "Multi-turn statefulness (Table 14)",
          "argv": ["scripts/run_paper_multiturn.py", "--arm", "llama"],
-         "table": "14", "requires": ["vllm", "datasets/multiturn_sessions.json"]},
+         "table": "14", "requires": ["vllm", "datasets/multiturn_primary.json"]},
         {"label": "Multi-worker state loss (§8.17)",
          "argv": ["scripts/run_paper_multiturn.py", "--arm", "llama", "--workers", "2"],
-         "table": "§8.17", "requires": ["vllm", "datasets/multiturn_sessions.json"]},
+         "table": "§8.17", "requires": ["vllm", "datasets/multiturn_primary.json"]},
         {"label": "Adaptive red-team loop (§8.15)",
          "argv": ["scripts/run_paper_adaptive.py", "--arm", "llama", "--rounds", "15"],
          "table": "§8.15", "requires": ["vllm"]},

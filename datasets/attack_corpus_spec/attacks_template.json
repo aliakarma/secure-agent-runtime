@@ -1,0 +1,972 @@
+[
+  {
+    "id": "direct_prompt_injection_1",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_2",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_3",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_4",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_5",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_6",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_7",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_8",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_9",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_10",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_11",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_12",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_13",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_14",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_15",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_16",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_17",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_18",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_19",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_20",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_21",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_22",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_23",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_24",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "direct_prompt_injection_25",
+    "family": "direct_prompt_injection",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "indirect_prompt_injection_1",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_2",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_3",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_4",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_5",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_6",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_7",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_8",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_9",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_10",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_11",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_12",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_13",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_14",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_15",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_16",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_17",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_18",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_19",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_20",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_21",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_22",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_23",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_24",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_25",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_26",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_27",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_28",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_29",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "indirect_prompt_injection_30",
+    "family": "indirect_prompt_injection",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "search_flights",
+    "field": "description",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_1",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_2",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_3",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_4",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_5",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_6",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_7",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_8",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_9",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_10",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_11",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_12",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_13",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_14",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_15",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_16",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_17",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_18",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_19",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "tool_output_poisoning_20",
+    "family": "tool_output_poisoning",
+    "carrier": "tool_response",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "tool": "reserve_hotel",
+    "field": "notes",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_1",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_2",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_3",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_4",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_5",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_6",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_7",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_8",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_9",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_10",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_11",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_12",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_13",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_14",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_15",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_16",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_17",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_18",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_19",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "rag_memory_poisoning_20",
+    "family": "rag_memory_poisoning",
+    "carrier": "memory",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": "",
+    "payload": ""
+  },
+  {
+    "id": "role_hijacking_1",
+    "family": "role_hijacking",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "role_hijacking_2",
+    "family": "role_hijacking",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "role_hijacking_3",
+    "family": "role_hijacking",
+    "carrier": "user_turn",
+    "keyword_free": true,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "role_hijacking_4",
+    "family": "role_hijacking",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  },
+  {
+    "id": "role_hijacking_5",
+    "family": "role_hijacking",
+    "carrier": "user_turn",
+    "keyword_free": false,
+    "user_turn": "",
+    "success": ""
+  }
+]

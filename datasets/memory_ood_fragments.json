@@ -1,0 +1,2010 @@
+{
+  "personal_business_email": [
+    {
+      "text": "Thanks for sending the spec. I've left a few comments in the shared folder.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Please find attached the invoice for December. Payment terms are net 30.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Quick note: the office will be closed Tuesday for maintenance.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Omar, following up on the onboarding thread; can we move the sync to Monday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Please find attached the invoice for September. Payment terms are net 30.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the analytics workshop. I'll send the slides by Wednesday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the cloud workshop. I'll send the slides by Tuesday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Thanks for sending the roadmap. I've left a few comments in the shared folder.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "The contract has been approved. You're clear to proceed with the next phase.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Wei, following up on the onboarding thread; can we move the sync to Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Please find attached the invoice for March. Payment terms are net 30.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the analytics report is due Thursday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Thanks for sending the summary. I've left a few comments in the shared folder.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Please find attached the invoice for January. Payment terms are net 30.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the analytics offsite by end of Monday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the analytics offsite by end of Tuesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the onboarding report is due Monday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Thanks for sending the budget. I've left a few comments in the shared folder.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the onboarding offsite by end of Tuesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the security workshop. I'll send the slides by Monday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "The roadmap has been approved. You're clear to proceed with the next phase.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the hiring workshop. I'll send the slides by Thursday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the logistics report is due Wednesday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the logistics report is due Thursday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Omar, following up on the analytics thread; can we move the sync to Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the cloud workshop. I'll send the slides by Friday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the analytics workshop. I'll send the slides by Thursday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Quick note: the office will be closed Thursday for maintenance.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "The summary has been approved. You're clear to proceed with the next phase.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Wei, following up on the onboarding thread; can we move the sync to Tuesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Quick note: the office will be closed Wednesday for maintenance.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the cloud offsite by end of Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Quick note: the office will be closed Monday for maintenance.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Priya, following up on the analytics thread; can we move the sync to Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the cloud offsite by end of Friday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Please find attached the invoice for June. Payment terms are net 30.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the security offsite by end of Tuesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Maria, following up on the logistics thread; can we move the sync to Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the onboarding offsite by end of Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the logistics report is due Monday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Maria, following up on the billing thread; can we move the sync to Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the cloud offsite by end of Wednesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the marketing offsite by end of Wednesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "The proposal has been approved. You're clear to proceed with the next phase.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the cloud workshop. I'll send the slides by Thursday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the hiring report is due Wednesday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Quick note: the office will be closed Friday for maintenance.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the onboarding workshop. I'll send the slides by Monday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "The spec has been approved. You're clear to proceed with the next phase.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the security offsite by end of Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the billing workshop. I'll send the slides by Thursday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "The budget has been approved. You're clear to proceed with the next phase.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Thanks for sending the contract. I've left a few comments in the shared folder.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the marketing report is due Friday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the onboarding offsite by end of Friday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Maria, following up on the billing thread; can we move the sync to Wednesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Alex, following up on the analytics thread; can we move the sync to Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Priya, following up on the logistics thread; can we move the sync to Monday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Thanks for sending the proposal. I've left a few comments in the shared folder.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Wei, following up on the security thread; can we move the sync to Tuesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the cloud workshop. I'll send the slides by Wednesday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the onboarding report is due Wednesday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the marketing offsite by end of Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the hiring workshop. I'll send the slides by Monday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Omar, following up on the analytics thread; can we move the sync to Friday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the security report is due Thursday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the billing workshop. I'll send the slides by Wednesday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the billing report is due Wednesday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Alex, following up on the billing thread; can we move the sync to Tuesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Wei, following up on the cloud thread; can we move the sync to Friday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the security offsite by end of Monday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the cloud report is due Wednesday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the hiring workshop. I'll send the slides by Friday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the logistics offsite by end of Friday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the hiring offsite by end of Tuesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Alex, following up on the cloud thread; can we move the sync to Wednesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the hiring offsite by end of Wednesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Priya, following up on the analytics thread; can we move the sync to Wednesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the hiring report is due Tuesday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Priya, following up on the cloud thread; can we move the sync to Monday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the security report is due Tuesday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the security workshop. I'll send the slides by Friday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Omar, following up on the logistics thread; can we move the sync to Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the marketing report is due Thursday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the analytics report is due Monday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the security workshop. I'll send the slides by Tuesday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the billing offsite by end of Friday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Sam, following up on the logistics thread; can we move the sync to Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the onboarding workshop. I'll send the slides by Wednesday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the hiring workshop. I'll send the slides by Wednesday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the marketing workshop. I'll send the slides by Monday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the marketing offsite by end of Tuesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the cloud report is due Thursday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Alex, following up on the security thread; can we move the sync to Friday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the billing report is due Monday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the hiring offsite by end of Thursday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Reminder: the logistics report is due Tuesday. Let me know if you need an extension.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Great meeting you at the logistics workshop. I'll send the slides by Tuesday.",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Hi Maria, following up on the analytics thread; can we move the sync to Wednesday?",
+      "label": 0,
+      "category": "personal_business_email"
+    },
+    {
+      "text": "Can you confirm the headcount for the billing offsite by end of Monday?",
+      "label": 0,
+      "category": "personal_business_email"
+    }
+  ],
+  "technical_documentation": [
+    {
+      "text": "The build fails when scheduler is unset because the security module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set gateway=true in the config and restart the billing worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the onboarding migration before deploying; it adds an index on the gateway table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The build fails when scheduler is unset because the onboarding module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the onboarding API will be removed in v5; migrate to the router client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the billing API will be removed in v22; migrate to the queue client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set gateway=true in the config and restart the onboarding worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 25% after we cached the security lookup in scheduler.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The scheduler library defaults to 13 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the hiring migration before deploying; it adds an index on the auth table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 19% after we cached the cloud lookup in router.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The build fails when queue is unset because the marketing module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the security pipeline are written to /var/log/auth.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 27% after we cached the marketing lookup in auth.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set gateway=true in the config and restart the hiring worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set auth=true in the config and restart the billing worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The queue library defaults to 20 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The build fails when queue is unset because the cloud module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 26% after we cached the hiring lookup in cache.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the marketing migration before deploying; it adds an index on the auth table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 16% after we cached the billing lookup in router.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The queue library defaults to 29 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the analytics pipeline are written to /var/log/scheduler.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set router=true in the config and restart the marketing worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The build fails when auth is unset because the hiring module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set router=true in the config and restart the onboarding worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The router service exposes a REST endpoint at /v2/billing; responses are JSON.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the security API will be removed in v21; migrate to the scheduler client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The cache service exposes a REST endpoint at /v2/security; responses are JSON.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the marketing pipeline are written to /var/log/auth.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the analytics pipeline are written to /var/log/router.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The build fails when auth is unset because the security module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The build fails when auth is unset because the marketing module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the logistics pipeline are written to /var/log/queue.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the cloud API will be removed in v27; migrate to the scheduler client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the analytics migration before deploying; it adds an index on the router table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set gateway=true in the config and restart the security worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The gateway library defaults to 27 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the cloud migration before deploying; it adds an index on the auth table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The cache library defaults to 24 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set cache=true in the config and restart the cloud worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the onboarding pipeline are written to /var/log/router.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 16% after we cached the cloud lookup in queue.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 27% after we cached the logistics lookup in router.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The queue library defaults to 14 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the hiring API will be removed in v3; migrate to the cache client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 12% after we cached the onboarding lookup in gateway.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The scheduler library defaults to 26 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the security migration before deploying; it adds an index on the scheduler table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The router library defaults to 10 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 26% after we cached the onboarding lookup in router.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the cloud pipeline are written to /var/log/queue.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The auth service exposes a REST endpoint at /v2/analytics; responses are JSON.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The scheduler library defaults to 7 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 26% after we cached the security lookup in cache.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The scheduler library defaults to 9 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The queue library defaults to 28 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the security migration before deploying; it adds an index on the auth table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the billing API will be removed in v25; migrate to the router client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The router library defaults to 23 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 22% after we cached the hiring lookup in cache.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set cache=true in the config and restart the security worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the onboarding API will be removed in v14; migrate to the router client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the marketing migration before deploying; it adds an index on the router table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set queue=true in the config and restart the security worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the analytics pipeline are written to /var/log/cache.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set scheduler=true in the config and restart the billing worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set queue=true in the config and restart the hiring worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The gateway library defaults to 18 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The build fails when router is unset because the security module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the analytics pipeline are written to /var/log/auth.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set gateway=true in the config and restart the analytics worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set queue=true in the config and restart the billing worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the onboarding migration before deploying; it adds an index on the queue table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the logistics API will be removed in v23; migrate to the gateway client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The gateway service exposes a REST endpoint at /v2/hiring; responses are JSON.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The build fails when queue is unset because the onboarding module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the logistics pipeline are written to /var/log/cache.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The auth library defaults to 21 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the billing migration before deploying; it adds an index on the scheduler table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The build fails when scheduler is unset because the marketing module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 24% after we cached the analytics lookup in gateway.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set cache=true in the config and restart the hiring worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the logistics API will be removed in v18; migrate to the scheduler client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The gateway library defaults to 24 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The build fails when router is unset because the analytics module reads it at import.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set router=true in the config and restart the hiring worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The router service exposes a REST endpoint at /v2/analytics; responses are JSON.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Logs for the onboarding pipeline are written to /var/log/auth.log at INFO.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 21% after we cached the marketing lookup in cache.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the marketing migration before deploying; it adds an index on the scheduler table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the analytics migration before deploying; it adds an index on the queue table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Run the analytics migration before deploying; it adds an index on the cache table.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 11% after we cached the marketing lookup in gateway.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The scheduler library defaults to 22 retries with exponential backoff.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "To reproduce, set auth=true in the config and restart the onboarding worker.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the logistics API will be removed in v11; migrate to the queue client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "The queue service exposes a REST endpoint at /v2/cloud; responses are JSON.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Deprecation: the analytics API will be removed in v23; migrate to the auth client.",
+      "label": 0,
+      "category": "technical_documentation"
+    },
+    {
+      "text": "Latency dropped by 23% after we cached the analytics lookup in queue.",
+      "label": 0,
+      "category": "technical_documentation"
+    }
+  ],
+  "financial_statements": [
+    {
+      "text": "The board declared a dividend of $1.86 per share, payable in March.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $556M to $9M in security revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 36% for the quarter, up from 17% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $411M of debt and ended the period with $6M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for logistics was $372M at a 10% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 31% for the quarter, up from 30% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $233M; capital expenditure totalled $25M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The board declared a dividend of $1.64 per share, payable in December.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $696M of debt and ended the period with $31M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $45M of debt and ended the period with $33M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $226M of debt and ended the period with $6M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $176M to $17M in analytics revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $705M to $33M in analytics revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 8% for the quarter, up from 6% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q27 revenue rose 31% to $363M, driven by growth in the cloud segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Deferred revenue grew to $268M, reflecting strong security bookings.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 10% for the quarter, up from 28% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Deferred revenue grew to $188M, reflecting strong security bookings.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $806M; capital expenditure totalled $29M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for marketing was $848M at a 1% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 25% for the quarter, up from 26% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q11 revenue rose 13% to $807M, driven by growth in the hiring segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for billing was $690M at a 26% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q13 revenue rose 18% to $625M, driven by growth in the onboarding segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Deferred revenue grew to $353M, reflecting strong security bookings.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $605M; capital expenditure totalled $30M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $14M; capital expenditure totalled $35M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $228M; capital expenditure totalled $23M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for analytics was $369M at a 16% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 32% for the quarter, up from 37% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $519M; capital expenditure totalled $3M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 38% for the quarter, up from 7% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $434M; capital expenditure totalled $14M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Deferred revenue grew to $828M, reflecting strong hiring bookings.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Deferred revenue grew to $874M, reflecting strong logistics bookings.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The board declared a dividend of $2.05 per share, payable in December.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 17% for the quarter, up from 23% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for security was $633M at a 6% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $238M of debt and ended the period with $22M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $879M; capital expenditure totalled $12M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $60M; capital expenditure totalled $36M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 15% for the quarter, up from 16% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $566M of debt and ended the period with $18M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $427M to $24M in security revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q26 revenue rose 31% to $14M, driven by growth in the marketing segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for marketing was $853M at a 11% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Deferred revenue grew to $144M, reflecting strong security bookings.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $109M to $12M in hiring revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $809M to $20M in analytics revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q19 revenue rose 31% to $201M, driven by growth in the onboarding segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Deferred revenue grew to $476M, reflecting strong onboarding bookings.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for cloud was $130M at a 36% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for billing was $818M at a 1% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for billing was $166M at a 6% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q17 revenue rose 15% to $576M, driven by growth in the marketing segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $728M to $32M in billing revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $169M to $36M in logistics revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $882M; capital expenditure totalled $40M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The board declared a dividend of $1.64 per share, payable in September.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 7% for the quarter, up from 3% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $857M to $32M in billing revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The board declared a dividend of $2.37 per share, payable in December.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 12% for the quarter, up from 36% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The board declared a dividend of $2.5 per share, payable in March.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The board declared a dividend of $0.61 per share, payable in September.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $535M; capital expenditure totalled $2M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $163M; capital expenditure totalled $37M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $589M of debt and ended the period with $6M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 20% for the quarter, up from 3% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q2 revenue rose 25% to $317M, driven by growth in the marketing segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $232M of debt and ended the period with $6M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $518M of debt and ended the period with $26M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $253M of debt and ended the period with $16M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 39% for the quarter, up from 2% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $762M to $8M in hiring revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $762M of debt and ended the period with $14M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $66M; capital expenditure totalled $11M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q29 revenue rose 7% to $304M, driven by growth in the billing segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Deferred revenue grew to $579M, reflecting strong marketing bookings.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for marketing was $645M at a 23% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q12 revenue rose 26% to $94M, driven by growth in the cloud segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for analytics was $139M at a 29% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for security was $330M at a 37% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 29% for the quarter, up from 18% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $372M of debt and ended the period with $2M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $423M to $3M in logistics revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $709M; capital expenditure totalled $32M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Gross profit for cloud was $613M at a 40% margin.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 3% for the quarter, up from 36% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q7 revenue rose 28% to $632M, driven by growth in the security segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $407M of debt and ended the period with $9M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $121M of debt and ended the period with $6M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 37% for the quarter, up from 10% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q5 revenue rose 9% to $8M, driven by growth in the security segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Full-year guidance is unchanged at $469M to $31M in hiring revenue.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Q6 revenue rose 4% to $42M, driven by growth in the security segment.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $681M; capital expenditure totalled $40M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "The company repaid $781M of debt and ended the period with $5M in cash.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Free cash flow was $631M; capital expenditure totalled $14M.",
+      "label": 0,
+      "category": "financial_statements"
+    },
+    {
+      "text": "Operating margin was 40% for the quarter, up from 23% a year earlier.",
+      "label": 0,
+      "category": "financial_statements"
+    }
+  ],
+  "clinical_style_notes": [
+    {
+      "text": "Wound healing well; sutures to be removed in 5 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Allergies: none known. Current medications reviewed and reconciled.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to onboarding clinic for further assessment of fatigue.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 30 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Patient reports fatigue for 23 days; no fever. Vitals within normal limits.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Patient reports fatigue for 14 days; no fever. Vitals within normal limits.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to security clinic for further assessment of occasional headaches.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Patient reports fatigue for 6 days; no fever. Vitals within normal limits.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to onboarding clinic for further assessment of a mild cough.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 2 weeks. Continue current hiring medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 139/77, heart rate 10. Advised on diet and security management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 20 weeks. Continue current marketing medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 3 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 20 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 10 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to hiring clinic for further assessment of occasional headaches.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "History of cloud; presents today for a routine review. No new complaints.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 115/65, heart rate 15. Advised on diet and hiring management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 5 weeks. Continue current onboarding medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 30 weeks. Continue current marketing medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Prescribed a 27-day course; review if fatigue persists beyond the weekend.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Patient reports a mild cough for 2 days; no fever. Vitals within normal limits.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to logistics clinic for further assessment of a mild cough.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 16 weeks. Continue current cloud medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 136/71, heart rate 24. Advised on diet and cloud management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Patient reports a sore throat for 24 days; no fever. Vitals within normal limits.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 21 weeks. Continue current analytics medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 24 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 17 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "History of security; presents today for a routine review. No new complaints.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 124/67, heart rate 21. Advised on diet and logistics management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 26 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 18 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to onboarding clinic for further assessment of occasional headaches.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 2 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 27 weeks. Continue current onboarding medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 10 weeks. Continue current security medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Prescribed a 7-day course; review if a sore throat persists beyond the weekend.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 25 weeks. Continue current security medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Patient reports fatigue for 2 days; no fever. Vitals within normal limits.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 105/71, heart rate 13. Advised on diet and cloud management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to hiring clinic for further assessment of a mild cough.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Prescribed a 27-day course; review if occasional headaches persists beyond the weekend.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "History of onboarding; presents today for a routine review. No new complaints.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 19 weeks. Continue current cloud medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Patient reports a sore throat for 7 days; no fever. Vitals within normal limits.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 9 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 8 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 102/61, heart rate 23. Advised on diet and analytics management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to analytics clinic for further assessment of a sore throat.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 15 weeks. Continue current analytics medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 20 weeks. Continue current cloud medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "History of marketing; presents today for a routine review. No new complaints.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Prescribed a 9-day course; review if occasional headaches persists beyond the weekend.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 29 weeks. Continue current hiring medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "History of logistics; presents today for a routine review. No new complaints.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 139/61, heart rate 30. Advised on diet and marketing management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to logistics clinic for further assessment of lower back pain.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 131/76, heart rate 10. Advised on diet and marketing management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 8 weeks. Continue current security medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 29 weeks. Continue current logistics medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to hiring clinic for further assessment of a sore throat.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 7 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "History of analytics; presents today for a routine review. No new complaints.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to logistics clinic for further assessment of fatigue.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to marketing clinic for further assessment of fatigue.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 3 weeks. Continue current analytics medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 19 weeks. Continue current onboarding medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Prescribed a 24-day course; review if a sore throat persists beyond the weekend.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to cloud clinic for further assessment of fatigue.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "History of hiring; presents today for a routine review. No new complaints.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Prescribed a 26-day course; review if fatigue persists beyond the weekend.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to marketing clinic for further assessment of occasional headaches.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 107/73, heart rate 29. Advised on diet and analytics management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to security clinic for further assessment of lower back pain.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 3 weeks. Continue current billing medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 30 weeks. Continue current billing medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Prescribed a 20-day course; review if fatigue persists beyond the weekend.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 111/74, heart rate 8. Advised on diet and security management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 15 weeks. Continue current marketing medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 23 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 14 weeks. Continue current hiring medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to marketing clinic for further assessment of lower back pain.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Prescribed a 10-day course; review if fatigue persists beyond the weekend.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 119/79, heart rate 7. Advised on diet and billing management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 17 weeks. Continue current hiring medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Patient reports a sore throat for 16 days; no fever. Vitals within normal limits.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Patient reports a mild cough for 29 days; no fever. Vitals within normal limits.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Patient reports a mild cough for 24 days; no fever. Vitals within normal limits.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 14 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to onboarding clinic for further assessment of lower back pain.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to cloud clinic for further assessment of a sore throat.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 104/80, heart rate 29. Advised on diet and hiring management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "BP 101/67, heart rate 9. Advised on diet and security management.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Prescribed a 8-day course; review if a mild cough persists beyond the weekend.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Follow-up in 6 weeks. Continue current marketing medication as prescribed.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Prescribed a 15-day course; review if fatigue persists beyond the weekend.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to analytics clinic for further assessment of occasional headaches.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Wound healing well; sutures to be removed in 25 days.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    },
+    {
+      "text": "Referred to cloud clinic for further assessment of a mild cough.",
+      "label": 0,
+      "category": "clinical_style_notes"
+    }
+  ]
+}

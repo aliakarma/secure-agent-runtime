@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-09-24T09:23:58.765965+00:00",
+  "seed": 42,
+  "total": 4800,
+  "complete": true,
+  "components": {
+    "bipia": 1200,
+    "template": 1200,
+    "travel_request": 600,
+    "travel_tool_output": 600,
+    "general_benign": 1200
+  },
+  "bipia_source": {
+    "repository": "microsoft/BIPIA",
+    "commit": "a004b69ec0dd446e0afd461d98cb5e96e120a5d0",
+    "files": [
+      "benchmark/text_attack_train.json",
+      "benchmark/email/train.jsonl",
+      "benchmark/table/train.jsonl"
+    ]
+  },
+  "held_out_canaries": [
+    "audit mode engaged",
+    "protocol seven confirmed",
+    "maintenance bypass on",
+    "override acknowledged",
+    "task hijack complete"
+  ],
+  "decontamination": {
+    "reference_sets": {
+      "attacks": 100,
+      "benign": 96,
+      "multiturn": 84,
+      "injecagent": 79,
+      "mock_tool_outputs": 100
+    },
+    "thresholds": {
+      "minhash_jaccard": 0.8,
+      "cosine": 0.9,
+      "shingle": 5,
+      "encoder": "sentence-transformers/all-MiniLM-L6-v2"
+    },
+    "dropped_candidates": {
+      "exact": 1,
+      "minhash": 0,
+      "embedding": 0
+    }
+  },
+  "train_size": 4560,
+  "validation_size": 240,
+  "validation_by_source": {
+    "bipia": 60,
+    "template": 60,
+    "travel_request": 30,
+    "travel_tool_output": 30,
+    "general_benign": 60
+  },
+  "sha256": {
+    "corpus": "473bdceba13c276186ecd3630b8a8d9386fa818bd9c4e9ec038d9f0cdd6f2fd1",
+    "train": "f4f11f64d258eb6fd35fc16496a56d0471b0f29cd1b36630e3f81c2ef04a7c9f",
+    "validation": "5c4b66001c74d0402cdcfed44504694cf35bf3a777eed13336afbd6543539be3"
+  }
+}

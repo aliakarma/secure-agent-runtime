@@ -254,7 +254,7 @@ Clone the repository and prepare an isolated virtual environment:
 
 #### On Linux / macOS (Bash):
 ```bash
-git clone https://github.com/aliakarma/secure-agent-runtime.git
+git clone https://github.com/anonymous/secure-agent-runtime.git
 cd secure-agent-runtime
 
 python3 -m venv venv
@@ -265,7 +265,7 @@ pip install -r requirements.txt
 
 #### On Windows (PowerShell):
 ```powershell
-git clone https://github.com/aliakarma/secure-agent-runtime.git
+git clone https://github.com/anonymous/secure-agent-runtime.git
 cd secure-agent-runtime
 
 python -m venv venv
@@ -738,15 +738,14 @@ secure-agent-runtime/
 
 ## 12. Citation & Academic Attribution
 
-If you utilize this codebase, architecture, or evaluation methodology in your research, please cite our corresponding manuscript:
+> **Double-Blind Review Notice:** In accordance with double-blind peer review policies, author names, affiliations, and institutional details are withheld in this repository. Full attribution will be restored upon completion of the review process.
 
 ```bibtex
-@article{almutairi2026secureagentruntime,
+@article{anonymous2026secureagentruntime,
   title   = {Orchestration-Level Prompt-Injection Defense for Multi-Agent LLM Systems: Placement, Linguistic Limits of Detection, and Measurement Reliability},
-  author  = {Almutairi, Meshal Ateeq and Syed, Toqeer Ali and Akarma, Ali and Noor, Fazal},
-  journal = {Preprint / Elsevier Under Review},
-  year    = {2026},
-  institution = {Islamic University of Madinah and King Fahd University of Petroleum and Minerals}
+  author  = {Anonymous Authors},
+  journal = {Under Peer Review},
+  year    = {2026}
 }
 ```
 

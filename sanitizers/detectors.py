@@ -133,6 +133,9 @@ def build_detector(
 
     loaders = {
         "distilbert": lambda: _try("distilbert", lambda: _load_pipeline(local_distilbert_path, local=True)),
+        # "local": any checkpoint written by scripts/train_detector.py (DistilBERT,
+        # DeBERTa-v3, XLM-R); the architecture is read from its config.
+        "local": lambda: _try("local", lambda: _load_pipeline(local_distilbert_path, local=True)),
         "promptguard2": lambda: _try("promptguard2", lambda: _load_pipeline(promptguard_model)),
         "deberta-pi": lambda: _try("deberta-pi", lambda: _load_pipeline(deberta_pi_model)),
     }

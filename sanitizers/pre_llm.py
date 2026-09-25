@@ -181,6 +181,24 @@ class PreLLMSanitizer:
             return content
         return f"--- USER INPUT START ---\n{content}\n--- USER INPUT END ---"
 
+    def boundary_only(self, messages: List[Any]) -> List[Any]:
+        """Boundary marking alone: canonical system prompt plus delimiters
+        around user spans. No masking and no regex stripping."""
+        out = [SystemMessage(content=self.canonical_system_prompt, id="canonical_system_prompt")]
+        for msg in messages:
+            if getattr(msg, "id", None) == "canonical_system_prompt":
+                continue
+            if isinstance(msg, HumanMessage):
+                msg.content = self._wrap_always(str(msg.content))
+            out.append(msg)
+        return out
+
+    @staticmethod
+    def _wrap_always(content: str) -> str:
+        if "--- USER INPUT START ---" in content:
+            return content
+        return f"--- USER INPUT START ---\n{content}\n--- USER INPUT END ---"
+
     # ── Context assembly ─────────────────────────────────────────────
 
     def sanitize_context(self, messages: List[Any], trust_tier: str) -> List[Any]:

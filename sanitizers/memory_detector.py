@@ -47,7 +47,11 @@ _SCAFFOLD_PATTERNS = [
     re.compile(r"^\s*context from previous conversations:\s*", re.IGNORECASE),
     re.compile(r"\[PROVENANCE:[^\]]*\]"),
     re.compile(r"\[SANITIZED\]"),
+    re.compile(r"\[(?:Extracted|Transcribed) from [^\]]*\]\s*:?", re.IGNORECASE),
     re.compile(r"^\s*(?:user|agent|assistant|system)\s*:\s*", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"(?:I'll|I will|now)?\s*hand(?:ing)?\s*back to (?:the )?supervisor(?:\s*now)?\.?", re.IGNORECASE),
+    re.compile(r"If you (?:would|'d) like to proceed[^.!]*[.!]?", re.IGNORECASE),
+    re.compile(r"please let me know[^.!]*[.!]?", re.IGNORECASE),
 ]
 
 
@@ -145,7 +149,8 @@ class MemoryBoundaryDetector:
                     raw = detector(fragment)[0]
                     is_injection = raw["label"] == "INJECTION"
                     score = float(raw["score"])
-                    flagged = is_injection and score >= settings.detector_threshold
+                    threshold = float(os.getenv("MEMORY_DETECTOR_THRESHOLD", "0.55"))
+                    flagged = is_injection and score >= threshold
                     if flagged:
                         return True, (
                             f"Memory-adapted detector: INJECTION "

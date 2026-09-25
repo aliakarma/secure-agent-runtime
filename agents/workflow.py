@@ -36,13 +36,27 @@ def _spotlight_wrapper(node_runnable, variant: str):
     return wrapper
 
 
+def _boundary_only_wrapper(node_runnable):
+    """Wrap a raw node with Phase 8 boundary marking only (configuration
+    'boundary marking only'): canonical system prompt and delimiters around
+    untrusted spans, with no detector, no masking, no regex stripping, and no
+    trust state."""
+    def wrapper(state):
+        from sanitizers.pre_llm import pre_llm_sanitizer
+        if state and "messages" in state:
+            state["messages"] = pre_llm_sanitizer.boundary_only(state["messages"])
+        return node_runnable(state)
+    return wrapper
+
+
 def build_travel_graph() -> CompiledStateGraph:
     """Build and compile the multi-agent travel graph (cached per config)."""
     baseline = os.getenv("DISABLE_ALL_SECURITY", "0") == "1"
     deterministic = os.getenv("DETERMINISTIC_AGENT", "0") == "1"
+    boundary_only = baseline and os.getenv("BOUNDARY_MARKING", "0") == "1"
     cache_key = (
-        f"{int(baseline)}-{int(deterministic)}"
-        f"-{os.getenv('SPOTLIGHTING', '')}-{os.getenv('INTERCEPTION_MODE', '')}"
+        f"{int(baseline)}-{int(deterministic)}-{int(boundary_only)}"
+        f"-{os.getenv('SPOTLIGHTING', '')}"
     )
     cached = _compiled_graphs.get(cache_key)
     if cached is not None:
@@ -83,6 +97,11 @@ def build_travel_graph() -> CompiledStateGraph:
         graph.add_node("Supervisor", _spotlight_wrapper(sup_node, spotlight))
         graph.add_node("FlightAgent", _spotlight_wrapper(flight_node, spotlight))
         graph.add_node("HotelAgent", _spotlight_wrapper(hotel_node, spotlight))
+    elif boundary_only:
+        logger.warning("BOUNDARY MARKING ONLY: no hooks, no detector, no trust state")
+        graph.add_node("Supervisor", _boundary_only_wrapper(sup_node))
+        graph.add_node("FlightAgent", _boundary_only_wrapper(flight_node))
+        graph.add_node("HotelAgent", _boundary_only_wrapper(hotel_node))
     elif baseline:
         logger.warning("BASELINE MODE: All security wrappers DISABLED")
         graph.add_node("Supervisor", sup_node)
@@ -133,6 +152,10 @@ def run_travel_graph(user_input: str, session_id: str = "default_session", input
     from agents.memory.chroma_memory import ChromaMemoryManager
     
     logger.info("travel_graph_execution_started", session_id=session_id)
+    # Tool calls read the session from this context variable, including in the
+    # undefended graph, where no hook wrapper sets it.
+    from sanitizers.hooks import current_session_id
+    current_session_id.set(session_id)
     
     # 1. Retrieve persistent memory, keeping each fragment's cosine similarity
     #    to the active query so the trust engine can compute R(x) instead of
@@ -149,8 +172,14 @@ def run_travel_graph(user_input: str, session_id: str = "default_session", input
     #    what puts a benign session whose context is a weakly-matching memory
     #    fragment at MEDIUM without any detector firing.
     trust_score, trust_tier = 1.0, "HIGH"
-    if scored_memory and os.getenv("DISABLE_TRUST_ENGINE", "0") != "1" \
-            and os.getenv("DISABLE_ALL_SECURITY", "0") != "1":
+    trust_active = (os.getenv("DISABLE_TRUST_ENGINE", "0") != "1"
+                    and os.getenv("DISABLE_ALL_SECURITY", "0") != "1")
+    if trust_active:
+        # Algorithm 1, "Turn start": the turn tier restarts at the persistent tier.
+        from sanitizers.trust_engine import trust_engine
+        trust_engine.begin_turn(session_id)
+        trust_tier = trust_engine.session_tier(session_id)
+    if scored_memory and trust_active:
         from sanitizers.trust_engine import trust_engine
         trust_score, trust_tier = trust_engine.process_payload(
             session_id,
@@ -199,6 +228,11 @@ def run_travel_graph(user_input: str, session_id: str = "default_session", input
     memory_string = f"User: {user_input}\nAgent: {last_message}"
     safe_memory_string = secure_memory_hook(session_id, memory_string)
     memory_manager.save_memory(session_id, safe_memory_string)
-    
+
+    if trust_active:
+        from sanitizers.trust_engine import trust_engine
+        final_state["trust_score"] = trust_engine.snapshot(session_id)["governing_score"]
+        final_state["trust_tier"] = trust_engine.session_tier(session_id)
+
     logger.info("travel_graph_execution_completed", session_id=session_id)
     return final_state

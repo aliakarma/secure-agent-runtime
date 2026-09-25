@@ -36,46 +36,59 @@ class TextSanitizer:
     _shared_classifier = None
     _shared_name = "none"
     _shared_error = None
-    _shared_loaded = False
+    _shared_key = None
 
     def __init__(self):
-        self.local_classifier = None
-        self.detector_name = "none"
-        self.init_error = None
         self.llm = None
         self.prompt = None
-
-        # 1. Load the configured detector backend (distilbert | promptguard2 |
-        #    deberta-pi | ensemble) via the pluggable detector registry. Loads
-        #    once and is shared. Fail-soft unless STRICT_SECURITY=1.
         if os.getenv("SECURED_SYSTEM_MODE", "full-research").lower() != "fast":
-            if not TextSanitizer._shared_loaded:
-                from config import settings
-                from sanitizers.detectors import build_detector
-                logger.info(f"Initializing detector backend: {settings.detector_backend} ...")
-                detector, name, error = build_detector(
-                    settings.detector_backend,
-                    promptguard_model=settings.promptguard_model,
-                    deberta_pi_model=settings.deberta_pi_model,
-                )
-                TextSanitizer._shared_classifier = detector
-                TextSanitizer._shared_name = name
-                TextSanitizer._shared_error = error
-                TextSanitizer._shared_loaded = True
-                if detector is not None:
-                    logger.info(f"Detector active: {name}")
-                else:
-                    logger.warning(f"No detector loaded ({error}); using keyword heuristics.")
+            self._ensure_loaded()
 
-            self.local_classifier = TextSanitizer._shared_classifier
-            self.detector_name = TextSanitizer._shared_name
-            self.init_error = TextSanitizer._shared_error
-            if self.local_classifier is None and os.getenv("STRICT_SECURITY", "0") == "1":
-                raise RuntimeError(
-                    "STRICT_SECURITY=1: a prompt-injection detector is required "
-                    f"but none loaded: {self.init_error}. "
-                    "Train DistilBERT via scripts/train_local_classifier.py or set DETECTOR_BACKEND."
-                )
+    # The classifier is loaded lazily and shared, keyed on (backend, path), so a
+    # process that switches configurations never keeps a stale detector or falls
+    # back to keywords because it was first constructed in fast mode.
+    @classmethod
+    def _ensure_loaded(cls):
+        from config import settings
+        key = (settings.detector_backend, settings.detector_path)
+        if cls._shared_key != key:
+            from sanitizers.detectors import build_detector
+            logger.info(f"Initializing detector backend: {settings.detector_backend} "
+                        f"({settings.detector_path}) ...")
+            detector, name, error = build_detector(
+                settings.detector_backend,
+                local_distilbert_path=settings.detector_path,
+                promptguard_model=settings.promptguard_model,
+                deberta_pi_model=settings.deberta_pi_model,
+            )
+            cls._shared_classifier, cls._shared_name, cls._shared_error = detector, name, error
+            cls._shared_key = key
+            if detector is not None:
+                logger.info(f"Detector active: {name}")
+            else:
+                logger.warning(f"No detector loaded ({error}); using keyword heuristics.")
+        if cls._shared_classifier is None and os.getenv("STRICT_SECURITY", "0") == "1":
+            raise RuntimeError(
+                "STRICT_SECURITY=1: a prompt-injection detector is required "
+                f"but none loaded: {cls._shared_error}. Train one with scripts/train_detector.py.")
+        return cls._shared_classifier
+
+    @property
+    def local_classifier(self):
+        if os.getenv("SECURED_SYSTEM_MODE", "full-research").lower() == "fast":
+            return None
+        return self._ensure_loaded()
+
+    @property
+    def detector_name(self):
+        if os.getenv("SECURED_SYSTEM_MODE", "full-research").lower() == "fast":
+            return "keyword-heuristic"
+        self._ensure_loaded()
+        return TextSanitizer._shared_name
+
+    @property
+    def init_error(self):
+        return TextSanitizer._shared_error
 
     @staticmethod
     def marker_is_authenticated(text: str, session_id: Optional[str] = None) -> bool:
@@ -735,20 +748,34 @@ def _unroll_structured_text(text: str) -> str:
 
     leaves: list[str] = []
 
-    def _walk(node):
+    def _walk(node, depth=0):
         if isinstance(node, str):
             stripped = node.strip()
+            # A string leaf that is itself JSON (e.g. the tool result inside the
+            # Phase 3 JSON-RPC envelope) is unrolled too, to a bounded depth.
+            if depth < 4 and stripped[:1] in ("{", "["):
+                try:
+                    _walk(json.loads(stripped), depth + 1)
+                    return
+                except (json.JSONDecodeError, TypeError):
+                    pass
             if stripped:
                 leaves.append(stripped)
         elif isinstance(node, dict):
-            for v in node.values():
-                _walk(v)
+            for k, v in node.items():
+                if k in _PROTOCOL_KEYS:
+                    continue
+                _walk(v, depth)
         elif isinstance(node, list):
             for item in node:
-                _walk(item)
+                _walk(item, depth)
 
     _walk(obj)
     return " ".join(leaves) if leaves else text
+
+
+# JSON-RPC envelope fields that carry protocol, not content.
+_PROTOCOL_KEYS = {"jsonrpc", "id"}
 
 
 class RAGSanitizer:

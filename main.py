@@ -542,7 +542,7 @@ async def run_travel_multimodal_endpoint(
     from sanitizers.multimodal import CONFIDENCE_THRESHOLD
     import hashlib as _hashlib
 
-    PRESCAN_REGISTER_CONFIDENCE = 0.95  # conservative: only nudge trust on strong flags
+    PRESCAN_REGISTER_CONFIDENCE = 0.50  # Matches detector threshold so ingestion pre-scan degrades trust on injections
 
     def _prescan(label: str, content: str) -> None:
         if not content or not content.strip():
@@ -552,7 +552,7 @@ async def run_travel_multimodal_endpoint(
             # Dedup-safe hash so the same content flagged again in-graph is not
             # double-counted (which would over-collapse trust to LOW).
             content_hash = _hashlib.sha256(content.encode("utf-8", "replace")).hexdigest()[:16]
-            trust_engine.register_injection(session_id, content_hash)
+            trust_engine.process_payload(session_id, content, "user", is_malicious=True)
             logger.warning(f"Ingestion pre-scan: injection in {label}: {verdict.reason}")
             push_dashboard_event("SECURITY_ALERT", {
                 "session_id": session_id,

@@ -118,6 +118,10 @@ class Settings:
         # probability". This value now drives the sanitizer directly — it was
         # previously shadowed by a hardcoded 0.85 in sanitizers/multimodal.py.
         self.detector_threshold: float = float(os.getenv("DETECTOR_THRESHOLD", "0.5"))
+        # Local fine-tuned detector checkpoint (scripts/train_detector.py). The
+        # checkpoint released with the submission (deepset/prompt-injections,
+        # 436 training prompts) remains at ./models/local_prompt_detector.
+        self.detector_path: str = os.getenv("DETECTOR_PATH", "./models/prompt_detector").strip()
 
         # ── Trust Engine weights (T = αS + βP + γH + δR) ───────────────
         # Config-driven so the weighting can be tuned / ablated empirically
@@ -143,6 +147,28 @@ class Settings:
         # no intra-session recovery.
         self.trust_decay_rho: float = float(os.getenv("TRUST_DECAY_RHO", "0.3"))
 
+        # Tier aggregation (paper §3.3.1): "turn" (Equation scoped, default) or
+        # "session" (Equation aggregation, the session-wide running minimum).
+        self.trust_aggregation: str = os.getenv("TRUST_AGGREGATION", "turn").strip().lower()
+        if self.trust_aggregation not in ("turn", "session"):
+            raise ValueError(f"TRUST_AGGREGATION must be 'turn' or 'session', got {self.trust_aggregation!r}")
+        # Where persistent trust state lives (paper §3.5): "memory",
+        # "sqlite:///path", or "redis://host:port/db".
+        self.session_store: str = os.getenv("SESSION_STORE", "memory").strip()
+        # Step-up confirmation (paper §3.3): at MEDIUM, a state-changing call is
+        # dispatched only after the user approves the exact call instead of being
+        # refused outright.
+        self.step_up_confirmation: bool = _flag("STEP_UP_CONFIRMATION", False)
+
+        # ── Interception topology (paper Table phases / Table attrib) ─────
+        # Hooks that run, as a comma list of 1-5. INTERCEPTION_MODE=perimeter
+        # is shorthand for "1". DISABLE_PRE_LLM switches Phase 8 off entirely
+        # (used by configuration group (e), "every other component off").
+        self.hooks_enabled: set[int] = {
+            int(h) for h in os.getenv("HOOKS", "1,2,3,4,5").replace(" ", "").split(",") if h
+        }
+        self.disable_pre_llm: bool = _flag("DISABLE_PRE_LLM", False)
+
         # ── Ablation switches (paper §8.3 leave-one-out, Table 10) ──────
         # Each disables exactly one mechanism from the otherwise-complete
         # pipeline. Default off = mechanism enabled.
@@ -167,6 +193,8 @@ class Settings:
         # perimeter: detector at ingress/egress only, no internal transitions.
         # multipoint: all five hooks (default, the paper's runtime).
         self.interception_mode: str = os.getenv("INTERCEPTION_MODE", "multipoint").strip().lower()
+        if self.interception_mode == "perimeter":
+            self.hooks_enabled = {1}
 
         # ── Agent model backend (paper §7.3) ────────────────────────────
         # openai   — gpt-4o-mini-2024-07-18 via the OpenAI API
